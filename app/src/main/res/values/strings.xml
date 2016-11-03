@@ -1,0 +1,74 @@
+<resources>
+    <string name="app_name" translatable="false">MyMensor</string>
+    <string name="action_settings">Settings</string>
+    <string name="app_version_seamensor" translatable="false">MyMensor 1.0.0.0</string>
+    <string name="app_version_smc" translatable="false">MyMensor 1.0.0.0</string>
+    <string name="double_bck_exit">Press Back twice quickly to exit!</string>
+    <string name="button_exit">Press Button twice quickly to exit!</string>
+    <string name="starting_to_load_assets">Starting.....</string>
+    <string name="waiting_to_load_assets">Loading.....</string>
+    <string name="still_loading_assets">Still loading.....</string>
+    <string name="almost_finished_loading_assets">Almost there.....</string>
+    <string name="load_assets_finished">The wait is over!!!</string>
+    <string name="vp_name">VP#</string>
+    <string name="vp_touched">VP#</string>
+    <string name="date_vp_touched_not_acquired">never</string>
+    <string name="date_vp_touched_first_acquisition">now</string>
+    <string name="date_vp_touched_last_acquired">Last acquired</string>
+    <string name="date_vp_touched_free_to_be_acquired">Available from</string>
+    <string name="date_vp_capture_shown">Photo taken on</string>
+    <string name="vp_touched_info">Info about this VP</string>
+    <string name="vp_out_of_bounds">VP out of Bounds!!!! Increase qty with QtyVp++.</string>
+    <string name="camera_focusing">Wait!!! Camera Focusing!!!</string>
+    <string name="camera_image_captured">image captured</string>
+    <string name="user_name">User name:</string>
+    <string name="button_ok">OK</string>
+    <string name="button_text">Close VP Photo</string>
+    <string name="button_alpha_toggle">Transparent</string>
+    <string name="button_flash_toggle">TORCH ON</string>
+    <string name="button_show_vp_captures">See Captures</string>
+    <string name="button_show_previous_vp_capture">\u003c</string>
+    <string name="button_show_next_vp_capture">\u003e</string>
+    <string name="button_text_request_photo">Capture VP</string>
+    <string name="button_sav_desc_vp_text">DscVpTxt</string>
+    <string name="button_text_increase_qtyvps">QtyVp++</string>
+    <string name="button_text_decrease_qtyvps">QtyVp--</string>
+    <string name="button_text_save_tracking_vps_data">Save VPs</string>
+    <string name="button_ambiguous_vp_toggle">Amb VP</string>
+    <string name="button_flash_torch_vp_toggle">FLASH</string>
+    <string name="button_super_single_vp_toggle">Sup VP</string>
+    <string name="button_id_20mm_vp_toggle">ID 20mm</string>
+    <string name="button_id_100mm_vp_toggle">ID 100mm</string>
+    <string name="button_accept_vp_photo">OK</string>
+    <string name="button_reject_vp_photo">Repeat</string>
+    <string name="is_photo_ok">Is Photo captured ok? (You can zoom in!!!)</string>
+    <string name="desc_vp_empty">Empty</string>
+    <string name="vp_00">VP#00</string>
+    <string name="vpNotAcquiredStatus">N</string>
+    <string name="vpAcquiredStatus">Y</string>
+    <string name="not_all_vps_acquired">Error: not all vps acquired</string>
+    <string name="vp_location_des_text_missing">Error: vp location text missing</string>
+    <string name="no_photo_captured_in_this_vp">No photo captured in this vp!!!</string>
+    <string name="logging_in">Logging in to server...</string>
+    <string name="authlabel" translatable="false">SeaMensor</string>
+    <string name="userstate_loggedout">Please log in.</string>
+    <string name="userstate_loggedin">Authorized, using credentials from</string>
+    <string name="start_config">Configuration</string>
+    <string name="start_cap">Image Capture</string>
+    <string name="login_btn_txt">LOGIN</string>
+    <string name="logout_btn_txt">LOGOUT</string>
+    <string name="accountname">Username</string>
+    <string name="Password">Password</string>
+    <string name="SignIn">Sign In</string>
+    <string name="newuser">New User?</string>
+    <string name="Name">Name</string>
+    <string name="CreateAcc">Create Account</string>
+    <string name="AlreadyMember">Already a member?</string>
+    <string name="emailusr">Email</string>
+    <string name="checkcfgfiles">Please check your setup files. Sorry, closing now...</string>
+    <string name="hostconn_not">Disconnected from server.</string>
+    <string name="hostconn_con">Connecting to server...</string>
+    <string name="hostconn_yes">Connected to server.</string>
+    <string name="vp_capture_success">VP capture successful. Do not forget to save!</string>
+    <string name="vp_capture_failure">VP capture failed, please try again.</string>
+</resources>
