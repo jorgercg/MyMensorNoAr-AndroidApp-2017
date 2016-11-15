@@ -220,7 +220,7 @@ public class LoaderActivity extends Activity
             Log.d(TAG, "backgroundLoader: ending the loop querying pool.ntp.org for 10 seconds max:" + (System.currentTimeMillis() - loopStart) + " millis:" + now);
             if (clockSetSuccess) {
                 Log.d(TAG, "backgroundLoader: System.currentTimeMillis() before setTime=" + System.currentTimeMillis());
-                Log.d(TAG, "backgroundLoader: System.currentTimeMillis() AFTER setTime=" + Utils.timeNow(clockSetSuccess, sntpTime, sntpReference));
+                Log.d(TAG, "backgroundLoader: System.currentTimeMillis() AFTER setTime=" + MymUtils.timeNow(clockSetSuccess, sntpTime, sntpReference));
             } else {
                 sntpTime = 0;
                 sntpReference = 0;
@@ -240,13 +240,13 @@ public class LoaderActivity extends Activity
 
                 File vpsFile = new File(getApplicationContext().getFilesDir(),Constants.vpsConfigFileName);
 
-                if (Utils.isNewFileAvailable(  s3Client,
+                if (MymUtils.isNewFileAvailable(  s3Client,
                         Constants.vpsConfigFileName,
                         (vpsRemotePath + Constants.vpsConfigFileName),
                         Constants.BUCKET_NAME,
                         getApplicationContext())) {
                     Log.d(TAG,"vpsFile isNewFileAvailable= TRUE");
-                    TransferObserver observer = Utils.getRemoteFile(transferUtility, (vpsRemotePath + Constants.vpsConfigFileName), Constants.BUCKET_NAME, vpsFile);
+                    TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (vpsRemotePath + Constants.vpsConfigFileName), Constants.BUCKET_NAME, vpsFile);
                     observer.setTransferListener(new TransferListener() {
 
                         @Override
@@ -292,13 +292,13 @@ public class LoaderActivity extends Activity
 
                 final File vpsCheckedFile = new File(getApplicationContext().getFilesDir(),Constants.vpsCheckedConfigFileName);
 
-                if (Utils.isNewFileAvailable(  s3Client,
+                if (MymUtils.isNewFileAvailable(  s3Client,
                         Constants.vpsCheckedConfigFileName,
                         (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName),
                         Constants.BUCKET_NAME,
                         getApplicationContext())) {
                     Log.d(TAG,"vpsCheckedFile isNewFileAvailable= TRUE");
-                    TransferObserver observer = Utils.getRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile);
+                    TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile);
                     observer.setTransferListener(new TransferListener() {
 
                         @Override
@@ -362,7 +362,7 @@ public class LoaderActivity extends Activity
                     try
                     {
                         Log.d(TAG,"loadQtyVpsFromVpsFile: File="+Constants.vpsConfigFileName);
-                        InputStream fis = Utils.getLocalFile(Constants.vpsConfigFileName, getApplicationContext());
+                        InputStream fis = MymUtils.getLocalFile(Constants.vpsConfigFileName, getApplicationContext());
                         XmlPullParserFactory xmlFactoryObject = XmlPullParserFactory.newInstance();
                         XmlPullParser myparser = xmlFactoryObject.newPullParser();
                         myparser.setInput(fis, null);
@@ -420,13 +420,13 @@ public class LoaderActivity extends Activity
                     Log.d(TAG,"loadFinalDefinitions:####### LOADING: VPDESCFILES CONTENTS j="+j);
                     File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (j + 1) + ".png");
                     Log.d(TAG,"loadFinalDefinitions: vpLocationDescImageFilePath Dropbox: " + descvpRemotePath+ "descvp" + (j + 1) + ".png");
-                    if (Utils.isNewFileAvailable(  s3Client,
+                    if (MymUtils.isNewFileAvailable(  s3Client,
                             ("descvp" + (j + 1) + ".png"),
                             (descvpRemotePath+ "descvp" + (j + 1) + ".png"),
                             Constants.BUCKET_NAME,
                             getApplicationContext())) {
                         Log.d(TAG,"descvpFile loadFinalDefinitions: isNewFileAvailable= TRUE");
-                        final TransferObserver observer = Utils.getRemoteFile(transferUtility, (descvpRemotePath+ "descvp" + (j + 1) + ".png"), Constants.BUCKET_NAME, descvpFile);
+                        final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (descvpRemotePath+ "descvp" + (j + 1) + ".png"), Constants.BUCKET_NAME, descvpFile);
                         observer.setTransferListener(new TransferListener() {
 
                             @Override
@@ -463,7 +463,7 @@ public class LoaderActivity extends Activity
                 try
                 {
                     Log.d(TAG,"loadFinalDefinitions: backgroundLoader:####### LOADING: LOCAL ASSETS");
-                    Utils.extractAllAssets(getApplicationContext());
+                    MymUtils.extractAllAssets(getApplicationContext());
                 }
                 catch (Exception e)
                 {
@@ -533,7 +533,7 @@ public class LoaderActivity extends Activity
             try
             {
                 Intent intent = new Intent(getApplicationContext(), ConfigActivity.class);
-                intent.putExtra("seamensoraccount", mymensorAccount);
+                intent.putExtra("mymensoraccount", mymensorAccount);
                 intent.putExtra("dcinumber", dciNumber);
                 intent.putExtra("QtyVps", qtyVps);
                 intent.putExtra("sntpTime", sntpTime);
@@ -557,7 +557,7 @@ public class LoaderActivity extends Activity
             try
             {
                 Intent intent = new Intent(getApplicationContext(), ImageCapActivity.class);
-                intent.putExtra("seamensoraccount", mymensorAccount);
+                intent.putExtra("mymensoraccount", mymensorAccount);
                 intent.putExtra("dcinumber", dciNumber);
                 intent.putExtra("QtyVps", qtyVps);
                 intent.putExtra("sntpTime", sntpTime);

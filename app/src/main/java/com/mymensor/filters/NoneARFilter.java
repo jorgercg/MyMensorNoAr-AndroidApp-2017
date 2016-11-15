@@ -4,7 +4,7 @@ import com.mymensor.filters.NoneFilter;
 
 public class NoneARFilter extends NoneFilter implements ARFilter {
     @Override
-    public float[] getGLPose() {
+    public float[] getPose() {
         return null;
     }
 }

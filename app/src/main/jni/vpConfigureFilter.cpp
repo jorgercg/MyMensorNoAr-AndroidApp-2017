@@ -3,11 +3,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
-#include "ImageDetectionFilter.hpp"
+#include "VpConfigureFilter.hpp"
 
 using namespace mymensor;
 
-ImageDetectionFilter::ImageDetectionFilter(cv::Mat &referenceImageGray, double realSize)
+VpConfigureFilter::VpConfigureFilter(cv::Mat &referenceImageGray, double realSize)
 {
     // referenceImageBGR
     // Create grayscale and RGBA versions of the reference image.
@@ -69,7 +69,7 @@ ImageDetectionFilter::ImageDetectionFilter(cv::Mat &referenceImageGray, double r
     mTargetFound = false;
 }
 
-float *ImageDetectionFilter::getPose()
+float *VpConfigureFilter::getPose()
 {
     if (mTargetFound) {
         return mPose;
@@ -78,11 +78,8 @@ float *ImageDetectionFilter::getPose()
     }
 }
 
-void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
+void VpConfigureFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
 {
-
-    cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
-
     CvRect rect;
     rect = CvRect(440,160,400,400);
     // Convert the scene to grayscale.
@@ -97,6 +94,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
     mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
     mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
 
+    cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
     matcher.match(mSceneDescriptors, mReferenceDescriptors, mMatches);
 
     //mDescriptorMatcher->match(mSceneDescriptors, mReferenceDescriptors, mMatches);
@@ -109,7 +107,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
     //draw(src, dst);
 }
 
-void ImageDetectionFilter::findPose(cv::Mat &cameraMatrix)
+void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
 {
     if (mMatches.size() < 4) {
         // There are too few matches to find the pose.

@@ -1,6 +1,7 @@
 #include <jni.h>
 
 #include "ImageDetectionFilter.hpp"
+#include "VpConfigureFilter.hpp"
 
 using namespace mymensor;
 
@@ -29,7 +30,7 @@ Java_com_mymensor_filters_ImageDetectionFilter_deleteSelf(
 }
 
 JNIEXPORT jfloatArray JNICALL
-Java_com_mymensor_filters_ImageDetectionFilter_getGLPose(
+Java_com_mymensor_filters_ImageDetectionFilter_getPose(
         JNIEnv *env, jclass clazz, jlong selfAddr)
 {
     if (selfAddr == 0)
@@ -38,18 +39,18 @@ Java_com_mymensor_filters_ImageDetectionFilter_getGLPose(
     }
 
     ImageDetectionFilter *self = (ImageDetectionFilter *)selfAddr;
-    float *glPoseNative = self->getGLPose();
-    if (glPoseNative == NULL)
+    float *poseNative = self->getPose();
+    if (poseNative == NULL)
     {
         return NULL;
     }
 
-    jfloatArray glPoseJava = env->NewFloatArray(16);
-    if (glPoseJava != NULL)
+    jfloatArray poseJava = env->NewFloatArray(6);
+    if (poseJava != NULL)
     {
-        env->SetFloatArrayRegion(glPoseJava, 0, 16, glPoseNative);
+        env->SetFloatArrayRegion(poseJava, 0, 6, poseNative);
     }
-    return glPoseJava;
+    return poseJava;
 }
 
 JNIEXPORT void JNICALL
@@ -63,5 +64,58 @@ Java_com_mymensor_filters_ImageDetectionFilter_apply(JNIEnv *env, jclass clazz, 
         self->apply(src, projection);
     }
 }
+
+JNIEXPORT jlong JNICALL
+Java_com_mymensor_filters_VpConfigFilter_newSelf(JNIEnv *env, jclass clazz,
+                                                 jlong referenceImageBGRAddr, jdouble realSize) {
+    cv::Mat &referenceImageBGR =  *(cv::Mat *)referenceImageBGRAddr;
+    VpConfigureFilter *self = new VpConfigureFilter(referenceImageBGR, realSize);
+    return (jlong)self;
+}
+
+JNIEXPORT void JNICALL
+Java_com_mymensor_filters_VpConfigFilter_deleteSelf(JNIEnv *env, jclass clazz, jlong selfAddr) {
+    if (selfAddr != 0)
+    {
+        VpConfigureFilter *self = (VpConfigureFilter *)selfAddr;
+        delete self;
+    }
+}
+
+JNIEXPORT jfloatArray JNICALL
+Java_com_mymensor_filters_VpConfigFilter_getPose__J(JNIEnv *env, jclass clazz, jlong selfAddr) {
+    if (selfAddr == 0)
+    {
+        return NULL;
+    }
+
+    VpConfigureFilter *self = (VpConfigureFilter *)selfAddr;
+    float *poseNative = self->getPose();
+    if (poseNative == NULL)
+    {
+        return NULL;
+    }
+
+    jfloatArray poseJava = env->NewFloatArray(6);
+    if (poseJava != NULL)
+    {
+        env->SetFloatArrayRegion(poseJava, 0, 6, poseNative);
+    }
+    return poseJava;
+}
+
+JNIEXPORT void JNICALL
+Java_com_mymensor_filters_VpConfigFilter_apply__JJJ(JNIEnv *env, jclass type, jlong selfAddr, jlong srcAddr, jlong projectionAddr)
+{
+    if (selfAddr != 0)
+    {
+        VpConfigureFilter *self = (VpConfigureFilter *)selfAddr;
+        cv::Mat &src = *(cv::Mat *)srcAddr;
+        cv::Mat &projection = *(cv::Mat *)projectionAddr;
+        self->apply(src, projection);
+    }
+}
+
+
 
 } // extern "C"

@@ -1,15 +1,15 @@
 package com.mymensor.filters;
 
-import java.io.IOException;
+import android.content.Context;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.imgcodecs.Imgcodecs;
 
-import android.content.Context;
+import java.io.IOException;
 
-public final class ImageDetectionFilter implements ARFilter {
+public final class VpConfigFilter implements ARFilter {
 
     // The address of the native object.
     private long mSelfAddr;
@@ -22,14 +22,11 @@ public final class ImageDetectionFilter implements ARFilter {
         System.loadLibrary("MyMensor");
     }
 
-    public ImageDetectionFilter(final Context context,
-                                final int referenceImageResourceID,
-                                final MatOfDouble cameraCalibration,
-                                final double realSize)
+    public VpConfigFilter(final Context context,
+                          final Mat referenceImageBGR,
+                          final MatOfDouble cameraCalibration,
+                          final double realSize)
             throws IOException {
-        final Mat referenceImageBGR = Utils.loadResource(context,
-                referenceImageResourceID,
-                Imgcodecs.CV_LOAD_IMAGE_COLOR);
         mSelfAddr = newSelf(referenceImageBGR.getNativeObjAddr(), realSize);
         mCameraCalibration = cameraCalibration;
     }
@@ -60,4 +57,4 @@ public final class ImageDetectionFilter implements ARFilter {
     private static native void deleteSelf(long selfAddr);
     private static native float[] getPose(long selfAddr);
     private static native void apply(long selfAddr, long srcAddr, long projectionAddr);
-}
+ }

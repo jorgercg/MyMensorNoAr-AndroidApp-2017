@@ -9,7 +9,7 @@
     android:padding="0dp">
 
     <org.opencv.android.JavaCameraView
-        android:id="@+id/imagecap_javaCameraView"
+        android:id="@+id/config_javaCameraView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
@@ -31,20 +31,8 @@
         android:padding="1dp"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_toEndOf="@+id/imageView1"
         android:background="@android:color/transparent"
         android:layout_width="110dp" />
-
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="4dp"
-        android:layout_gravity="top|center"
-        android:text="@string/vp_00"
-        android:background="@android:color/holo_blue_dark"
-        android:visibility="gone"
-        />
 
     <ImageView
         android:id="@+id/waitingTrkLoading"
@@ -73,124 +61,187 @@
 
     <Button
         android:id="@+id/button2"
-        style="@style/Widget.AppCompat.Button.Borderless"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/custom_button"
-        android:textColor="#000000"
-        android:onClick="onButtonClick"
-        android:clickable="true"
-        android:text="@string/button_text"
-        android:visibility="gone"
-        />
-
-    <Button
-        android:id="@+id/buttonAlphaToggle"
         style="?android:attr/buttonStyleSmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/button2"
+        android:layout_toStartOf="@+id/button3"
+        android:onClick="onButtonClick"
+        android:padding="10dp"
+        android:text="@string/button_ok"
+        android:visibility="gone"
+        />
+
+    <Button
+        android:id="@+id/buttonRequestPhoto"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toStartOf="@+id/button2"
+        android:onClick="onButtonClick"
+        android:padding="10dp"
+        android:text="@string/button_text_request_photo"
+        android:visibility="gone"
+        />
+
+    <Button
+        android:id="@+id/buttonIncreaseQtyVps"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/vp_list"
+        android:onClick="onButtonClick"
+        android:padding="10dp"
+        android:text="@string/button_text_increase_qtyvps"
+        android:visibility="gone"
+        />
+
+    <Button
+        android:id="@+id/buttonDecreaseQtyVps"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/buttonIncreaseQtyVps"
+        android:onClick="onButtonClick"
+        android:padding="10dp"
+        android:text="@string/button_text_decrease_qtyvps"
+        android:visibility="gone"
+        />
+
+    <Button
+        android:id="@+id/buttonSaveTrackingVpsData"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/buttonDecreaseQtyVps"
+        android:onClick="onButtonClick"
+        android:padding="10dp"
+        android:text="@string/button_text_save_tracking_vps_data"
+        android:visibility="gone"
+        />
+
+    <Button
+        android:id="@+id/buttonAmbiguousVpToggle"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="82dp"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/imageView1"
+        android:layout_below="@+id/descVPEditText"
         android:background="@drawable/custom_button"
         android:textColor="#000000"
         android:onClick="onButtonClick"
-        android:clickable="true"
-        android:text="@string/button_alpha_toggle"
+        android:padding="10dp"
+        android:text="@string/button_ambiguous_vp_toggle"
         android:visibility="gone"
         />
 
     <Button
         android:id="@+id/buttonFlashTorchVpToggle"
         style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
+        android:layout_width="82dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/buttonAlphaToggle"
+        android:layout_toEndOf="@+id/imageView1"
+        android:layout_below="@+id/buttonAmbiguousVpToggle"
         android:background="@drawable/custom_button"
         android:textColor="#000000"
         android:onClick="onButtonClick"
-        android:clickable="true"
-        android:text="@string/button_flash_toggle"
+        android:padding="10dp"
+        android:text="@string/button_flash_torch_vp_toggle"
         android:visibility="gone"
         />
 
     <Button
-        android:id="@+id/buttonShowVpCaptures"
+        android:id="@+id/buttonSuperSingleVpToggle"
         style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
+        android:layout_width="82dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/buttonFlashTorchVpToggle"
+        android:layout_toEndOf="@+id/imageView1"
+        android:layout_below="@+id/buttonFlashTorchVpToggle"
         android:background="@drawable/custom_button"
         android:textColor="#000000"
         android:onClick="onButtonClick"
-        android:clickable="true"
-        android:text="@string/button_show_vp_captures"
+        android:padding="10dp"
+        android:text="@string/button_super_single_vp_toggle"
         android:visibility="gone"
         />
 
     <Button
-        android:id="@+id/buttonShowPreviousVpCapture"
-        android:layout_width="wrap_content"
+        android:id="@+id/buttonId20mmToggle"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="82dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/buttonShowVpCaptures"
+        android:layout_toEndOf="@+id/imageView1"
+        android:layout_below="@+id/buttonSuperSingleVpToggle"
         android:background="@drawable/custom_button"
         android:textColor="#000000"
         android:onClick="onButtonClick"
-        android:clickable="true"
-        android:padding="0dp"
-        android:textSize="30dp"
-        android:text="@string/button_show_previous_vp_capture"
+        android:padding="10dp"
+        android:text="@string/button_id_20mm_vp_toggle"
         android:visibility="gone"
         />
 
     <Button
-        android:id="@+id/buttonShowNextVpCapture"
-        android:layout_width="wrap_content"
+        android:id="@+id/buttonId100mmToggle"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="82dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/buttonShowPreviousVpCapture"
+        android:layout_toEndOf="@+id/imageView1"
+        android:layout_below="@+id/buttonId20mmToggle"
         android:background="@drawable/custom_button"
         android:textColor="#000000"
         android:onClick="onButtonClick"
-        android:clickable="true"
-        android:padding="0dp"
-        android:textSize="30dp"
-        android:text="@string/button_show_next_vp_capture"
+        android:padding="10dp"
+        android:text="@string/button_id_100mm_vp_toggle"
         android:visibility="gone"
         />
 
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="match_parent"
+    <EditText
+        android:id="@+id/descVPEditText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="4dp"
         android:lines="2"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@+id/textView2"
-        android:gravity="center"
+        android:gravity="left|top"
         android:text="@string/desc_vp_empty"
         android:textColor="@android:color/holo_blue_light"
         android:background="@android:color/background_dark"
         android:visibility="gone"
+        android:inputType="text|textCapSentences|textAutoCorrect"
+        android:imeOptions="actionDone"
         />
 
     <TextView
-        android:id="@+id/textViewIsPhotoOK"
-        android:layout_width="match_parent"
-        android:layout_height="35dp"
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="4dp"
         android:layout_alignParentTop="true"
+        android:layout_toEndOf="@id/vp_list"
         android:gravity="center"
-        android:text="@string/is_photo_ok"
-        android:textColor="@android:color/holo_blue_light"
-        android:background="@android:color/background_dark"
-        android:textSize="20dp"
-        android:visibility="gone"
+        android:text="@string/vp_00"
+        android:background="@android:color/holo_blue_dark"
+        android:visibility="invisible"
         />
 
+    <TextView
+        android:id="@+id/vpAcquiredStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:layout_toEndOf="@id/vp_list"
+        android:layout_below="@+id/textView2"
+        android:gravity="center"
+        android:text="@string/vpNotAcquiredStatus"
+        android:textColor="@android:color/holo_blue_light"
+        android:background="@android:color/background_dark"
+        android:visibility="invisible"
+        />
     <Button
         android:id="@+id/buttonAcceptVpPhoto"
         android:layout_width="100dp"
@@ -238,16 +289,5 @@
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
         android:background="@android:color/transparent" />
-
-    <ImageView
-        android:id="@+id/imageViewRadarScan"
-        android:layout_width="252.67dp"
-        android:layout_height="252.33dp"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
-        android:src="@drawable/radarscan"
-        android:padding="0dp"
-        android:visibility="visible"
-        android:layout_alignTop="@+id/imageViewTarget" />
 
 </RelativeLayout>

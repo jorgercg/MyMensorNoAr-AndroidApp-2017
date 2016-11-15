@@ -68,4 +68,5 @@
     <string name="vp_capture_failure">Falha na captura do VP, por favor tente novamente.</string>
     <string name="vp_capture_success">VP capturado com sucesso. Não esqueça de gravar!</string>
     <string name="action_settings">Configurações</string>
+    <string name="vp_capture_placeholder_description">Descrição do VP#</string>
 </resources>

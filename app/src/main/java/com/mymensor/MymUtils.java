@@ -12,6 +12,9 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import org.opencv.core.CvType;
+import org.opencv.core.MatOfDouble;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -19,9 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class Utils {
+public class MymUtils {
 
-    private static final String TAG = "Utils";
+    private static final String TAG = "MymUtils";
 
     public static boolean isNewFileAvailable(   AmazonS3Client s3,
                                                 String localFileName,
@@ -40,7 +43,7 @@ public class Utils {
                 return false;
             }
         } catch (AmazonClientException ace){
-            Log.e("Utils","isNewFileAvailable: exception: "+ace.toString());
+            Log.e("MymUtils","isNewFileAvailable: exception: "+ace.toString());
             return false;
         }
     }
@@ -142,6 +145,30 @@ public class Utils {
         while ((read = in.read(buffer)) != -1) {
             out.write(buffer, 0, read);
         }
+    }
+
+
+    public static MatOfDouble getCameraMatrix(int mWidth, int mHeight) {
+
+        MatOfDouble mCameraMatrix = new MatOfDouble();
+        mCameraMatrix.create(3, 3, CvType.CV_64FC1);
+
+        final float fovAspectRatio = Constants.mFOVX/Constants.mFOVY;
+        final double diagonalPx = Math.sqrt((Math.pow(mWidth, 2.0)+Math.pow(mWidth / fovAspectRatio, 2.0)));
+        final double focalLengthPx = 0.5*diagonalPx/Math.sqrt(Math.pow(Math.tan(0.5 * Constants.mFOVX * Math.PI / 180f), 2.0) +
+                        Math.pow(Math.tan(0.5 * Constants.mFOVY * Math.PI / 180f), 2.0));
+
+        mCameraMatrix.put(0, 0, focalLengthPx);
+        mCameraMatrix.put(0, 1, 0.0);
+        mCameraMatrix.put(0, 2, 0.5 * mWidth);
+        mCameraMatrix.put(1, 0, 0.0);
+        mCameraMatrix.put(1, 1, focalLengthPx);
+        mCameraMatrix.put(1, 2, 0.5 * mHeight);
+        mCameraMatrix.put(2, 0, 0.0);
+        mCameraMatrix.put(2, 1, 0.0);
+        mCameraMatrix.put(2, 2, 1.0);
+
+        return mCameraMatrix;
     }
 
 

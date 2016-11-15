@@ -34,22 +34,20 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.mymensor.adapters.CameraProjectionAdapter;
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensor.filters.ARFilter;
 import com.mymensor.filters.Filter;
 import com.mymensor.filters.ImageDetectionFilter;
 import com.mymensor.filters.NoneARFilter;
-import com.mymensor.filters.NoneFilter;
 
 import org.apache.commons.io.FileUtils;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.xmlpull.v1.XmlPullParser;
@@ -58,6 +56,7 @@ import org.xmlpull.v1.XmlSerializer;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -155,9 +154,6 @@ public class ImageCapActivity extends Activity implements
     // The camera view.
     private CameraBridgeViewBase mCameraView;
 
-    // An adapter between the video camera and projection matrix.
-    private CameraProjectionAdapter mCameraProjectionAdapter;
-
     // A matrix that is used when saving photos.
     private Mat mBgr;
 
@@ -201,6 +197,10 @@ public class ImageCapActivity extends Activity implements
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
 
+    // Matrix to hold camera calibration
+    // initially with absolute compute values
+    private MatOfDouble mCameraMatrix;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -212,7 +212,7 @@ public class ImageCapActivity extends Activity implements
         setContentView(R.layout.activity_imagecap);
 
         // Retrieve SeaMensor configuration info
-        mymensorAccount = getIntent().getExtras().get("seamensoraccount").toString();
+        mymensorAccount = getIntent().getExtras().get("mymensoraccount").toString();
         dciNumber = Integer.parseInt(getIntent().getExtras().get("dcinumber").toString());
         qtyVps = Short.parseShort(getIntent().getExtras().get("QtyVps").toString());
         sntpTime = Long.parseLong(getIntent().getExtras().get("sntpTime").toString());
@@ -246,9 +246,7 @@ public class ImageCapActivity extends Activity implements
         final Camera camera;
         CameraInfo cameraInfo = new CameraInfo();
         Camera.getCameraInfo(mCameraIndex, cameraInfo);
-        mIsCameraFrontFacing =
-                (cameraInfo.facing ==
-                        CameraInfo.CAMERA_FACING_FRONT);
+        mIsCameraFrontFacing = (cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT);
         mNumCameras = Camera.getNumberOfCameras();
         camera = Camera.open(mCameraIndex);
 
@@ -256,22 +254,15 @@ public class ImageCapActivity extends Activity implements
         camera.release();
         mSupportedImageSizes = parameters.getSupportedPreviewSizes();
         final Size size = mSupportedImageSizes.get(mImageSizeIndex);
+        for (int i=0; i<mSupportedImageSizes.size(); i++){
+            Log.d(TAG,"size ="+mSupportedImageSizes.get(i).width+"x"+mSupportedImageSizes.get(i).height);
+        }
+
 
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.imagecap_javaCameraView);
         mCameraView.setCameraIndex(mCameraIndex);
         mCameraView.setMaxFrameSize(1280, 720);
         mCameraView.setCvCameraViewListener(this);
-
-        mCameraProjectionAdapter = new CameraProjectionAdapter();
-
-        Size tmpCamProjSize = mSupportedImageSizes.get(mImageSizeIndex);;
-
-        tmpCamProjSize.width = 1280;
-        tmpCamProjSize.height = 720;
-
-        final Size camProjSize = tmpCamProjSize;
-
-        mCameraProjectionAdapter.setCameraParameters(parameters,camProjSize);
 
         loadConfigurationFile();
         loadVpsChecked();
@@ -314,9 +305,6 @@ public class ImageCapActivity extends Activity implements
 
         imageView = (TouchImageView) this.findViewById(R.id.imageView1);
 
-
-
-
     }
 
 
@@ -326,12 +314,10 @@ public class ImageCapActivity extends Activity implements
         savedInstanceState.putInt(STATE_CAMERA_INDEX, mCameraIndex);
 
         // Save the current image size index.
-        savedInstanceState.putInt(STATE_IMAGE_SIZE_INDEX,
-                mImageSizeIndex);
+        savedInstanceState.putInt(STATE_IMAGE_SIZE_INDEX, mImageSizeIndex);
 
         // Save the current filter indices.
-        savedInstanceState.putInt(STATE_IMAGE_DETECTION_FILTER_INDEX,
-                mImageDetectionFilterIndex);
+        savedInstanceState.putInt(STATE_IMAGE_DETECTION_FILTER_INDEX, mImageDetectionFilterIndex);
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -425,8 +411,7 @@ public class ImageCapActivity extends Activity implements
         }
         super.onPause();
         //stopLocationUpdates();
-        saveVpsChecked();
-        finish();
+
     }
 
     @Override
@@ -434,6 +419,7 @@ public class ImageCapActivity extends Activity implements
     {
         super.onStop();
         Log.d(TAG,"onStop CALLED");
+        saveVpsChecked();
         //mGoogleApiClient.disconnect();
     }
 
@@ -465,6 +451,8 @@ public class ImageCapActivity extends Activity implements
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
                     Log.d(TAG, "OpenCV loaded successfully");
+                    //TODO: Fix this
+                    mCameraMatrix = MymUtils.getCameraMatrix(1280, 720);
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
 
@@ -488,7 +476,7 @@ public class ImageCapActivity extends Activity implements
             trackFilter = new ImageDetectionFilter(
                     ImageCapActivity.this,
                     R.drawable.seamensormarker,
-                    mCameraProjectionAdapter, 500.0);
+                    mCameraMatrix, 500.0);
         } catch (IOException e) {
             Log.e(TAG, "Failed to load marker:");
             e.printStackTrace();
@@ -524,12 +512,10 @@ public class ImageCapActivity extends Activity implements
         // Apply the active filters.
         if (mImageDetectionFilters != null) {
             mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba);
-            trckValues = mImageDetectionFilters[mImageDetectionFilterIndex].getGLPose();
+            trckValues = mImageDetectionFilters[mImageDetectionFilterIndex].getPose();
             if (trckValues!=null){
-                Log.d(TAG,"trckValues = "+trckValues[0]*(180/3.141592)+" | "+trckValues[4]*(180/3.141592)+" | "+trckValues[8]*(180/3.141592)+" | "+trckValues[12]);
-                Log.d(TAG,"trckValues = "+trckValues[1]*(180/3.141592)+" | "+trckValues[5]*(180/3.141592)+" | "+trckValues[9]*(180/3.141592)+" | "+trckValues[13]);
-                Log.d(TAG,"trckValues = "+trckValues[2]*(180/3.141592)+" | "+trckValues[6]*(180/3.141592)+" | "+trckValues[10]*(180/3.141592)+" | "+trckValues[14]);
-                Log.d(TAG,"trckValues = "+trckValues[4]+" | "+trckValues[7]+" | "+trckValues[11]+" | "+trckValues[15]);
+                Log.d(TAG,"trckValues: Translations = "+trckValues[0]+" | "+trckValues[1]+" | "+trckValues[2]);
+                Log.d(TAG,"trckValues: Rotations = "+trckValues[3]*(180.0f/Math.PI)+" | "+trckValues[4]*(180.0f/Math.PI)+" | "+trckValues[5]*(180.0f/Math.PI));
             }
 
         }
@@ -549,8 +535,7 @@ public class ImageCapActivity extends Activity implements
 
     private void takePhoto(final Mat rgba) {
 
-
-        String photoPath = getApplicationContext().getFilesDir().getPath();
+        /*
 
         // Try to create the photo.
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
@@ -560,8 +545,13 @@ public class ImageCapActivity extends Activity implements
         }
         Log.d(TAG, "Photo saved successfully to " + photoPath);
 
+        */
+
         return;
-        }
+
+
+
+    }
 
     private void onTakePhotoFailed() {
         mIsMenuLocked = false;
@@ -623,14 +613,14 @@ public class ImageCapActivity extends Activity implements
             ObjectMetadata myObjectMetadata = new ObjectMetadata();
             //create a map to store user metadata
             Map<String, String> userMetadata = new HashMap<String,String>();
-            userMetadata.put("TimeStamp", Utils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference).toString());
+            userMetadata.put("TimeStamp", MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference).toString());
             myObjectMetadata.setUserMetadata(userMetadata);
-            TransferObserver observer = Utils.storeRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile, myObjectMetadata);
+            TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile, myObjectMetadata);
             observer.setTransferListener(new TransferListener() {
                 @Override
                 public void onStateChanged(int id, TransferState state) {
                     if (state.equals(TransferState.COMPLETED)) {
-                        Log.d(TAG,"TransferListener="+state.toString());
+                        Log.d(TAG,"SaveVpsChecked(): TransferListener="+state.toString());
                     }
                 }
 
@@ -651,7 +641,7 @@ public class ImageCapActivity extends Activity implements
             });
 
         } catch (Exception e) {
-            Log.e(TAG, "Vps checked state data saving to Remote Storage:"+e.toString());
+            Log.e(TAG, "SaveVpsChecked(): ERROR data saving to Remote Storage:"+e.toString());
         }
     }
 
@@ -939,7 +929,7 @@ public class ImageCapActivity extends Activity implements
                     if (photoSelected<0) photoSelected = 0;
                     if (photoSelected > (numOfEntries-1)) photoSelected = 0;
                     vpPhotoFileName = capsInDirectory[photoSelected].getName();
-                    InputStream fis = Utils.getLocalFile(vpPhotoFileName,getApplicationContext());
+                    InputStream fis = MymUtils.getLocalFile(vpPhotoFileName,getApplicationContext());
                     selectedVpPhotoImageFileContents = BitmapFactory.decodeStream(fis);
                     fis.close();
                     StringBuilder sb = new StringBuilder(vpPhotoFileName);
@@ -1056,7 +1046,7 @@ public class ImageCapActivity extends Activity implements
 
             Log.d(TAG,"Vps Config Local name = "+Constants.vpsConfigFileName);
             File vpsFile = new File(getApplicationContext().getFilesDir(),Constants.vpsConfigFileName);
-            InputStream fis = Utils.getLocalFile(Constants.vpsConfigFileName, getApplicationContext());
+            InputStream fis = MymUtils.getLocalFile(Constants.vpsConfigFileName, getApplicationContext());
             try
             {
                 XmlPullParserFactory xmlFactoryObject = XmlPullParserFactory.newInstance();
@@ -1243,7 +1233,7 @@ public class ImageCapActivity extends Activity implements
     public void verifyVpsChecked()
     {
         boolean change = false;
-        long presentMillis = Utils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference);
+        long presentMillis = MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference);
         long presentHour = presentMillis/(1000*60*60);
         long presentDay = presentMillis/(1000*60*60*24);
         long presentWeek = presentDay/7;
@@ -1340,7 +1330,7 @@ public class ImageCapActivity extends Activity implements
         Log.d(TAG, "loadVpsChecked() started ");
         int vpListOrder = 0;
         try {
-            InputStream fis = Utils.getLocalFile(Constants.vpsCheckedConfigFileName, getApplicationContext());
+            InputStream fis = MymUtils.getLocalFile(Constants.vpsCheckedConfigFileName, getApplicationContext());
             XmlPullParserFactory xmlFactoryObject = XmlPullParserFactory.newInstance();
             XmlPullParser myparser = xmlFactoryObject.newPullParser();
             myparser.setInput(fis, null);

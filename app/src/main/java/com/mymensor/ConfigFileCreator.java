@@ -41,7 +41,7 @@ public class ConfigFileCreator {
         int vpZCameraRotation[] = new int[qtyVps];
         vpZCameraRotation[0]=0;
         String vpLocationDesText[] = new String[qtyVps];
-        vpLocationDesText[0] = context.getString(R.string.desc_vp_empty);
+        vpLocationDesText[0] = context.getString(R.string.vp_capture_placeholder_description)+1;
         short vpMarkerlessMarkerWidth[] = new short[qtyVps];
         vpMarkerlessMarkerWidth[0] = 500;
         short vpMarkerlessMarkerHeigth[] = new short[qtyVps];

@@ -45,12 +45,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ImageCapActivity">
-
+            android:name=".ImageCapActivity"
+            android:screenOrientation="landscape">
         </activity>
         <activity
-            android:name=".ConfigActivity">
-
+            android:name=".ConfigActivity"
+            android:screenOrientation="landscape">
         </activity>
         <service
             android:name="com.amazonaws.mobileconnectors.s3.transferutility.TransferService"

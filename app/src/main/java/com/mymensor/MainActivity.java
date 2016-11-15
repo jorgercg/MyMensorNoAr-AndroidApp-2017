@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         /**
          * Initializes the sync client. This must be call before you can use it.
          */
-        CognitoSyncClientManager.init(this);
+        CognitoSyncClientManager.init(getApplicationContext());
 
         setContentView(R.layout.activity_main);
         mainLinearLayout = (LinearLayout)findViewById(R.id.MainActivityLinearLayout);

@@ -1,10 +1,10 @@
-#ifndef IMAGE_DETECTION_FILTER
-#define IMAGE_DETECTION_FILTER
+#ifndef VP_CONFIGURE_FILTER
+#define VP_CONFIGURE_FILTER
 
 #include <vector>
 
 #include <android/log.h>
-#define  LOG_TAG    "NATIVE ImgDetFilter"
+#define  LOG_TAG    "NATIVE VpCfgFilter"
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
@@ -14,10 +14,10 @@
 
 namespace mymensor {
 
-class ImageDetectionFilter
+class VpConfigureFilter
 {
 public:
-    ImageDetectionFilter(cv::Mat &referenceImageBGR, double realSize);
+    VpConfigureFilter(cv::Mat &referenceImageBGR, double realSize);
     float *getPose();
     void apply(cv::Mat &src, cv::Mat &projection);
 
@@ -57,9 +57,6 @@ private:
     // descriptors.
     cv::Ptr<cv::DescriptorMatcher> mDescriptorMatcher;
 
-
-
-
     // Distortion coefficients of the camera's lens.
     cv::Mat mDistCoeffs;
 
@@ -78,4 +75,4 @@ private:
 
 } // namespace mymensor
 
-#endif // IMAGE_DETECTION_FILTER
+#endif // VP_CONFIGURE_FILTER
