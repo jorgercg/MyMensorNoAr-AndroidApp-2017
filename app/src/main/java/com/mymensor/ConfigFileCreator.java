@@ -23,11 +23,11 @@ public class ConfigFileCreator {
 
     public static void createVpsfile(Context context, File directory, String fileName){
         short shipId = 1;
-        String frequencyUnit = "millis";
-        int frequencyValue = 200;
+        String frequencyUnit = Constants.frequencyUnit;
+        int frequencyValue = Constants.frequencyValue;
         short qtyVps =1;
-        float tolerancePosition = 50;
-        float toleranceRotation = 10;
+        float tolerancePosition = Constants.tolerancePosition;
+        float toleranceRotation = Constants.toleranceRotation;
         int vpXCameraDistance[] = new int[qtyVps];
         vpXCameraDistance[0]=0;
         int vpYCameraDistance[] = new int[qtyVps];
@@ -43,9 +43,9 @@ public class ConfigFileCreator {
         String vpLocationDesText[] = new String[qtyVps];
         vpLocationDesText[0] = context.getString(R.string.vp_capture_placeholder_description)+1;
         short vpMarkerlessMarkerWidth[] = new short[qtyVps];
-        vpMarkerlessMarkerWidth[0] = 500;
+        vpMarkerlessMarkerWidth[0] = Constants.standardMarkerlessMarkerWidth;
         short vpMarkerlessMarkerHeigth[] = new short[qtyVps];
-        vpMarkerlessMarkerHeigth[0] = 500;
+        vpMarkerlessMarkerHeigth[0] = Constants.standardMarkerlessMarkerHeigth;
         boolean vpIsAmbiguous[] = new boolean[qtyVps];
         vpIsAmbiguous[0]=false;
         boolean vpFlashTorchIsOn[] = new boolean[qtyVps];
@@ -299,7 +299,7 @@ public class ConfigFileCreator {
 
     public static void createDescvpFile(Context context, File directory, String fileName){
 
-        String internalAssetsFileName = "seamensormarker.jpg";
+        String internalAssetsFileName = "seamensormarker.png";
         AssetManager assetManager = context.getAssets();
         InputStream in = null;
         OutputStream out = null;
@@ -328,6 +328,41 @@ public class ConfigFileCreator {
             }
         }
     }
+
+
+    public static void createMarkervpFile(Context context, File directory, String fileName){
+
+        String internalAssetsFileName = "seamensormarker.png";
+        AssetManager assetManager = context.getAssets();
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            in = assetManager.open(internalAssetsFileName);
+            File outFile = new File(directory, fileName);
+            out = new FileOutputStream(outFile);
+            copyFile(in, out);
+        } catch(IOException e) {
+            Log.e(TAG, "createMarkervpFile: Failed to copy asset file: " + fileName, e);
+        }
+        finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    // NOOP
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    // NOOP
+                }
+            }
+        }
+    }
+
+
 
     private static void copyFile(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];

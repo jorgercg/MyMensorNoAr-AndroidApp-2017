@@ -5,15 +5,25 @@ import com.amazonaws.regions.Regions;
 public class Constants {
 
     public static final short maxQtyVps = 30;
+    public static final String frequencyUnit = "millis";
+    public static final int frequencyValue = 200;
+    public static final float tolerancePosition = 50;
+    public static final float toleranceRotation = 10;
     public static final String vpsConfigFileName = "vps.xml";
     public static final String vpsCheckedConfigFileName = "vpschecked.xml";
-    public static final short standardMarkerlessMarkerWidth = 500;
-    public static final short standardMarkerlessMarkerHeigth = 500;
+    public static final short captureMarkerWidth = 240;
+    public static final short captureMarkerHeight = 240;
+    public static final short standardMarkerlessMarkerWidth = 400;
+    public static final short standardMarkerlessMarkerHeigth = 400;
     public static final short seaMensorMarkerWidthWhenIdIs20mm = 46;
     public static final short seaMensorMarkerHeigthWhenIdIs20mm = 46;
     public static final short seaMensorMarkerWidthWhenIdIs100mm = 134;
     public static final short seaMensorMarkerHeigthWhenIdIs100mm = 134;
     public static final int idMarkerStdSize = 20;
+    public static final int cameraWidthInPixels = 1280;
+    public static final int cameraHeigthInPixels = 720;
+    public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440
+    public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160
 
     /**
      * OpenCV

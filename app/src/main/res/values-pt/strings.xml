@@ -65,8 +65,9 @@
     <string name="hostconn_con">Conectando ao servidor...</string>
     <string name="hostconn_not">Desconectado do servidor.</string>
     <string name="hostconn_yes">Conectado ao servidor.</string>
-    <string name="vp_capture_failure">Falha na captura do VP, por favor tente novamente.</string>
-    <string name="vp_capture_success">VP capturado com sucesso. Não esqueça de gravar!</string>
+    <string name="vp_capture_failure">Falha na captura do VP, por favor verificar instruções de configuração, tente novamente, ou mude o método.</string>
+    <string name="vp_capture_success">VP capturado com sucesso. Gravando agora...</string>
     <string name="action_settings">Configurações</string>
     <string name="vp_capture_placeholder_description">Descrição do VP#</string>
+    <string name="vp_acquisition_failure">A foto do VP capturada, mas ocorreu falha na captura da realidade aumentada, verifique instruções de configuração, tente novamente ou mude o método.</string>
 </resources>

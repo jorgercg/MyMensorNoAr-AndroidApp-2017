@@ -10,6 +10,7 @@ import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
@@ -45,6 +46,7 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
@@ -62,6 +64,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +93,8 @@ public class ImageCapActivity extends Activity implements
     private String capRemotePath;
 
     private static Bitmap vpLocationDescImageFileContents;
-    public static Bitmap selectedVpPhotoImageFileContents;
+    private static Bitmap selectedVpPhotoImageFileContents;
+    private static Bitmap markerImageFileContents;
 
     private short[] vpNumber;
     private boolean[] vpChecked;
@@ -117,6 +121,8 @@ public class ImageCapActivity extends Activity implements
 
     private static float tolerancePosition;
     private static float toleranceRotation;
+
+    private boolean waitingForMarkerlessTrackingConfigurationToLoad = false;
 
     private short shipId;
     private String frequencyUnit;
@@ -156,6 +162,8 @@ public class ImageCapActivity extends Activity implements
 
     // A matrix that is used when saving photos.
     private Mat mBgr;
+    public List<Mat> markerBuffer;
+    public long[] tmpObjAdr;
 
     // Whether the next camera frame should be saved as a photo.
     private boolean mIsPhotoPending;
@@ -261,7 +269,7 @@ public class ImageCapActivity extends Activity implements
 
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.imagecap_javaCameraView);
         mCameraView.setCameraIndex(mCameraIndex);
-        mCameraView.setMaxFrameSize(1280, 720);
+        mCameraView.setMaxFrameSize(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
         mCameraView.setCvCameraViewListener(this);
 
         loadConfigurationFile();
@@ -276,7 +284,7 @@ public class ImageCapActivity extends Activity implements
             newVpsList[i] = getString(R.string.vp_name)+vpNumber[i];
         }
         vpsListView = (ListView) this.findViewById(R.id.vp_list);
-        vpsListView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_multiple_choice, newVpsList));
+        vpsListView.setAdapter(new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_multiple_choice, newVpsList));
         vpsListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         vpsListView.setOnItemClickListener(this);
         vpsListView.setVisibility(View.VISIBLE);
@@ -452,7 +460,7 @@ public class ImageCapActivity extends Activity implements
                 case LoaderCallbackInterface.SUCCESS:
                     Log.d(TAG, "OpenCV loaded successfully");
                     //TODO: Fix this
-                    mCameraMatrix = MymUtils.getCameraMatrix(1280, 720);
+                    mCameraMatrix = MymUtils.getCameraMatrix(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
 
@@ -469,24 +477,112 @@ public class ImageCapActivity extends Activity implements
 
     private void configureTracking(){
 
-        mBgr = new Mat();
+        new AsyncTask<Void, Void, Void>()
+        {
+            @Override
+            protected void onPreExecute(){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //if (waitingForMarkerlessTrackingConfigurationToLoad)
+                        {
+                            Log.d(TAG, "BEFORE STARTING configureTracking IN BACKGROUND - Lighting Waiting Circle");
+                            mProgress.setVisibility(View.VISIBLE);
+                            mProgress.startAnimation(rotationMProgress);
+                        }
+                    }
+                });
 
-        ARFilter trackFilter = null;
-        try {
-            trackFilter = new ImageDetectionFilter(
-                    ImageCapActivity.this,
-                    R.drawable.seamensormarker,
-                    mCameraMatrix, 500.0);
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to load marker:");
-            e.printStackTrace();
-        }
-        if (trackFilter!=null){
-            mImageDetectionFilters = new ARFilter[] {
-                    new NoneARFilter(),
-                    trackFilter
-            };
-        }
+
+                /*
+                ************************************************************************************
+                */
+
+
+
+                /*
+                ************************************************************************************
+                */
+
+            }
+
+            @Override
+            protected Void doInBackground(Void... params){
+                //mBgr = new Mat();
+
+                markerBuffer = new ArrayList<Mat>();
+                for (int i=0; i<qtyVps; i++ ){
+                    try
+                    {
+                        File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (i + 1) + ".png");
+                        Mat tmpMarker = Imgcodecs.imread(markervpFile.getAbsolutePath(), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
+                        markerBuffer.add(tmpMarker);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.e(TAG, "configureTracking(): markerImageFileContents failed:"+e.toString());
+                    }
+                }
+                ARFilter trackFilter = null;
+                try {
+                    trackFilter = new ImageDetectionFilter(
+                            ImageCapActivity.this,
+                            markerBuffer.toArray(),
+                            qtyVps,
+                            mCameraMatrix,
+                            Constants.standardMarkerlessMarkerWidth);
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to load marker: "+e.toString());
+                }
+                if (trackFilter!=null){
+                    mImageDetectionFilters = new ARFilter[] {
+                            new NoneARFilter(),
+                            trackFilter
+                    };
+                }
+
+
+
+
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void result)
+            {
+                Log.d(TAG, "FINISHING configureTracking IN BACKGROUND");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //if (waitingForMarkerlessTrackingConfigurationToLoad)
+                        {
+                            Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - Turning off Waiting Circle");
+                            mProgress.clearAnimation();
+                            mProgress.setVisibility(View.GONE);
+                            Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - mProgress.isShown():" + mProgress.isShown());
+                            // TURNING OFF TARGET
+                            //targetImageView.setImageDrawable(drawableTargetWhite);
+                            //targetImageView.setVisibility(View.GONE);
+                            // TURNING ON RADAR SCAN
+                            radarScanImageView.setVisibility(View.VISIBLE);
+                            radarScanImageView.startAnimation(rotationRadarScan);
+                            waitingForMarkerlessTrackingConfigurationToLoad = false;
+                        }
+
+                    }
+                });
+
+            }
+
+
+        }.execute();
+
+
+
+
+
+
+
 
     }
 
@@ -535,17 +631,7 @@ public class ImageCapActivity extends Activity implements
 
     private void takePhoto(final Mat rgba) {
 
-        /*
 
-        // Try to create the photo.
-        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-        if (!Imgcodecs.imwrite(photoPath, mBgr)) {
-            Log.e(TAG, "Failed to save photo to " + photoPath);
-            onTakePhotoFailed();
-        }
-        Log.d(TAG, "Photo saved successfully to " + photoPath);
-
-        */
 
         return;
 

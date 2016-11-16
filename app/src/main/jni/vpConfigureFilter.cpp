@@ -137,10 +137,12 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
     if (minDist > 50.0) {
         // The target is completely lost.
         mTargetFound = false;
+        LOGD("minDist > 50.0 >>>>>> mTargetFound = false and return");
         return;
     } else if (minDist > 25.0) {
         // The target is lost but maybe it is still close.
         // Keep using any previously found pose.
+        LOGD("minDist > 25.0 >>>>>> return");
         return;
     }
 
@@ -159,6 +161,7 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
 
     if (goodReferencePoints.size() < 4 || goodScenePoints.size() < 4) {
         // There are too few good points to find the pose.
+        LOGD("too few good points to find the pose. >>>>>> return");
         return;
     }
 
@@ -178,6 +181,7 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
     // make the corners of a rectangular image look like a concave
     // polygon!
     if (!cv::isContourConvex(mCandidateSceneCorners)) {
+        LOGD("Contour is NOT Convex >>>>>> return");
         return;
     }
 

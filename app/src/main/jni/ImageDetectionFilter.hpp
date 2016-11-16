@@ -17,20 +17,20 @@ namespace mymensor {
 class ImageDetectionFilter
 {
 public:
-    ImageDetectionFilter(cv::Mat &referenceImageBGR, double realSize);
+    ImageDetectionFilter(std::vector<cv::Mat> &referenceImageBGR, int qtyVps, double realSize);
     float *getPose();
     void apply(cv::Mat &src, cv::Mat &projection);
 
 private:
-    void findPose(cv::Mat &projection);
+    //void findPose(cv::Mat &projection);
     //void draw(cv::Mat src, cv::Mat dst);
 
     // The reference image (this detector's target).
     cv::Mat mReferenceImage;
     // Features of the reference image.
-    std::vector<cv::KeyPoint> mReferenceKeypoints;
+    std::vector<std::vector<cv::KeyPoint> > mReferenceKeypoints;
     // Descriptors of the reference image's features.
-    cv::Mat mReferenceDescriptors;
+    std::vector<cv::Mat> mReferenceDescriptors;
     // The corner coordinates of the reference image, in pixels.
     cv::Mat mReferenceCorners;
     // The reference image's corner coordinates, in 3D, in real
@@ -74,6 +74,8 @@ private:
 
     // Whether the target is currently detected.
     bool mTargetFound;
+
+    int qtVp;
 };
 
 } // namespace mymensor

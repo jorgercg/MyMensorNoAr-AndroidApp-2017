@@ -42,6 +42,7 @@ public class LoaderActivity extends Activity
     private String descvpRemotePath;
     private String vpsRemotePath;
     private String vpsCheckedRemotePath;
+    private String markervpRemotePath;
 
     private boolean clockSetSuccess = false;
     private static long back_pressed;
@@ -140,12 +141,14 @@ public class LoaderActivity extends Activity
             File vpsFile = new File(getApplicationContext().getFilesDir(), Constants.vpsConfigFileName);
             File vpsCheckedFile = new File(getApplicationContext().getFilesDir(),Constants.vpsCheckedConfigFileName);
             File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp1.png");
+            File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp1.png");
 
             if (!vpsFile.exists()) {
                 Log.d(TAG,"firstTimeLoader: vpsFile.exists()="+vpsFile.exists());
                 ConfigFileCreator.createVpsfile(getApplicationContext(), getApplicationContext().getFilesDir(), Constants.vpsConfigFileName); }
             if (!vpsCheckedFile.exists()) { ConfigFileCreator.createVpsCheckedFile(getApplicationContext(), getApplicationContext().getFilesDir(), Constants.vpsCheckedConfigFileName); }
             if (!descvpFile.exists()) { ConfigFileCreator.createDescvpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "descvp1.png"); }
+            if (!markervpFile.exists()) { ConfigFileCreator.createMarkervpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "markervp1.png"); }
 
             Log.d(TAG,"firstTimeLoader: Waiting for initial config files and image to be created");
 
@@ -233,6 +236,7 @@ public class LoaderActivity extends Activity
 
 
             descvpRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
+            markervpRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "mrk" + "/";
             vpsRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
             vpsCheckedRemotePath = mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
 
@@ -482,6 +486,68 @@ public class LoaderActivity extends Activity
                 finish();
             }
 
+
+
+
+            /*
+            *********************************************************************************************************************
+            */
+
+            try
+            {
+                // Loading Vp Marker Images from Remote Storage and writing to local storage.
+
+                for (int j = 0; j < qtyVps; j++)
+                {
+                    Log.d(TAG,"loadFinalDefinitions:####### LOADING: MARKERVP CONTENTS j="+j);
+                    File markervpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (j + 1) + ".png");
+                    Log.d(TAG,"loadFinalDefinitions: markervpRemotePath: " + markervpRemotePath+ "markervp" + (j + 1) + ".png");
+                    if (MymUtils.isNewFileAvailable(  s3Client,
+                            ("markervp" + (j + 1) + ".png"),
+                            (markervpRemotePath+ "markervp" + (j + 1) + ".png"),
+                            Constants.BUCKET_NAME,
+                            getApplicationContext())) {
+                        Log.d(TAG,"markervpFile loadFinalDefinitions: isNewFileAvailable= TRUE");
+                        final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (markervpRemotePath+ "markervp" + (j + 1) + ".png"), Constants.BUCKET_NAME, markervpFile);
+                        observer.setTransferListener(new TransferListener() {
+
+                            @Override
+                            public void onStateChanged(int id, TransferState state) {
+                                if (state.equals(TransferState.COMPLETED)) {
+                                    Log.d(TAG,"loadFinalDefinitions: TransferListener Markervp="+observer.getKey()+" State="+state.toString());
+                                }
+                            }
+
+                            @Override
+                            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                                if (bytesTotal>0){
+                                    int percentage = (int) (bytesCurrent / bytesTotal * 100);
+
+                                }
+
+                                //Display percentage transfered to user
+                            }
+
+                            @Override
+                            public void onError(int id, Exception ex) {
+                                Log.e(TAG, "loadFinalDefinitions: Markervp loading failed, see stack trace:"+observer.getKey());
+                                publishProgress(getString(R.string.checkcfgfiles));
+                                finish();
+                            }
+
+                        });
+                    } else {
+                        Log.d(TAG,"markervpFile loadFinalDefinitions: "+ "markervp" + (j + 1) + ".jpg"+" isNewFileAvailable= FALSE");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.e(TAG, "markervpFile loading:Error: "+e.toString());
+                publishProgress(getString(R.string.checkcfgfiles));
+                finish();
+            }
+
             // Checking if all images are already in the local storage, as network operations take place in background.
 
             int product = 0;
@@ -490,7 +556,8 @@ public class LoaderActivity extends Activity
                 for (int k = 0; k < qtyVps; k++){
                     try{
                         File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k + 1) + ".png");
-                        if (descvpFileCHK.exists()) {
+                        File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k + 1) + ".png");
+                        if (descvpFileCHK.exists() && markervpFileCHK.exists()) {
                             if (k == 0) {
                                 product = Math.abs(1);
                             } else {
@@ -510,6 +577,7 @@ public class LoaderActivity extends Activity
                 }
 
             } while (product==0);
+
             Log.d(TAG,"Loading Image Config Files: imageFilesOK="+product);
             publishProgress(getString(R.string.load_assets_finished));
             return null;

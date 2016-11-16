@@ -15,7 +15,7 @@ public final class ImageDetectionFilter implements ARFilter {
     private long mSelfAddr;
 
     // An adaptor that provides the camera's projection matrix.
-    private final MatOfDouble mCameraCalibration;
+    private final MatOfDouble mCameraMatrix;
 
     static {
         // Load the native library if it is not already loaded.
@@ -23,15 +23,13 @@ public final class ImageDetectionFilter implements ARFilter {
     }
 
     public ImageDetectionFilter(final Context context,
-                                final int referenceImageResourceID,
-                                final MatOfDouble cameraCalibration,
+                                final Object markerBuffer[],
+                                final int qtyVps,
+                                final MatOfDouble cameraMatrix,
                                 final double realSize)
             throws IOException {
-        final Mat referenceImageBGR = Utils.loadResource(context,
-                referenceImageResourceID,
-                Imgcodecs.CV_LOAD_IMAGE_COLOR);
-        mSelfAddr = newSelf(referenceImageBGR.getNativeObjAddr(), realSize);
-        mCameraCalibration = cameraCalibration;
+        mSelfAddr = newSelf(markerBuffer, qtyVps, realSize);
+        mCameraMatrix = cameraMatrix;
     }
 
     @Override
@@ -52,11 +50,11 @@ public final class ImageDetectionFilter implements ARFilter {
 
     @Override
     public void apply(final Mat src) {
-        final Mat projection = mCameraCalibration;
+        final Mat projection = mCameraMatrix;
         apply(mSelfAddr, src.getNativeObjAddr(), projection.getNativeObjAddr());
     }
 
-    private static native long newSelf(long referenceImageBGRAddr, double realSize);
+    private static native long newSelf(Object markerBuffer[], int qtyVps, double realSize);
     private static native void deleteSelf(long selfAddr);
     private static native float[] getPose(long selfAddr);
     private static native void apply(long selfAddr, long srcAddr, long projectionAddr);

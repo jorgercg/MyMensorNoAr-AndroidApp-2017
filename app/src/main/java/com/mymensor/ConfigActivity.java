@@ -45,6 +45,7 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.imgproc.Imgproc;
@@ -82,8 +83,6 @@ public class ConfigActivity extends Activity implements
 
     private short qtyVps = 0;
     private short vpIndex;
-    private short captureMarkerWidth = 240;
-    private short captureMarkerHeight = 240;
 
     private String mymensorAccount;
     private int dciNumber;
@@ -150,6 +149,7 @@ public class ConfigActivity extends Activity implements
     public long sntpTime;
     public long sntpTimeReference;
     public boolean clockSetSuccess;
+    private long acquisitionStartTime;
 
     // The camera view.
     private CameraBridgeViewBase mCameraView;
@@ -262,13 +262,13 @@ public class ConfigActivity extends Activity implements
 
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.config_javaCameraView);
         mCameraView.setCameraIndex(mCameraIndex);
-        mCameraView.setMaxFrameSize(1280, 720);
+        mCameraView.setMaxFrameSize(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
         mCameraView.setCvCameraViewListener(this);
 
         Camera.Size tmpCamProjSize = mSupportedImageSizes.get(mImageSizeIndex);;
 
-        tmpCamProjSize.width = 1280;
-        tmpCamProjSize.height = 720;
+        tmpCamProjSize.width = Constants.cameraWidthInPixels;
+        tmpCamProjSize.height = Constants.cameraHeigthInPixels;
 
         final Camera.Size camProjSize = tmpCamProjSize;
 
@@ -282,7 +282,7 @@ public class ConfigActivity extends Activity implements
             newVpsList[i] = getString(R.string.vp_name)+vpNumber[i];
         }
         vpsListView = (ListView) this.findViewById(R.id.vp_list);
-        vpsListView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_multiple_choice, newVpsList));
+        vpsListView.setAdapter(new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_multiple_choice, newVpsList));
         vpsListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         vpsListView.setOnItemClickListener(this);
         vpsListView.setVisibility(View.VISIBLE);
@@ -380,10 +380,9 @@ public class ConfigActivity extends Activity implements
                 case LoaderCallbackInterface.SUCCESS:
                     Log.d(TAG, "OpenCV loaded successfully");
                     //TODO: Fix this
-                    mCameraMatrix = MymUtils.getCameraMatrix(1280, 720);
+                    mCameraMatrix = MymUtils.getCameraMatrix(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
-                    mBgr = new Mat();
 
                     break;
                 default:
@@ -398,10 +397,12 @@ public class ConfigActivity extends Activity implements
 
         ARFilter trackFilter = null;
         try {
+            Log.d(TAG," configureTracking(): DONE 1 ");
             trackFilter = new VpConfigFilter(
                     ConfigActivity.this,
                     referenceImage,
-                    mCameraMatrix, 400.0);
+                    mCameraMatrix, Constants.standardMarkerlessMarkerWidth);
+            trackingConfigDone = true;
         } catch (IOException e) {
             Log.e(TAG, "Failed to configure tracking:"+ e.toString());
             trackingConfigDone = false;
@@ -411,7 +412,11 @@ public class ConfigActivity extends Activity implements
                     new NoneARFilter(),
                     trackFilter
             };
+            acquisitionStartTime = System.currentTimeMillis();
             if (!trackingConfigDone) trackingConfigDone=true;
+            Log.d(TAG," configureTracking(): DONE 2 ="+acquisitionStartTime);
+        } else {
+            Log.e(TAG," configureTracking(): FAILED ");
         }
 
     }
@@ -424,14 +429,17 @@ public class ConfigActivity extends Activity implements
         float[] trckValues;
 
         // Apply the active filters.
+        //Log.d(TAG,"1 waitingForTrackingAcquisition="+waitingForTrackingAcquisition);
         if ((mVpConfigureFilters != null)&& waitingForTrackingAcquisition) {
             mVpConfigureFilters[mVpConfigureFilterIndex].apply(rgba);
             trckValues = mVpConfigureFilters[mVpConfigureFilterIndex].getPose();
+            Log.d(TAG,"(trckValues!=null)="+(trckValues!=null));
             if (trckValues!=null){
+                Log.d(TAG,"(System.currentTimeMillis()-acquisitionStartTime)="+(System.currentTimeMillis()-acquisitionStartTime));
                 Log.d(TAG,"trckValues: Translations = "+trckValues[0]+" | "+trckValues[1]+" | "+trckValues[2]);
                 Log.d(TAG,"trckValues: Rotations = "+trckValues[3]*(180.0f/Math.PI)+" | "+trckValues[4]*(180.0f/Math.PI)+" | "+trckValues[5]*(180.0f/Math.PI));
-                vpXCameraDistance[vpIndex-1] = Math.round(trckValues[0]);
-                vpYCameraDistance[vpIndex-1] = Math.round(trckValues[1]);
+                vpXCameraDistance[vpIndex-1] = Math.round(trckValues[0])+Constants.xAxisTrackingCorrection;
+                vpYCameraDistance[vpIndex-1] = Math.round(trckValues[1])+Constants.yAxisTrackingCorrection;
                 vpZCameraDistance[vpIndex-1] = Math.round(trckValues[2]);
                 vpXCameraRotation[vpIndex-1] = (int) Math.round(trckValues[3]*(180.0f/Math.PI));
                 vpYCameraRotation[vpIndex-1] = (int) Math.round(trckValues[4]*(180.0f/Math.PI));
@@ -446,9 +454,37 @@ public class ConfigActivity extends Activity implements
                     }
                 });
                 Log.d(TAG, "onCameraFrame:Setting to true: VpAcquired: ["+(vpIndex-1)+"] = "+vpAcquired[vpIndex-1]);
+                vpChecked[vpIndex-1]=true;
+                setVpsChecked();
                 saveVpsData();
                 saveTrackingConfig();
+                if (vpDescAndMarkerImageOK){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getBaseContext(), getString(R.string.vp_capture_success), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+                Log.d(TAG,"2 waitingForTrackingAcquisition="+waitingForTrackingAcquisition);
                 waitingForTrackingAcquisition = false;
+                trackingConfigDone = false;
+            } else {
+                if (vpDescAndMarkerImageOK && ((System.currentTimeMillis()-acquisitionStartTime)>2000)) {
+                    Log.d(TAG, "(System.currentTimeMillis()-acquisitionStartTime)=" + (System.currentTimeMillis() - acquisitionStartTime));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getBaseContext(), getString(R.string.vp_acquisition_failure), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    // Giving up tracking acquisition as it is taking too long>>>> need to change marker or method
+                    Log.d(TAG, "3 waitingForTrackingAcquisition=" + waitingForTrackingAcquisition);
+                    waitingForTrackingAcquisition = false;
+                    trackingConfigDone = false;
+                    vpChecked[vpIndex-1]=false;
+                    setVpsChecked();
+                }
             }
         }
 
@@ -478,23 +514,19 @@ public class ConfigActivity extends Activity implements
 
         }
 
-        if (waitingForTrackingAcquisition && vpDescAndMarkerImageOK && !trackingConfigDone) configureTracking(mBgr);
-
         return rgba;
     }
 
 
     private void takePhoto(final Mat rgba) {
         try {
-            // Try to create the photo.
-            //Mat mMat = new Mat();
-            //Imgproc.cvtColor(rgba, mMat, Imgproc., 3);
+            mBgr = new Mat();
             // bitmap to descvp and markervp
             Bitmap bitmapImage = null;
             Bitmap markerFromBitmapImage = null;
             // creating temp local storage files
             File pictureFile = new File(getApplicationContext().getFilesDir(), "descvp"+vpIndex+".png");
-            File markerFile = new File(getApplicationContext().getFilesDir(), "markervp"+vpIndex+".jpg");
+            File markerFile = new File(getApplicationContext().getFilesDir(), "markervp"+vpIndex+".png");
             if(rgba != null)
             {
                 // getting bitmap from cameraframe
@@ -527,8 +559,10 @@ public class ConfigActivity extends Activity implements
                 // getting marker from bitmap, centering the marker in the original bitmap
                 markerFromBitmapImage = Bitmap.createBitmap(bitmapImage, x, y, markerWidthLocal, markerHeightLocal);
                 //markerFromBitmapImage = greyScaler(markerFromBitmapImage);
-                markerFromBitmapImage = markerFromBitmapImage.createScaledBitmap(markerFromBitmapImage, captureMarkerWidth, captureMarkerHeight, false);
+                markerFromBitmapImage = markerFromBitmapImage.createScaledBitmap(markerFromBitmapImage, Constants.captureMarkerWidth, Constants.captureMarkerHeight, false);
                 Utils.bitmapToMat(markerFromBitmapImage,mBgr);
+                Imgproc.cvtColor(mBgr, mBgr, Imgproc.COLOR_BGR2GRAY);
+                Utils.matToBitmap(mBgr, markerFromBitmapImage);
                 Log.d(TAG, "Camera frame width: "+width+" height: "+height);
             }
             if (pictureFile == null)
@@ -542,14 +576,59 @@ public class ConfigActivity extends Activity implements
                 return;
             }
             FileOutputStream fos_d = new FileOutputStream(pictureFile);
-            bitmapImage.compress(Bitmap.CompressFormat.PNG, 95, fos_d);
+            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos_d);
             fos_d.close();
             FileOutputStream fos_m = new FileOutputStream(markerFile);
-            markerFromBitmapImage.compress(Bitmap.CompressFormat.JPEG, 85, fos_m);
+            markerFromBitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos_m);
             fos_m.close();
+            // if marker from bitmap image is ok and not a super VP then save it to remote storage
+            if (markerFromBitmapImage != null)
+            {
+                // Set the tracking configuration using the markerFile currently in the app data folder
+                if (vpIsSuperSingle[vpIndex-1])
+                {
+                    //setSLAMTrackingConfig();
+                    Log.d(TAG, "takePhoto: calling setSuperSingleIdMarkerTrackingConfig()");
+                    waitingForVpSuperMarkerId=true;
+                    setSuperIdMarkersTrackingConfig();
+                    //setSuperSingleIdMarkerTrackingConfig();
+                }
+                else {
+                    Log.d(TAG, "takePhoto: calling configureTracking()");
+                    Log.d(TAG,"4 waitingForTrackingAcquisition="+waitingForTrackingAcquisition);
+                    Log.d(TAG,"4 trackingConfigDone="+trackingConfigDone);
+                    waitingForTrackingAcquisition = true;
+                    if (!trackingConfigDone) configureTracking(mBgr);
+
+                    ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                    //create a map to store user metadata
+                    Map<String, String> userMetadata = new HashMap<String, String>();
+                    userMetadata.put("VP", "" + (vpIndex));
+                    userMetadata.put("mymensorAccount", mymensorAccount);
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    String formattedDateTime = sdf.format(MymUtils.timeNow(clockSetSuccess, sntpTime, sntpTimeReference));
+                    userMetadata.put("DateTime", formattedDateTime);
+                    //call setUserMetadata on our ObjectMetadata object, passing it our map
+                    myObjectMetadata.setUserMetadata(userMetadata);
+                    //uploading the objects
+                    TransferObserver observer = MymUtils.storeRemoteFile(
+                            transferUtility,
+                            markervpRemotePath + markerFile.getName(),
+                            Constants.BUCKET_NAME,
+                            markerFile,
+                            myObjectMetadata);
+                    Log.d(TAG, "AWS s3 Observer: " + observer.getState().toString());
+                    Log.d(TAG, "AWS s3 Observer: " + observer.getAbsoluteFilePath());
+                    Log.d(TAG, "AWS s3 Observer: " + observer.getBucket());
+                    Log.d(TAG, "AWS s3 Observer: " + observer.getKey());
+                }
+            }
             // if bitmapimage is OK it is saved to remote storage
             if (bitmapImage != null)
             {
+                cameraPhotoRequested =false;
+                vpDescAndMarkerImageOK = true;
                 ObjectMetadata myObjectMetadata = new ObjectMetadata();
                 //create a map to store user metadata
                 Map<String, String> userMetadata = new HashMap<String,String>();
@@ -573,49 +652,6 @@ public class ConfigActivity extends Activity implements
                 Log.d(TAG, "AWS s3 Observer: "+observer.getBucket());
                 Log.d(TAG, "AWS s3 Observer: "+observer.getKey());
             }
-            // if marker from bitmap image is ok and not a super VP then save it to dropbox
-            if (markerFromBitmapImage != null)
-            {
-                // Set the tracking configuration using the markerFile currently in the app data folder
-                cameraPhotoRequested =false;
-                vpDescAndMarkerImageOK = true;
-                if (vpIsSuperSingle[vpIndex-1])
-                {
-                    //setSLAMTrackingConfig();
-                    Log.d(TAG, "takePhoto: calling setSuperSingleIdMarkerTrackingConfig()");
-                    waitingForVpSuperMarkerId=true;
-                    setSuperIdMarkersTrackingConfig();
-                    //setSuperSingleIdMarkerTrackingConfig();
-                }
-                else
-                {
-                    Log.d(TAG, "takePhoto: calling setTrackingConfig()");
-                    waitingForTrackingAcquisition = true;
-                    //setTrackingConfig();
-                }
-                ObjectMetadata myObjectMetadata = new ObjectMetadata();
-                //create a map to store user metadata
-                Map<String, String> userMetadata = new HashMap<String,String>();
-                userMetadata.put("VP", ""+(vpIndex));
-                userMetadata.put("mymensorAccount", mymensorAccount);
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
-                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                String formattedDateTime = sdf.format(MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference));
-                userMetadata.put("DateTime", formattedDateTime);
-                //call setUserMetadata on our ObjectMetadata object, passing it our map
-                myObjectMetadata.setUserMetadata(userMetadata);
-                //uploading the objects
-                TransferObserver observer = MymUtils.storeRemoteFile(
-                        transferUtility,
-                        markervpRemotePath+markerFile.getName(),
-                        Constants.BUCKET_NAME,
-                        markerFile,
-                        myObjectMetadata);
-                Log.d(TAG, "AWS s3 Observer: "+observer.getState().toString());
-                Log.d(TAG, "AWS s3 Observer: "+observer.getAbsoluteFilePath());
-                Log.d(TAG, "AWS s3 Observer: "+observer.getBucket());
-                Log.d(TAG, "AWS s3 Observer: "+observer.getKey());
-            }
             runOnUiThread(new Runnable()
             {
                 @Override
@@ -624,17 +660,12 @@ public class ConfigActivity extends Activity implements
                     if (targetImageView.isShown()) targetImageView.setVisibility(View.GONE);
                 }
             });
-            if ((bitmapImage != null)&&(markerFromBitmapImage != null)) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getBaseContext(), getString(R.string.vp_capture_success), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
         } catch (Exception e){
             vpChecked[(vpIndex-1)] = false;
+            setVpsChecked();
             mIsMenuLocked = false;
+            cameraPhotoRequested =true;
+            vpDescAndMarkerImageOK = false;
             e.printStackTrace();
             runOnUiThread(new Runnable() {
                 @Override
@@ -643,7 +674,6 @@ public class ConfigActivity extends Activity implements
                 }
             });
         }
-        return;
     }
 
 
