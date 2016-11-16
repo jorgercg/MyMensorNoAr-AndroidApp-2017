@@ -67,7 +67,7 @@ private:
     // The rotation matrix of the detected target.
     cv::Mat mRotation;
     // The OpenGL pose matrix of the detected target.
-    float mPose[6];
+    float mPose[7];
 
     // Whether the target is currently detected.
     bool mTargetFound;

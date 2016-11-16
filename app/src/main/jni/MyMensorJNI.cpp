@@ -55,10 +55,10 @@ Java_com_mymensor_filters_ImageDetectionFilter_getPose(
         return NULL;
     }
 
-    jfloatArray poseJava = env->NewFloatArray(6);
+    jfloatArray poseJava = env->NewFloatArray(7);
     if (poseJava != NULL)
     {
-        env->SetFloatArrayRegion(poseJava, 0, 6, poseNative);
+        env->SetFloatArrayRegion(poseJava, 0, 7, poseNative);
     }
     return poseJava;
 }
@@ -105,10 +105,10 @@ Java_com_mymensor_filters_VpConfigFilter_getPose__J(JNIEnv *env, jclass clazz, j
         return NULL;
     }
 
-    jfloatArray poseJava = env->NewFloatArray(6);
+    jfloatArray poseJava = env->NewFloatArray(7);
     if (poseJava != NULL)
     {
-        env->SetFloatArrayRegion(poseJava, 0, 6, poseNative);
+        env->SetFloatArrayRegion(poseJava, 0, 7, poseNative);
     }
     return poseJava;
 }

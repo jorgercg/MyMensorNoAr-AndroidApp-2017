@@ -500,7 +500,7 @@ public class LoaderActivity extends Activity
                 for (int j = 0; j < qtyVps; j++)
                 {
                     Log.d(TAG,"loadFinalDefinitions:####### LOADING: MARKERVP CONTENTS j="+j);
-                    File markervpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (j + 1) + ".png");
+                    File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (j + 1) + ".png");
                     Log.d(TAG,"loadFinalDefinitions: markervpRemotePath: " + markervpRemotePath+ "markervp" + (j + 1) + ".png");
                     if (MymUtils.isNewFileAvailable(  s3Client,
                             ("markervp" + (j + 1) + ".png"),

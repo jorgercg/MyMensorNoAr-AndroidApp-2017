@@ -23,14 +23,16 @@ public:
 
 private:
     //void findPose(cv::Mat &projection);
-    //void draw(cv::Mat src, cv::Mat dst);
+    void draw(cv::Mat src, cv::Mat dst);
 
     // The reference image (this detector's target).
     cv::Mat mReferenceImage;
     // Features of the reference image.
     std::vector<std::vector<cv::KeyPoint> > mReferenceKeypoints;
+    std::vector<cv::KeyPoint>  localReferenceKeypoints;
     // Descriptors of the reference image's features.
     std::vector<cv::Mat> mReferenceDescriptors;
+    cv::Mat localReferenceDescriptors;
     // The corner coordinates of the reference image, in pixels.
     cv::Mat mReferenceCorners;
     // The reference image's corner coordinates, in 3D, in real
@@ -70,12 +72,18 @@ private:
     // The rotation matrix of the detected target.
     cv::Mat mRotation;
     // The OpenGL pose matrix of the detected target.
-    float mPose[6];
+    float mPose[7];
 
     // Whether the target is currently detected.
     bool mTargetFound;
 
     int qtVp;
+
+    std::vector<cv::Point2f> goodReferencePoints;
+    std::vector<cv::Point2f> goodScenePoints;
+
+
+
 };
 
 } // namespace mymensor

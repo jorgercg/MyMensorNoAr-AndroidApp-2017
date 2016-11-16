@@ -576,14 +576,6 @@ public class ImageCapActivity extends Activity implements
 
 
         }.execute();
-
-
-
-
-
-
-
-
     }
 
 
@@ -604,14 +596,65 @@ public class ImageCapActivity extends Activity implements
         final Mat rgba = inputFrame.rgba();
         float[] trckValues;
 
-
         // Apply the active filters.
         if (mImageDetectionFilters != null) {
             mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba);
             trckValues = mImageDetectionFilters[mImageDetectionFilterIndex].getPose();
             if (trckValues!=null){
-                Log.d(TAG,"trckValues: Translations = "+trckValues[0]+" | "+trckValues[1]+" | "+trckValues[2]);
-                Log.d(TAG,"trckValues: Rotations = "+trckValues[3]*(180.0f/Math.PI)+" | "+trckValues[4]*(180.0f/Math.PI)+" | "+trckValues[5]*(180.0f/Math.PI));
+                Log.d(TAG,"trckValues: VP=" + Math.round(trckValues[6])+" | "
+                                    + "Translations = " +Math.round((trckValues[0]+Constants.xAxisTrackingCorrection))+" | "
+                                                        +Math.round((trckValues[1]+Constants.yAxisTrackingCorrection))+" | "
+                                                        +Math.round(trckValues[2])+" | "
+                                    + "Rotations = "    +Math.round(trckValues[3]*(180.0f/Math.PI))+" | "
+                                                        +Math.round(trckValues[4]*(180.0f/Math.PI))+" | "
+                                                        +Math.round(trckValues[5]*(180.0f/Math.PI)));
+
+                final int tmpvp = Math.round(trckValues[6]);
+
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        // TURNING OFF RADAR SCAN
+                        radarScanImageView.clearAnimation();
+                        radarScanImageView.setVisibility(View.GONE);
+                        for (int i=0; i<(qtyVps); i++)
+                        {
+                            if (vpsListView != null)
+                            {
+                                if (i==(tmpvp-1)){
+                                    vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
+                                } else {
+                                    vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                }
+
+                            }
+
+                        }
+                    }
+                });
+            } else {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if (!radarScanImageView.isShown()){
+                            // TURNING ON RADAR SCAN
+                            radarScanImageView.setVisibility(View.VISIBLE);
+                            radarScanImageView.startAnimation(rotationRadarScan);
+                        }
+                        for (int i=0; i<(qtyVps); i++)
+                        {
+                            if (vpsListView != null)
+                            {
+                                vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                            }
+
+                        }
+                    }
+                });
             }
 
         }
