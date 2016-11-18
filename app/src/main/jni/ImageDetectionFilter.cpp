@@ -50,12 +50,12 @@ ImageDetectionFilter::ImageDetectionFilter(std::vector<cv::Mat> &referenceImageG
     mReferenceCorners3D.push_back(cv::Point3f( halfRealWidth,  halfRealHeight, 0.0f));
     mReferenceCorners3D.push_back(cv::Point3f(-halfRealWidth,  halfRealHeight, 0.0f));
 
-    for (int i=0; i<qtVp; i++){
+    // Create the feature detector, descriptor extractor, and
+    // descriptor matcher.
+    mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(400,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
+    mDescriptorMatcher = cv::DescriptorMatcher::create("BruteForce-HammingLUT");
 
-        // Create the feature detector, descriptor extractor, and
-        // descriptor matcher.
-        mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(500,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
-        mDescriptorMatcher = cv::DescriptorMatcher::create("BruteForce-HammingLUT");
+    for (int i=0; i<qtVp; i++){
         // Detect the reference features and compute their descriptors.
         mReferenceImage = referenceImageGray[i];
         mFeatureDetectorAndDescriptorExtractor->detect(mReferenceImage, localReferenceKeypoints);
@@ -66,23 +66,32 @@ ImageDetectionFilter::ImageDetectionFilter(std::vector<cv::Mat> &referenceImageG
     }
     // Assume no distortion.
     mDistCoeffs.zeros(4, 1, CV_64F);
-    mTargetFound = false;
+    mTracking = false;
 }
 
 float *ImageDetectionFilter::getPose()
 {
-    if (mTargetFound) {
+    if (mTracking) {
+        mLastValidPose[0]=mPose[0];
+        mLastValidPose[1]=mPose[1];
+        mLastValidPose[2]=mPose[2];
+        mLastValidPose[3]=mPose[3];
+        mLastValidPose[4]=mPose[4];
+        mLastValidPose[5]=mPose[5];
+        mLastValidPose[6]=mPose[6];
         return mPose;
     } else {
-        return NULL;
+        if (lostTrackingCounter < 20){
+            return mLastValidPose;
+        } else {
+            return NULL;
+        }
     }
 }
 
-void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
-{
+void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatrix) {
     //cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
-    CvRect rect;
-    rect = CvRect(440,160,400,400);
+    rect = CvRect(440, 160, 400, 400);
     // Convert the scene to grayscale.
     cv::cvtColor(src, mGraySrc, cv::COLOR_RGBA2GRAY);
     // Get only the center of the image to be used for detection.
@@ -91,13 +100,13 @@ void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
     // and match the scene descriptors to reference descriptors.
     mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
     mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
-    int k=0;
+    int k = 0;
     do {
         cv::Mat localReferenceDescriptors;
         mReferenceDescriptors[k].copyTo(localReferenceDescriptors);
         //matcher.match(mSceneDescriptors, localReferenceDescriptors, mMatches);
         mDescriptorMatcher->match(mSceneDescriptors, localReferenceDescriptors, mMatches);
-        LOGD("Searching for VP: %d    Matches Found: %d",(k+1),mMatches.size());
+        //LOGD("Searching for VP: %d    Matches Found: %d", (k + 1), mMatches.size());
         // Attempt to find the target image's 3D pose in the scene.
         if (mMatches.size() >= 4) {
             // There are sufficient matches to find the pose.
@@ -122,7 +131,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
             if (minDist <= 25.0) {
                 // Identify "good" keypoints based on match distance.
                 double maxGoodMatchDist = 1.75 * minDist;
-                for(int i = 0; i < mMatches.size(); i++) {
+                for (int i = 0; i < mMatches.size(); i++) {
                     cv::DMatch match = mMatches[i];
                     if (match.distance < maxGoodMatchDist) {
                         goodReferencePoints.push_back(localReferenceKeypoints[match.trainIdx].pt);
@@ -133,7 +142,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
                 if (goodReferencePoints.size() > 6 && goodScenePoints.size() > 6) {
                     // There are sufficient good points to find the pose.
                     // Find the homography.
-                    LOGD("goodReferencePoints.size(): %d  goodScenePoints.size(): %d ",goodReferencePoints.size(),goodScenePoints.size());
+                    //LOGD("goodReferencePoints.size(): %d  goodScenePoints.size(): %d ", goodReferencePoints.size(), goodScenePoints.size());
                     cv::Mat homography = cv::findHomography(goodReferencePoints, goodScenePoints);
                     // Use the homography to project the reference corner
                     // coordinates into scene coordinates.
@@ -147,68 +156,49 @@ void ImageDetectionFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
                     goodScenePoints.clear();
                     if (cv::isContourConvex(mCandidateSceneCorners)) {
                         // Find the target's Euler angles and XYZ coordinates.
-                        cv::solvePnP(mReferenceCorners3D, mCandidateSceneCorners, cameraMatrix, mDistCoeffs, mRVec, mTVec, 0);
-                        mPose[0]  =  (float)mTVec.at<double>(0);// X Translation
-                        mPose[1]  =  (float)mTVec.at<double>(1);// Y Translation
-                        mPose[2]  =  (float)mTVec.at<double>(2);// Z Translation
-                        mPose[3]  =  (float)mRVec.at<double>(0);// X Rotation
-                        mPose[4]  =  (float)mRVec.at<double>(1);// Y Rotation
-                        mPose[5]  =  (float)mRVec.at<double>(2);// Z Rotation
-                        mPose[6]  =  (float)(k+1); // VP currently being tracked
-                        mTargetFound = true;
-                        LOGD("mTargetFound = %d",mTargetFound);
+                        //LOGD("mCandidateSceneCorners.type() = %d", mCandidateSceneCorners.type());
+                        cv::solvePnP(mReferenceCorners3D, mCandidateSceneCorners, cameraMatrix,
+                                     mDistCoeffs, mRVec, mTVec, 0);
+                        mPose[0] = (float) mTVec.at<double>(0);// X Translation
+                        mPose[1] = (float) mTVec.at<double>(1);// Y Translation
+                        mPose[2] = (float) mTVec.at<double>(2);// Z Translation
+                        mPose[3] = (float) mRVec.at<double>(0);// X Rotation
+                        mPose[4] = (float) mRVec.at<double>(1);// Y Rotation
+                        mPose[5] = (float) mRVec.at<double>(2);// Z Rotation
+                        mPose[6] = (float) (k + 1); // VP currently being tracked
+                        mTracking = true;
+                        lostTrackingCounter = 0;
+                        LOGD("POSE: VP#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0]+440,mPose[1]+160,mPose[2],mPose[3],mPose[4],mPose[5]);
+                        draw(mCandidateSceneCorners, src, isHudOn);
                     } else {
-                        mTargetFound = false;
+                        mTracking = false;
                     }
                 } else {
-                    mTargetFound = false;
+                    mTracking = false;
                 }
             } else {
-                mTargetFound = false;
+                mTracking = false;
             }
         }
         k++;
-    } while ((k<qtVp)&&(!mTargetFound));
+        if (!mTracking) lostTrackingCounter++;
+    } while ((k < qtVp) && (!mTracking));
 
 }
 
-//void ImageDetectionFilter::draw(cv::Mat src, cv::Mat dst)
-//{
-//    if (&src != &dst) {
-//        src.copyTo(dst);
-//    }
-//
-//    if (!mTargetFound) {
-        // The target has not been found.
+void ImageDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
+{
+    if (((mTracking) || ((!mTracking)&&(lostTrackingCounter<12)))&&(isHudOn==1)) {
+        // The target has been found.
+        // Outline the found target in SeaMate blue.
+        LOGD("isHudOn= %d",isHudOn);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
 
-        // Draw a thumbnail of the target in the upper-left
-        // corner so that the user knows what it is.
+        // Draw the rectangle guide in SeaMate green.
+        cv::rectangle(src, rect,cv::Scalar(168.0,207.0,69.0), 8);
 
-        // Compute the thumbnail's larger dimension as half the
-        // video frame's smaller dimension.
-        //int height = mReferenceImage.rows;
-        //int width = mReferenceImage.cols;
-        //int maxDimension = MIN(dst.rows, dst.cols) / 2;
-        //double aspectRatio = width / (double)height;
-        //if (height > width) {
-        //    height = maxDimension;
-        //    width = (int)(height * aspectRatio);
-        //} else {
-        //    width = maxDimension;
-        //    height = (int)(width / aspectRatio);
-        //}
-
-        // Select the region of interest (ROI) where the thumbnail
-        // will be drawn.
-        //int offsetY = height - dst.rows;
-        //int offsetX = width - dst.cols;
-        //dst.adjustROI(0, offsetY, 0, offsetX);
-
-        // Copy a resized reference image into the ROI.
-        //cv::resize(mReferenceImage, dst, dst.size(), 0.0, 0.0,
-        //        cv::INTER_AREA);
-
-        // Deselect the ROI.
-        //dst.adjustROI(0, -offsetY, 0, -offsetX);
-//    }
-//}
+    }
+}

@@ -250,4 +250,15 @@
         android:visibility="visible"
         android:layout_alignTop="@+id/imageViewTarget" />
 
+    <ImageView
+        android:id="@+id/imageViewVpChecked"
+        android:layout_width="252.67dp"
+        android:layout_height="252.33dp"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/greencheck"
+        android:padding="0dp"
+        android:visibility="gone"
+        android:layout_alignTop="@+id/imageViewTarget" />
+
 </RelativeLayout>

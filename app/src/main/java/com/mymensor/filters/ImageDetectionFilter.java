@@ -49,13 +49,13 @@ public final class ImageDetectionFilter implements ARFilter {
     }
 
     @Override
-    public void apply(final Mat src) {
+    public void apply(final Mat src, final int isHudOn) {
         final Mat projection = mCameraMatrix;
-        apply(mSelfAddr, src.getNativeObjAddr(), projection.getNativeObjAddr());
+        apply(mSelfAddr, src.getNativeObjAddr(), isHudOn, projection.getNativeObjAddr());
     }
 
     private static native long newSelf(Object markerBuffer[], int qtyVps, double realSize);
     private static native void deleteSelf(long selfAddr);
     private static native float[] getPose(long selfAddr);
-    private static native void apply(long selfAddr, long srcAddr, long projectionAddr);
+    private static native void apply(long selfAddr, long srcAddr, int isHudOn, long projectionAddr);
 }

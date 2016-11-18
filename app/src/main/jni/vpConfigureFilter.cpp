@@ -54,8 +54,8 @@ VpConfigureFilter::VpConfigureFilter(cv::Mat &referenceImageGray, double realSiz
 
     // Create the feature detector, descriptor extractor, and
     // descriptor matcher.
-    mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(500,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
-    //mDescriptorMatcher = cv::DescriptorMatcher::create("BruteForce-HammingLUT");
+    mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(400,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
+    mDescriptorMatcher = cv::DescriptorMatcher::create("BruteForce-HammingLUT");
 
     // Detect the reference features and compute their descriptors.
     mFeatureDetectorAndDescriptorExtractor->detect(referenceImageGray, mReferenceKeypoints);
@@ -81,7 +81,7 @@ float *VpConfigureFilter::getPose()
 void VpConfigureFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
 {
     CvRect rect;
-    rect = CvRect(440,160,400,400);
+    rect = CvRect(440, 160, 400, 400);
     // Convert the scene to grayscale.
     cv::cvtColor(src, mGraySrc, cv::COLOR_RGBA2GRAY);
 
@@ -94,10 +94,10 @@ void VpConfigureFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
     mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
     mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
 
-    cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
-    matcher.match(mSceneDescriptors, mReferenceDescriptors, mMatches);
+    //cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
+    //matcher.match(mSceneDescriptors, mReferenceDescriptors, mMatches);
 
-    //mDescriptorMatcher->match(mSceneDescriptors, mReferenceDescriptors, mMatches);
+    mDescriptorMatcher->match(mSceneDescriptors, mReferenceDescriptors, mMatches);
 
     // Attempt to find the target image's 3D pose in the scene.
     findPose(cameraMatrix);
@@ -109,12 +109,11 @@ void VpConfigureFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
 
 void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
 {
+    LOGD("mMatches.size()= %d",mMatches.size());
     if (mMatches.size() < 4) {
         // There are too few matches to find the pose.
         return;
     }
-
-    LOGD("mMatches.size()= %d",mMatches.size());
 
     // Calculate the max and min distances between keypoints.
     float maxDist = 0.0f;
@@ -134,12 +133,15 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
     // based on testing. The unit is not related to pixel
     // distances; it is related to the number of failed tests
     // for similarity between the matched descriptors.
+    /*
     if (minDist > 50.0) {
         // The target is completely lost.
         mTargetFound = false;
         LOGD("minDist > 50.0 >>>>>> mTargetFound = false and return");
         return;
-    } else if (minDist > 25.0) {
+    } else
+    */
+    if (minDist > 25.0) {
         // The target is lost but maybe it is still close.
         // Keep using any previously found pose.
         LOGD("minDist > 25.0 >>>>>> return");
@@ -159,7 +161,7 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
         }
     }
 
-    if (goodReferencePoints.size() < 4 || goodScenePoints.size() < 4) {
+    if (goodReferencePoints.size() < 7 || goodScenePoints.size() < 7) {
         // There are too few good points to find the pose.
         LOGD("too few good points to find the pose. >>>>>> return");
         return;
@@ -222,6 +224,8 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
     mGLPose[15] =  1.0f;
     */
     mTargetFound = true;
+
+    LOGD("POSE: %f  %f  %f  %f  %f  %f",mPose[0]+440,mPose[1]+160,mPose[2],mPose[3],mPose[4],mPose[5]);
 }
 
 //void ImageDetectionFilter::draw(cv::Mat src, cv::Mat dst)

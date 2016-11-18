@@ -9,7 +9,6 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
-import android.hardware.Camera.Size;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -47,11 +46,9 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
@@ -94,7 +91,6 @@ public class ImageCapActivity extends Activity implements
 
     private static Bitmap vpLocationDescImageFileContents;
     private static Bitmap selectedVpPhotoImageFileContents;
-    private static Bitmap markerImageFileContents;
 
     private short[] vpNumber;
     private boolean[] vpChecked;
@@ -103,12 +99,29 @@ public class ImageCapActivity extends Activity implements
     private long[] vpNextCaptureMillis;
     private String[] vpLocationDesText;
 
+    private boolean[] vpIsAmbiguous;
+    private boolean[] vpIsSuperSingle;
+    private boolean[] vpSuperIdIs20mm;
+    private boolean[] vpSuperIdIs100mm;
+    private int[] vpSuperMarkerId;
+
+    private boolean inPosition = false;
+    private boolean inRotation = false;
+    private boolean isTracking = false;
+    private boolean isShowingVpPhoto = false;
+    private int isHudOn = 1;
+
+    private boolean vpIsDisambiguated = true;                   //TODO
+    private boolean doubleCheckingProcedureFinalized = true;    //TODO
+
+    private TrackingValues trackingValues;
+    private int vpTrackedInPose;
+
     public boolean vpPhotoAccepted = false;
     public boolean vpPhotoRejected = false;
+    public boolean lastVpPhotoRejected = false;
     public int lastVpSelectedByUser;
     public int photoSelected = 0;
-
-    private int coordinateSystemTrackedInPoseI;
 
     private int[] vpXCameraDistance;
     private int[] vpYCameraDistance;
@@ -123,6 +136,9 @@ public class ImageCapActivity extends Activity implements
     private static float toleranceRotation;
 
     private boolean waitingForMarkerlessTrackingConfigurationToLoad = false;
+    private boolean waitingToCaptureVpAfterDisambiguationProcedureSuccessful = true; //TODO
+    private boolean doubleCheckingProcedureStarted = false; //TODO
+    private boolean resultSpecialTrk = false; //TODO
 
     private short shipId;
     private String frequencyUnit;
@@ -132,6 +148,8 @@ public class ImageCapActivity extends Activity implements
     ImageView radarScanImageView;
     ImageView mProgress;
     TouchImageView imageView;
+    ImageView vpCheckedView;
+    TextView isVpPhotoOkTextView;
 
     TextView vpLocationDesTextView;
     TextView vpIdNumber;
@@ -163,39 +181,15 @@ public class ImageCapActivity extends Activity implements
     // A matrix that is used when saving photos.
     private Mat mBgr;
     public List<Mat> markerBuffer;
-    public long[] tmpObjAdr;
 
     // Whether the next camera frame should be saved as a photo.
-    private boolean mIsPhotoPending;
+    private boolean vpPhotoRequestInProgress;
 
     // The filters.
     private ARFilter[] mImageDetectionFilters;
 
     // The indices of the active filters.
     private int mImageDetectionFilterIndex;
-
-    // The index of the active camera.
-    private int mCameraIndex;
-
-    // Whether the active camera is front-facing.
-    // If so, the camera view should be mirrored.
-    private boolean mIsCameraFrontFacing;
-
-    // The number of cameras on the device.
-    private int mNumCameras;
-
-    // The image sizes supported by the active camera.
-    private List<Size> mSupportedImageSizes;
-
-    // The index of the active image size.
-    private int mImageSizeIndex;
-
-    // A key for storing the index of the active camera.
-    private static final String STATE_CAMERA_INDEX = "cameraIndex";
-
-    // A key for storing the index of the active image size.
-    private static final String STATE_IMAGE_SIZE_INDEX =
-            "imageSizeIndex";
 
     // Keys for storing the indices of the active filters.
     private static final String STATE_IMAGE_DETECTION_FILTER_INDEX =
@@ -239,42 +233,30 @@ public class ImageCapActivity extends Activity implements
         capRemotePath = mymensorAccount+"/"+"cap"+"/";
 
         if (savedInstanceState != null) {
-            mCameraIndex = savedInstanceState.getInt(
-                    STATE_CAMERA_INDEX, 0);
-            mImageSizeIndex = savedInstanceState.getInt(
-                    STATE_IMAGE_SIZE_INDEX, 0);
             mImageDetectionFilterIndex = savedInstanceState.getInt(
                     STATE_IMAGE_DETECTION_FILTER_INDEX, 0);
         } else {
-            mCameraIndex = 0;
-            mImageSizeIndex = 0;
             mImageDetectionFilterIndex = 0;
         }
 
         final Camera camera;
         CameraInfo cameraInfo = new CameraInfo();
-        Camera.getCameraInfo(mCameraIndex, cameraInfo);
-        mIsCameraFrontFacing = (cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT);
-        mNumCameras = Camera.getNumberOfCameras();
-        camera = Camera.open(mCameraIndex);
+        Camera.getCameraInfo(0, cameraInfo);
+        camera = Camera.open(0);
 
         final Parameters parameters = camera.getParameters();
         camera.release();
-        mSupportedImageSizes = parameters.getSupportedPreviewSizes();
-        final Size size = mSupportedImageSizes.get(mImageSizeIndex);
-        for (int i=0; i<mSupportedImageSizes.size(); i++){
-            Log.d(TAG,"size ="+mSupportedImageSizes.get(i).width+"x"+mSupportedImageSizes.get(i).height);
-        }
-
 
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.imagecap_javaCameraView);
-        mCameraView.setCameraIndex(mCameraIndex);
+        mCameraView.setCameraIndex(0);
         mCameraView.setMaxFrameSize(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
         mCameraView.setCvCameraViewListener(this);
 
         loadConfigurationFile();
         loadVpsChecked();
         verifyVpsChecked();
+
+        trackingValues = new TrackingValues();
 
         mImageDetectionFilterIndex = 1;
 
@@ -301,6 +283,8 @@ public class ImageCapActivity extends Activity implements
         acceptVpPhotoButton = (Button) this.findViewById(R.id.buttonAcceptVpPhoto);
         rejectVpPhotoButton = (Button) this.findViewById(R.id.buttonRejectVpPhoto);
 
+        isVpPhotoOkTextView = (TextView) this.findViewById(R.id.textViewIsPhotoOK);
+
         radarScanImageView = (ImageView) this.findViewById(R.id.imageViewRadarScan);
         rotationRadarScan = AnimationUtils.loadAnimation(this, R.anim.clockwise_rotation);
         radarScanImageView.setVisibility(View.VISIBLE);
@@ -313,17 +297,13 @@ public class ImageCapActivity extends Activity implements
 
         imageView = (TouchImageView) this.findViewById(R.id.imageView1);
 
+        vpCheckedView = (ImageView) this.findViewById(R.id.imageViewVpChecked);
+        vpCheckedView.setVisibility(View.GONE);
     }
 
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        // Save the current camera index.
-        savedInstanceState.putInt(STATE_CAMERA_INDEX, mCameraIndex);
-
-        // Save the current image size index.
-        savedInstanceState.putInt(STATE_IMAGE_SIZE_INDEX, mImageSizeIndex);
-
         // Save the current filter indices.
         savedInstanceState.putInt(STATE_IMAGE_DETECTION_FILTER_INDEX, mImageDetectionFilterIndex);
 
@@ -474,6 +454,44 @@ public class ImageCapActivity extends Activity implements
         }
     };
 
+    private boolean setSpecialDisambiguationTrackingConfiguration(int vpIndex)
+    {
+        markerBuffer.clear();
+        try
+        {
+            File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (vpIndex + 1) + ".png");
+            Mat tmpMarker = Imgcodecs.imread(markervpFile.getAbsolutePath(), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
+            markerBuffer.add(tmpMarker);
+        }
+        catch (Exception e)
+        {
+            Log.e(TAG, "configureTracking(): markerImageFileContents failed:"+e.toString());
+        }
+        ARFilter trackFilter = null;
+        try {
+            trackFilter = new ImageDetectionFilter(
+                ImageCapActivity.this,
+                markerBuffer.toArray(),
+                qtyVps,
+                mCameraMatrix,
+                Constants.standardMarkerlessMarkerWidth);
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to load marker: "+e.toString());
+        }
+        if (trackFilter!=null) {
+            mImageDetectionFilters = new ARFilter[]{
+                    new NoneARFilter(),
+                    trackFilter
+            };
+        }
+        return true;
+    }
+
+    private void configureIdTracking(){
+
+        //TODO
+    }
+
 
     private void configureTracking(){
 
@@ -484,26 +502,12 @@ public class ImageCapActivity extends Activity implements
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        //if (waitingForMarkerlessTrackingConfigurationToLoad)
-                        {
-                            Log.d(TAG, "BEFORE STARTING configureTracking IN BACKGROUND - Lighting Waiting Circle");
-                            mProgress.setVisibility(View.VISIBLE);
-                            mProgress.startAnimation(rotationMProgress);
-                        }
+                        waitingForMarkerlessTrackingConfigurationToLoad = true;
+                        Log.d(TAG, "BEFORE STARTING configureTracking IN BACKGROUND - Lighting Waiting Circle");
+                        mProgress.setVisibility(View.VISIBLE);
+                        mProgress.startAnimation(rotationMProgress);
                     }
                 });
-
-
-                /*
-                ************************************************************************************
-                */
-
-
-
-                /*
-                ************************************************************************************
-                */
-
             }
 
             @Override
@@ -554,27 +558,23 @@ public class ImageCapActivity extends Activity implements
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        //if (waitingForMarkerlessTrackingConfigurationToLoad)
-                        {
-                            Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - Turning off Waiting Circle");
-                            mProgress.clearAnimation();
-                            mProgress.setVisibility(View.GONE);
-                            Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - mProgress.isShown():" + mProgress.isShown());
-                            // TURNING OFF TARGET
-                            //targetImageView.setImageDrawable(drawableTargetWhite);
-                            //targetImageView.setVisibility(View.GONE);
-                            // TURNING ON RADAR SCAN
+                        Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - Turning off Waiting Circle");
+                        mProgress.clearAnimation();
+                        mProgress.setVisibility(View.GONE);
+                        Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - mProgress.isShown():" + mProgress.isShown());
+                        // TURNING OFF TARGET
+                        //targetImageView.setImageDrawable(drawableTargetWhite);
+                        //targetImageView.setVisibility(View.GONE);
+                        // TURNING ON RADAR SCAN
+                        if (!radarScanImageView.isShown()){
                             radarScanImageView.setVisibility(View.VISIBLE);
                             radarScanImageView.startAnimation(rotationRadarScan);
-                            waitingForMarkerlessTrackingConfigurationToLoad = false;
                         }
-
+                        mImageDetectionFilterIndex = 1;
+                        waitingForMarkerlessTrackingConfigurationToLoad = false;
                     }
                 });
-
             }
-
-
         }.execute();
     }
 
@@ -594,23 +594,31 @@ public class ImageCapActivity extends Activity implements
     public Mat onCameraFrame(final CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         final Mat rgba = inputFrame.rgba();
-        float[] trckValues;
+
+        verifyVpsChecked();
 
         // Apply the active filters.
         if (mImageDetectionFilters != null) {
-            mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba);
-            trckValues = mImageDetectionFilters[mImageDetectionFilterIndex].getPose();
-            if (trckValues!=null){
-                Log.d(TAG,"trckValues: VP=" + Math.round(trckValues[6])+" | "
-                                    + "Translations = " +Math.round((trckValues[0]+Constants.xAxisTrackingCorrection))+" | "
-                                                        +Math.round((trckValues[1]+Constants.yAxisTrackingCorrection))+" | "
-                                                        +Math.round(trckValues[2])+" | "
-                                    + "Rotations = "    +Math.round(trckValues[3]*(180.0f/Math.PI))+" | "
-                                                        +Math.round(trckValues[4]*(180.0f/Math.PI))+" | "
-                                                        +Math.round(trckValues[5]*(180.0f/Math.PI)));
 
-                final int tmpvp = Math.round(trckValues[6]);
+            //TODO Introduce measures to avoid an endless tracking with no detection in special cases.
 
+            mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn);
+            if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose()!=null){
+                trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
+                vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
+                if ((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1))) {
+                    isTracking = true;
+                } else {
+                    isTracking = false;
+                }
+            } else {
+                isTracking = false;
+            }
+            if (isTracking){
+                Log.d(TAG,"trckValues: VP=" + vpTrackedInPose+" | "
+                        + "Translations = " +trackingValues.getX()+" | "+trackingValues.getY()+" | "+trackingValues.getZ()+" | "
+                        + "Rotations = "    +trackingValues.getEAX()+" | "+trackingValues.getEAX()+" | "+trackingValues.getEAX());
+                final int tmpvp = vpTrackedInPose-1;
                 runOnUiThread(new Runnable()
                 {
                     @Override
@@ -621,33 +629,56 @@ public class ImageCapActivity extends Activity implements
                         radarScanImageView.setVisibility(View.GONE);
                         for (int i=0; i<(qtyVps); i++)
                         {
-                            if (vpsListView != null)
+                            if (vpsListView.getChildAt(i)!=null)
                             {
-                                if (i==(tmpvp-1)){
+                                if (i==tmpvp){
+                                    vpsListView.smoothScrollToPosition(i);
                                     vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
                                 } else {
                                     vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
                                 }
-
                             }
-
                         }
                     }
                 });
+                if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
+                    if (!vpChecked[vpTrackedInPose - 1]){
+                        runOnUiThread(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                            }
+                        });
+                        if (!waitingForMarkerlessTrackingConfigurationToLoad) checkPositionToTarget(trackingValues, rgba);
+                    } else {
+                        runOnUiThread(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                vpCheckedView.setVisibility(View.VISIBLE);
+                            }
+                        });
+                    }
+                }
             } else {
+                Log.d(TAG,"TRKSRVEY: NOT Tracking");
                 runOnUiThread(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        if (!radarScanImageView.isShown()){
+                        if ((!radarScanImageView.isShown())&&(!isShowingVpPhoto)){
                             // TURNING ON RADAR SCAN
                             radarScanImageView.setVisibility(View.VISIBLE);
                             radarScanImageView.startAnimation(rotationRadarScan);
                         }
+                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
                         for (int i=0; i<(qtyVps); i++)
                         {
-                            if (vpsListView != null)
+                            if (vpsListView.getChildAt(i)!=null)
                             {
                                 vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
                             }
@@ -656,48 +687,222 @@ public class ImageCapActivity extends Activity implements
                     }
                 });
             }
-
         }
-
-        if (mIsPhotoPending) {
-            mIsPhotoPending = false;
-            takePhoto(rgba);
-        }
-
-        if (mIsCameraFrontFacing) {
-            // Mirror (horizontally flip) the preview.
-            Core.flip(rgba, rgba, 1);
-        }
-
         return rgba;
     }
 
-    private void takePhoto(final Mat rgba) {
+    private void checkPositionToTarget(TrackingValues trackingValues, final Mat rgba) {
 
-
-
-        return;
-
-
-
-    }
-
-    private void onTakePhotoFailed() {
-        mIsMenuLocked = false;
-
-        // Show an error message.
-        final String errorMessage = getString(R.string.vp_capture_failure);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(ImageCapActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+        /*
+        if (!vpIsSuperSingle[vpTrackedInPose - 1]) {
+            inPosition = ((Math.abs(trackingValues.getX() - 0) <= tolerancePosition) &&
+                    (Math.abs(trackingValues.getY() - 0) <= tolerancePosition) &&
+                    (Math.abs(trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose - 1]) <= tolerancePosition));
+            inRotation = ((Math.abs(trackingValues.getEAX() - 0) <= toleranceRotation) &&
+                    (Math.abs(trackingValues.getEAY() - 0) <= toleranceRotation) &&
+                    (Math.abs(trackingValues.getEAZ() - 0) <= toleranceRotation));
+        } else {
+        */
+            inPosition = ((Math.abs(trackingValues.getX() - vpXCameraDistance[vpTrackedInPose-1]) <= (tolerancePosition)) &&
+                    (Math.abs(trackingValues.getY() - vpYCameraDistance[vpTrackedInPose-1]) <= (tolerancePosition)) &&
+                    (Math.abs(trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose - 1]) <= (tolerancePosition)));
+            inRotation = ((Math.abs(trackingValues.getEAX() - vpXCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)) &&
+                    (Math.abs(trackingValues.getEAY() - vpYCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)) &&
+                    (Math.abs(trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)));
+        /*
+        }
+        */
+        Log.d(TAG,"native inPosition="+inPosition+" inRotation="+inRotation+" waitingForMark...="+waitingForMarkerlessTrackingConfigurationToLoad+" vpPhReqInPress="+vpPhotoRequestInProgress);
+        if ((inPosition) && (inRotation) && (!waitingForMarkerlessTrackingConfigurationToLoad) && (!vpPhotoRequestInProgress)) {
+            if ((vpIsAmbiguous[vpTrackedInPose-1])&&(!doubleCheckingProcedureFinalized)) {
+                //TODO
+                configureIdTracking();
+                doubleCheckingProcedureStarted = true;
             }
-        });
+            if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1])&&(vpIsDisambiguated)&&(doubleCheckingProcedureFinalized))) {
+                    if (!waitingForMarkerlessTrackingConfigurationToLoad) {
+                        if (isHudOn==1) {
+                            isHudOn = 0;
+                        } else {
+                            takePhoto(rgba);
+                        }
+                    }
+            }
+        }
+
+    }
+
+    private void takePhoto (Mat rgba){
+        Bitmap bitmapImage = null;
+        File pictureFile = new File(getApplicationContext().getFilesDir(), "cap_temp.jpg");
+        long momentoLong = MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference);
+        photoTakenTimeMillis[vpTrackedInPose - 1] = momentoLong;
+        String momento = String.valueOf(momentoLong);
+        Log.d(TAG, "takePhoto: a new camera frame image is delivered " + momento);
+        if ((vpIsAmbiguous[vpTrackedInPose - 1]) && (vpIsDisambiguated))
+            waitingToCaptureVpAfterDisambiguationProcedureSuccessful = false;
+        if (doubleCheckingProcedureFinalized) {
+            doubleCheckingProcedureStarted = false;
+            doubleCheckingProcedureFinalized = false;
+        }
+
+        if (rgba != null) {
+            bitmapImage = Bitmap.createBitmap(rgba.cols(), rgba.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(rgba,bitmapImage);
+            final int width = bitmapImage.getWidth();
+            final int height = bitmapImage.getHeight();
+
+            Log.d(TAG, "takePhoto: Camera frame width: " + width + " height: " + height);
+            //locPhotoToExif = getGPSToExif(mCurrentLocation); //TODO
+        }
+        if (bitmapImage != null)
+        {
+            // Turning tracking OFF
+            mImageDetectionFilterIndex = 0;
+            if ((!vpPhotoAccepted) && (!vpPhotoRejected))
+            {
+                final Bitmap tmpBitmapImage = bitmapImage;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageBitmap(tmpBitmapImage);
+                        imageView.resetZoom();
+                        imageView.setVisibility(View.VISIBLE);
+                        if (imageView.getImageAlpha()==128) imageView.setImageAlpha(255);
+                        isVpPhotoOkTextView.setVisibility(View.VISIBLE);
+                        acceptVpPhotoButton.setVisibility(View.VISIBLE);
+                        rejectVpPhotoButton.setVisibility(View.VISIBLE);
+                        vpsListView.setVisibility(View.GONE);
+                    }
+                });
+            }
+
+            do
+            {
+                // Waiting for user response
+            } while ((!vpPhotoAccepted)&&(!vpPhotoRejected));
+
+            Log.d(TAG, "onNewCameraFrame: LOOP ENDED: vpPhotoAccepted:"+vpPhotoAccepted+" vpPhotoRejected:"+vpPhotoRejected);
+
+            if (vpPhotoAccepted) {
+                Log.d(TAG, "onNewCameraFrame: vpPhotoAccepted!!!!");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setVisibility(View.GONE);
+                        isVpPhotoOkTextView.setVisibility(View.GONE);
+                        acceptVpPhotoButton.setVisibility(View.GONE);
+                        rejectVpPhotoButton.setVisibility(View.GONE);
+                        vpsListView.setVisibility(View.VISIBLE);
+                        vpChecked[(vpTrackedInPose-1)] = true;
+                    }
+                });
+                setVpsChecked();
+                saveVpsChecked();
+                try
+                {
+                    String pictureFileName = "cap_"+mymensorAccount+"_"+vpNumber[vpTrackedInPose-1]+"_"+momento+".jpg";
+                    pictureFile.renameTo(new File(getApplicationContext().getFilesDir(), pictureFileName));
+                    FileOutputStream fos = new FileOutputStream(pictureFile);
+                    bitmapImage.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                    fos.close();
+                    ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                    //create a map to store user metadata
+                    Map<String, String> userMetadata = new HashMap<String,String>();
+                    /*
+                    userMetadata.put("GPSLatitude", locPhotoToExif[0]);
+                    userMetadata.put("GPSLongitude", locPhotoToExif[1]);
+                    */
+                    userMetadata.put("VP", ""+(vpTrackedInPose));
+                    userMetadata.put("seamensorAccount", mymensorAccount);
+                    /*
+                    userMetadata.put("Precisioninm", locPhotoToExif[4]);
+                    userMetadata.put("LocationMillis", locPhotoToExif[5]);
+                    userMetadata.put("LocationMethod", locPhotoToExif[6]);
+                    */
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose - 1]);
+                    userMetadata.put("DateTime", formattedDateTime);
+                    //call setUserMetadata on our ObjectMetadata object, passing it our map
+                    myObjectMetadata.setUserMetadata(userMetadata);
+                    //uploading the objects
+                    File fileToUpload = pictureFile;
+                    TransferObserver observer = MymUtils.storeRemoteFile(
+                            transferUtility,
+                            "cap/"+pictureFileName,
+                            Constants.BUCKET_NAME,
+                            fileToUpload,
+                            myObjectMetadata);
+                    Log.d(TAG, "AWS s3 Observer: "+observer.getState().toString());
+                    Log.d(TAG, "AWS s3 Observer: "+observer.getAbsoluteFilePath());
+                    Log.d(TAG, "AWS s3 Observer: "+observer.getBucket());
+                    Log.d(TAG, "AWS s3 Observer: "+observer.getKey());
+
+                    if (resultSpecialTrk)
+                    {
+                        waitingForMarkerlessTrackingConfigurationToLoad = true;
+                        Log.d(TAG, "onNewCameraFrame: vpPhotoAccepted >>>>> calling setMarkerlessTrackingConfiguration");
+                        configureTracking();
+                        resultSpecialTrk = false;
+                        vpIsDisambiguated = false;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.e(TAG, "Error when writing captured image to Remote Storage:"+e.toString());
+                    vpChecked[vpTrackedInPose-1] = false;
+                    setVpsChecked();
+                    saveVpsChecked();
+                    //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
+                    e.printStackTrace();
+                }
+                vpPhotoAccepted = false;
+                vpPhotoRequestInProgress = false;
+                Log.d(TAG, "onNewCameraFrame: vpPhotoAccepted: vpPhotoRequestInProgress = "+vpPhotoRequestInProgress);
+                waitingForMarkerlessTrackingConfigurationToLoad = true;
+                isHudOn = 1;
+                configureTracking();
+            }
+
+            if (vpPhotoRejected) {
+                Log.d(TAG, "onNewCameraFrame: vpPhotoRejected!!!!");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (imageView.getImageAlpha()==128) imageView.setImageAlpha(128);
+                        imageView.setVisibility(View.GONE);
+                        acceptVpPhotoButton.setVisibility(View.GONE);
+                        rejectVpPhotoButton.setVisibility(View.GONE);
+                        isVpPhotoOkTextView.setVisibility(View.GONE);
+                        vpsListView.setVisibility(View.VISIBLE);
+                        // TURNING ON RADAR SCAN
+                        radarScanImageView.setVisibility(View.VISIBLE);
+                        radarScanImageView.startAnimation(rotationRadarScan);
+                    }
+                });
+                vpChecked[vpTrackedInPose-1] = false;
+                setVpsChecked();
+                saveVpsChecked();
+                if (resultSpecialTrk)
+                {
+                    resultSpecialTrk = false;
+                    vpIsDisambiguated = false;
+                }
+                lastVpPhotoRejected = true;
+                vpPhotoRejected = false;
+                vpPhotoRequestInProgress = false;
+                Log.d(TAG, "onNewCameraFrame: vpPhotoRejected >>>>> calling setMarkerlessTrackingConfiguration");
+                Log.d(TAG, "onNewCameraFrame: vpPhotoRejected: vpPhotoRequestInProgress = "+vpPhotoRequestInProgress);
+                waitingForMarkerlessTrackingConfigurationToLoad = true;
+                isHudOn = 1;
+                configureTracking();
+            }
+        }
     }
 
 
-
-    public void saveVpsChecked()
+    private void saveVpsChecked()
     {
         // Saving vpChecked state.
         try {
@@ -776,7 +981,7 @@ public class ImageCapActivity extends Activity implements
 
 
 
-    public void setVpsChecked()
+    private void setVpsChecked()
     {
         try
         {
@@ -829,6 +1034,7 @@ public class ImageCapActivity extends Activity implements
                 // TURNING OFF RADAR SCAN
                 radarScanImageView.clearAnimation();
                 radarScanImageView.setVisibility(View.GONE);
+                isShowingVpPhoto = true;
                 // Setting the correct listview set position
                 vpsListView.setItemChecked(position, vpChecked[position]);
                 // Show last captured date and what is the frequency
@@ -900,6 +1106,7 @@ public class ImageCapActivity extends Activity implements
             Log.d(TAG, "Closing VPx location photo");
             //Turning tracking On
             mImageDetectionFilterIndex=1;
+            isShowingVpPhoto = false;
             vpLocationDesTextView.setVisibility(View.GONE);
             vpIdNumber.setVisibility(View.GONE);
             imageView.setVisibility(View.GONE);
@@ -1034,7 +1241,7 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    public void showVpCaptures(int vpSelected)
+    private void showVpCaptures(int vpSelected)
     {
         final int position = vpSelected-1;
         final int vpToList = vpSelected;
@@ -1133,9 +1340,9 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    public void loadConfigurationFile()
+    private void loadConfigurationFile()
     {
-        coordinateSystemTrackedInPoseI = 1;
+        vpTrackedInPose = 1;
         vpLocationDesText = new String[qtyVps];
         vpXCameraDistance = new int[qtyVps];
         vpYCameraDistance = new int[qtyVps];
@@ -1149,12 +1356,12 @@ public class ImageCapActivity extends Activity implements
         vpFrequencyUnit = new String[qtyVps];
         vpFrequencyValue = new long[qtyVps];
         vpChecked = new boolean[qtyVps];
-        boolean[] vpIsAmbiguous = new boolean[qtyVps];
+        vpIsAmbiguous = new boolean[qtyVps];
         vpFlashTorchIsOn = new boolean[qtyVps];
-        boolean[] vpIsSuperSingle = new boolean[qtyVps];
-        boolean[] vpSuperIdIs20mm = new boolean[qtyVps];
-        boolean[] vpSuperIdIs100mm = new boolean[qtyVps];
-        int[] vpSuperMarkerId = new int[qtyVps];
+        vpIsSuperSingle = new boolean[qtyVps];
+        vpSuperIdIs20mm = new boolean[qtyVps];
+        vpSuperIdIs100mm = new boolean[qtyVps];
+        vpSuperMarkerId = new int[qtyVps];
         photoTakenTimeMillis = new long[qtyVps];
         vpNextCaptureMillis = new long[qtyVps];
 
@@ -1359,7 +1566,7 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    public void verifyVpsChecked()
+    private void verifyVpsChecked()
     {
         boolean change = false;
         long presentMillis = MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference);
@@ -1455,7 +1662,7 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    public void loadVpsChecked() {
+    private void loadVpsChecked() {
         Log.d(TAG, "loadVpsChecked() started ");
         int vpListOrder = 0;
         try {

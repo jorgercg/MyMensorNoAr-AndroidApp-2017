@@ -101,6 +101,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        if (!getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+            Toast.makeText(getBaseContext(), getString(R.string.no_camera), Toast.LENGTH_LONG).show();
+        }
+
         permissionsRequest();
 
         mAccountManager = AccountManager.get(this);

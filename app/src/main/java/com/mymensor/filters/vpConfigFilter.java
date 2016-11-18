@@ -48,7 +48,7 @@ public final class VpConfigFilter implements ARFilter {
     }
 
     @Override
-    public void apply(final Mat src) {
+    public void apply(final Mat src, final int IsHudOn) {
         final Mat projection = mCameraCalibration;
         apply(mSelfAddr, src.getNativeObjAddr(), projection.getNativeObjAddr());
     }

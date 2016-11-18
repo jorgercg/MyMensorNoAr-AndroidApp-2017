@@ -19,11 +19,11 @@ class ImageDetectionFilter
 public:
     ImageDetectionFilter(std::vector<cv::Mat> &referenceImageBGR, int qtyVps, double realSize);
     float *getPose();
-    void apply(cv::Mat &src, cv::Mat &projection);
+    void apply(cv::Mat &src, int isHudOn, cv::Mat &projection);
 
 private:
     //void findPose(cv::Mat &projection);
-    void draw(cv::Mat src, cv::Mat dst);
+    void draw(cv::Mat sceneCorners , cv::Mat src, int isHudOn);
 
     // The reference image (this detector's target).
     cv::Mat mReferenceImage;
@@ -71,11 +71,15 @@ private:
     cv::Mat mTVec;
     // The rotation matrix of the detected target.
     cv::Mat mRotation;
-    // The OpenGL pose matrix of the detected target.
+    // The MyMensor Tracking vector of the detected marker.
     float mPose[7];
+    float mLastValidPose[7];
 
-    // Whether the target is currently detected.
-    bool mTargetFound;
+    // Whether a marker is currently being tracked.
+    bool mTracking;
+    int lostTrackingCounter;
+
+    CvRect rect;
 
     int qtVp;
 

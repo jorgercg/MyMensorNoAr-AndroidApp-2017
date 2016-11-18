@@ -64,14 +64,15 @@ Java_com_mymensor_filters_ImageDetectionFilter_getPose(
 }
 
 JNIEXPORT void JNICALL
-Java_com_mymensor_filters_ImageDetectionFilter_apply(JNIEnv *env, jclass clazz, jlong selfAddr, jlong srcAddr, jlong projectionAddr)
+Java_com_mymensor_filters_ImageDetectionFilter_apply(JNIEnv *env, jclass clazz, jlong selfAddr, jlong srcAddr, jint isHudOn, jlong projectionAddr)
 {
     if (selfAddr != 0)
     {
         ImageDetectionFilter *self = (ImageDetectionFilter *)selfAddr;
         cv::Mat &src = *(cv::Mat *)srcAddr;
+        //cv::Mat &dst = *(cv::Mat *)dstAddr;
         cv::Mat &projection = *(cv::Mat *)projectionAddr;
-        self->apply(src, projection);
+        self->apply(src, isHudOn, projection);
     }
 }
 

@@ -73,4 +73,5 @@
     <string name="vp_capture_failure">VP capture failed, please refer to configuration instructions, try again or change method.</string>
     <string name="vp_acquisition_failure">VP photo captured, but augmentation acquisiton failed, please refer to configuration instructions, try again or change method.</string>
     <string name="vp_capture_placeholder_description">Description of VP#</string>
+    <string name="no_camera">This device has no camera. Closing app!</string>
 </resources>

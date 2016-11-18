@@ -6,13 +6,13 @@ public class Constants {
 
     public static final short maxQtyVps = 30;
     public static final String frequencyUnit = "millis";
-    public static final int frequencyValue = 200;
+    public static final int frequencyValue = 20000;
     public static final float tolerancePosition = 50;
     public static final float toleranceRotation = 10;
     public static final String vpsConfigFileName = "vps.xml";
     public static final String vpsCheckedConfigFileName = "vpschecked.xml";
-    public static final short captureMarkerWidth = 240;
-    public static final short captureMarkerHeight = 240;
+    public static final short captureMarkerWidth = 400;
+    public static final short captureMarkerHeight = 400;
     public static final short standardMarkerlessMarkerWidth = 400;
     public static final short standardMarkerlessMarkerHeigth = 400;
     public static final short seaMensorMarkerWidthWhenIdIs20mm = 46;

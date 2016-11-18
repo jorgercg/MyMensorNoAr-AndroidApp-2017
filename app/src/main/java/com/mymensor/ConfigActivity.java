@@ -431,7 +431,7 @@ public class ConfigActivity extends Activity implements
         // Apply the active filters.
         //Log.d(TAG,"1 waitingForTrackingAcquisition="+waitingForTrackingAcquisition);
         if ((mVpConfigureFilters != null)&& waitingForTrackingAcquisition) {
-            mVpConfigureFilters[mVpConfigureFilterIndex].apply(rgba);
+            mVpConfigureFilters[mVpConfigureFilterIndex].apply(rgba, 1);
             trckValues = mVpConfigureFilters[mVpConfigureFilterIndex].getPose();
             Log.d(TAG,"(trckValues!=null)="+(trckValues!=null));
             if (trckValues!=null){
@@ -470,7 +470,7 @@ public class ConfigActivity extends Activity implements
                 waitingForTrackingAcquisition = false;
                 trackingConfigDone = false;
             } else {
-                if (vpDescAndMarkerImageOK && ((System.currentTimeMillis()-acquisitionStartTime)>2000)) {
+                if (vpDescAndMarkerImageOK && ((System.currentTimeMillis()-acquisitionStartTime)>3000)) {
                     Log.d(TAG, "(System.currentTimeMillis()-acquisitionStartTime)=" + (System.currentTimeMillis() - acquisitionStartTime));
                     runOnUiThread(new Runnable() {
                         @Override

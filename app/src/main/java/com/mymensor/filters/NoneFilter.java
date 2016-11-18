@@ -10,7 +10,7 @@ public class NoneFilter implements Filter {
     }
 
     @Override
-    public void apply(final Mat src) {
+    public void apply(final Mat src, final int IsHudOn) {
         // Do nothing.
     }
 }

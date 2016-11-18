@@ -33,7 +33,7 @@ public class ConfigFileCreator {
         int vpYCameraDistance[] = new int[qtyVps];
         vpYCameraDistance[0]=0;
         int vpZCameraDistance[] = new int[qtyVps];
-        vpZCameraDistance[0]=-1000;
+        vpZCameraDistance[0]=1000;
         int vpXCameraRotation[] = new int[qtyVps];
         vpXCameraRotation[0]=0;
         int vpYCameraRotation[] = new int[qtyVps];

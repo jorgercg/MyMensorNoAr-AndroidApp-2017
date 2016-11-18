@@ -70,4 +70,5 @@
     <string name="action_settings">Configurações</string>
     <string name="vp_capture_placeholder_description">Descrição do VP#</string>
     <string name="vp_acquisition_failure">A foto do VP capturada, mas ocorreu falha na captura da realidade aumentada, verifique instruções de configuração, tente novamente ou mude o método.</string>
+    <string name="no_camera">Este aparelho não possui câmera. Fechando a app!</string>
 </resources>
