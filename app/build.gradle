@@ -35,6 +35,7 @@ model {
             cppFlags.add("-fexceptions")
             ldLibs.add("log")
             ldLibs.add("opencv_java3")
+            ldLibs.add("opencv_aruco")
             stl "gnustl_static"
         }
 

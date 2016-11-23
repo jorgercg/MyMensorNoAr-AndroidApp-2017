@@ -2,30 +2,33 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/aruco.hpp>
 
-#include "ImageDetectionFilter.hpp"
+#include "IdMarkerDetectionFilter.hpp"
 
 using namespace mymensor;
 
-ImageDetectionFilter::ImageDetectionFilter(std::vector<cv::Mat> &referenceImageGray, int qtyVps, double realSize)
+IdMarkerDetectionFilter::IdMarkerDetectionFilter(int qtyVps, float realSize)
 {
     qtVp = qtyVps;
 
+    dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::PREDEFINED_DICTIONARY_NAME(16));
+    /*
     // All reference images are with the same size
 
-    int cols = referenceImageGray[0].cols;
-    int rows = referenceImageGray[0].rows;
+    //int cols = referenceImageGray[0].cols;
+    //int rows = referenceImageGray[0].rows;
 
     // Store the reference image's corner coordinates, in pixels.
-    mReferenceCorners.create(4, 1, CV_32FC2);
-    mReferenceCorners.at<cv::Vec2f>(0, 0)[0] = 0.0f;
-    mReferenceCorners.at<cv::Vec2f>(0, 0)[1] = 0.0f;
-    mReferenceCorners.at<cv::Vec2f>(1, 0)[0] = cols;
-    mReferenceCorners.at<cv::Vec2f>(1, 0)[1] = 0.0f;
-    mReferenceCorners.at<cv::Vec2f>(2, 0)[0] = cols;
-    mReferenceCorners.at<cv::Vec2f>(2, 0)[1] = rows;
-    mReferenceCorners.at<cv::Vec2f>(3, 0)[0] = 0.0f;
-    mReferenceCorners.at<cv::Vec2f>(3, 0)[1] = rows;
+    //mReferenceCorners.create(4, 1, CV_32FC2);
+    //mReferenceCorners.at<cv::Vec2f>(0, 0)[0] = 0.0f;
+    //mReferenceCorners.at<cv::Vec2f>(0, 0)[1] = 0.0f;
+    //mReferenceCorners.at<cv::Vec2f>(1, 0)[0] = cols;
+    //mReferenceCorners.at<cv::Vec2f>(1, 0)[1] = 0.0f;
+    //mReferenceCorners.at<cv::Vec2f>(2, 0)[0] = cols;
+    //mReferenceCorners.at<cv::Vec2f>(2, 0)[1] = rows;
+    //mReferenceCorners.at<cv::Vec2f>(3, 0)[0] = 0.0f;
+    //mReferenceCorners.at<cv::Vec2f>(3, 0)[1] = rows;
 
     // Compute the image's width and height in real units, based
     // on the specified real size of the image's smaller dimension.
@@ -63,13 +66,15 @@ ImageDetectionFilter::ImageDetectionFilter(std::vector<cv::Mat> &referenceImageG
         mReferenceDescriptors.push_back(localReferenceDescriptors);
         mReferenceKeypoints.push_back(localReferenceKeypoints);
     }
+    */
+
     mCandidateSceneCorners.create(4, 1, CV_32FC2);
     // Assume no distortion.
     mDistCoeffs.zeros(4, 1, CV_64F);
     mTracking = false;
 }
 
-float *ImageDetectionFilter::getPose()
+float *IdMarkerDetectionFilter::getPose()
 {
     if (mTracking) {
         mLastValidPose[0]=mPose[0];
@@ -89,17 +94,30 @@ float *ImageDetectionFilter::getPose()
     }
 }
 
-void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatrix) {
-    cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
-    rect = CvRect(440, 160, 400, 400);
+void IdMarkerDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatrix) {
+
     // Convert the scene to grayscale.
     cv::cvtColor(src, mGraySrc, cv::COLOR_RGBA2GRAY);
-    // Get only the center of the image to be used for detection.
-    mGraySrc = mGraySrc(rect);
-    // Detect the scene features, compute their descriptors,
-    // and match the scene descriptors to reference descriptors.
-    mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
-    mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
+
+    std::vector<int> ids;
+
+    cv::aruco::detectMarkers(mGraySrc, dictionary, corners, ids);
+
+    float markerLength = 0.03f;
+
+    if (ids.size() > 0) {
+        mTracking = true;
+        cv::aruco::estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, mDistCoeffs, mRVec, mTVec);
+        for(unsigned int i = 0; i < ids.size(); i++) LOGD("Ids: %d",ids[i]);
+        //cv::aruco::drawDetectedMarkers(src, corners, ids);
+        //for(unsigned int i = 0; i < ids.size(); i++)
+        //    cv::aruco::drawAxis(src, cameraMatrix, mDistCoeffs, mRVec[i], mTVec[i], markerLength * 0.5f);
+    } else {
+        mTracking = false;
+    }
+
+
+    /*
     int k = 0;
     do {
         cv::Mat localReferenceDescriptors;
@@ -189,9 +207,14 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatri
         if (!mTracking) lostTrackingCounter++;
     } while ((k < qtVp) && (!mTracking));
 
+    */
+
+
 }
 
-void ImageDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
+/*
+
+void IdMarkerDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
 {
     if (((mTracking) || ((!mTracking)&&(lostTrackingCounter<12)))&&(isHudOn==1)) {
         // The target has been found.
@@ -217,3 +240,5 @@ void ImageDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
         cv::line(src, cv::Point2d(640.0,120.0), cv::Point2d(660.0,140.0), cv::Scalar(168.0,207.0,69.0), 8);
     }
 }
+
+ */

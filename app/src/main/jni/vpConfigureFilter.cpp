@@ -54,7 +54,7 @@ VpConfigureFilter::VpConfigureFilter(cv::Mat &referenceImageGray, double realSiz
 
     // Create the feature detector, descriptor extractor, and
     // descriptor matcher.
-    mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(400,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
+    mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(1000,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
     mDescriptorMatcher = cv::DescriptorMatcher::create("BruteForce-HammingLUT");
 
     // Detect the reference features and compute their descriptors.

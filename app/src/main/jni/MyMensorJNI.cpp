@@ -2,6 +2,7 @@
 
 #include "ImageDetectionFilter.hpp"
 #include "VpConfigureFilter.hpp"
+#include "IdMarkerDetectionFilter.hpp"
 
 using namespace mymensor;
 
@@ -126,6 +127,66 @@ Java_com_mymensor_filters_VpConfigFilter_apply__JJJ(JNIEnv *env, jclass type, jl
     }
 }
 
+JNIEXPORT jlong JNICALL
+Java_com_mymensor_filters_IdMarkerDetectionFilter_newSelf(JNIEnv *env, jint qtyVps, jfloat realSize) {
+
+    IdMarkerDetectionFilter *self = new IdMarkerDetectionFilter(qtyVps, realSize);
+    return (jlong)self;
+
+}
+
+JNIEXPORT void JNICALL
+Java_com_mymensor_filters_IdMarkerDetectionFilter_deleteSelf(JNIEnv *env, jclass type,
+                                                             jlong selfAddr) {
+
+    if (selfAddr != 0)
+    {
+        IdMarkerDetectionFilter *self = (IdMarkerDetectionFilter *)selfAddr;
+        delete self;
+    }
+
+}
+
+JNIEXPORT jfloatArray JNICALL
+Java_com_mymensor_filters_IdMarkerDetectionFilter_getPose__J(JNIEnv *env, jclass type,
+                                                             jlong selfAddr) {
+
+    if (selfAddr == 0)
+    {
+        return NULL;
+    }
+
+    IdMarkerDetectionFilter *self = (IdMarkerDetectionFilter *)selfAddr;
+    float *poseNative = self->getPose();
+    if (poseNative == NULL)
+    {
+        return NULL;
+    }
+
+    jfloatArray poseJava = env->NewFloatArray(7);
+    if (poseJava != NULL)
+    {
+        env->SetFloatArrayRegion(poseJava, 0, 7, poseNative);
+    }
+    return poseJava;
+
+}
+
+JNIEXPORT void JNICALL
+Java_com_mymensor_filters_IdMarkerDetectionFilter_apply__JJIJ(JNIEnv *env, jclass type,
+                                                              jlong selfAddr, jlong srcAddr,
+                                                              jint isHudOn, jlong projectionAddr) {
+
+    if (selfAddr != 0)
+    {
+        IdMarkerDetectionFilter *self = (IdMarkerDetectionFilter *)selfAddr;
+        cv::Mat &src = *(cv::Mat *)srcAddr;
+        //cv::Mat &dst = *(cv::Mat *)dstAddr;
+        cv::Mat &projection = *(cv::Mat *)projectionAddr;
+        self->apply(src, isHudOn, projection);
+    }
+
+}
 
 
 } // extern "C"

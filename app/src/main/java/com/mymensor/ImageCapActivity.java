@@ -11,6 +11,7 @@ import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -37,6 +38,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensor.filters.ARFilter;
 import com.mymensor.filters.Filter;
+import com.mymensor.filters.IdMarkerDetectionFilter;
 import com.mymensor.filters.ImageDetectionFilter;
 import com.mymensor.filters.NoneARFilter;
 
@@ -271,6 +273,7 @@ public class ImageCapActivity extends Activity implements
         vpsListView.setOnItemClickListener(this);
         vpsListView.setVisibility(View.VISIBLE);
 
+
         vpLocationDesTextView = (TextView) this.findViewById(R.id.textView1);
         vpIdNumber = (TextView) this.findViewById(R.id.textView2);
 
@@ -444,7 +447,7 @@ public class ImageCapActivity extends Activity implements
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
 
-                    configureTracking();
+                    configureIdTracking();
 
                     break;
                 default:
@@ -485,11 +488,6 @@ public class ImageCapActivity extends Activity implements
             };
         }
         return true;
-    }
-
-    private void configureIdTracking(){
-
-        //TODO
     }
 
 
@@ -579,6 +577,35 @@ public class ImageCapActivity extends Activity implements
     }
 
 
+    private void configureIdTracking(){
+
+
+                ARFilter trackFilter = null;
+                try {
+                    trackFilter = new IdMarkerDetectionFilter(
+                            ImageCapActivity.this,
+                            qtyVps,
+                            mCameraMatrix,
+                            Constants.standardMarkerlessMarkerWidth);
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to load marker: "+e.toString());
+                }
+                if (trackFilter!=null){
+                    mImageDetectionFilters = new ARFilter[] {
+                            new NoneARFilter(),
+                            trackFilter
+                    };
+                }
+
+
+
+
+
+            }
+
+
+
+
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
@@ -627,18 +654,24 @@ public class ImageCapActivity extends Activity implements
                         // TURNING OFF RADAR SCAN
                         radarScanImageView.clearAnimation();
                         radarScanImageView.setVisibility(View.GONE);
-                        for (int i=0; i<(qtyVps); i++)
-                        {
-                            if (vpsListView.getChildAt(i)!=null)
-                            {
-                                if (i==tmpvp){
-                                    vpsListView.smoothScrollToPosition(i);
-                                    vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
-                                } else {
-                                    vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
-                                }
-                            }
+                        int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                        int lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                        if (tmpvp<firstVisiblePosition || tmpvp>lastVisiblePosition){
+                            vpsListView.smoothScrollToPosition(tmpvp);
+                            firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                            lastVisiblePosition = vpsListView.getLastVisiblePosition();
                         }
+                        int k = firstVisiblePosition - 1;
+                        int i = -1;
+                        do {
+                            k++;
+                            i++;
+                            if (k==tmpvp){
+                                vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
+                            } else {
+                                vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                            }
+                        } while (k<lastVisiblePosition);
                     }
                 });
                 if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
@@ -693,7 +726,7 @@ public class ImageCapActivity extends Activity implements
 
     private void checkPositionToTarget(TrackingValues trackingValues, final Mat rgba) {
 
-        /*
+
         if (!vpIsSuperSingle[vpTrackedInPose - 1]) {
             inPosition = ((Math.abs(trackingValues.getX() - 0) <= tolerancePosition) &&
                     (Math.abs(trackingValues.getY() - 0) <= tolerancePosition) &&
@@ -702,16 +735,15 @@ public class ImageCapActivity extends Activity implements
                     (Math.abs(trackingValues.getEAY() - 0) <= toleranceRotation) &&
                     (Math.abs(trackingValues.getEAZ() - 0) <= toleranceRotation));
         } else {
-        */
+
             inPosition = ((Math.abs(trackingValues.getX() - vpXCameraDistance[vpTrackedInPose-1]) <= (tolerancePosition)) &&
                     (Math.abs(trackingValues.getY() - vpYCameraDistance[vpTrackedInPose-1]) <= (tolerancePosition)) &&
                     (Math.abs(trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose - 1]) <= (tolerancePosition)));
             inRotation = ((Math.abs(trackingValues.getEAX() - vpXCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)) &&
                     (Math.abs(trackingValues.getEAY() - vpYCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)) &&
                     (Math.abs(trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)));
-        /*
         }
-        */
+
         Log.d(TAG,"native inPosition="+inPosition+" inRotation="+inRotation+" waitingForMark...="+waitingForMarkerlessTrackingConfigurationToLoad+" vpPhReqInPress="+vpPhotoRequestInProgress);
         if ((inPosition) && (inRotation) && (!waitingForMarkerlessTrackingConfigurationToLoad) && (!vpPhotoRequestInProgress)) {
             if ((vpIsAmbiguous[vpTrackedInPose-1])&&(!doubleCheckingProcedureFinalized)) {
