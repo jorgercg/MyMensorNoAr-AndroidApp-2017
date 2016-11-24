@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
         android:background="@android:color/transparent"
-        android:layout_width="110dp" />
+        android:layout_width="120dp" />
 
     <ImageView
         android:id="@+id/waitingTrkLoading"

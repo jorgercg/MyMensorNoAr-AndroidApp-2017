@@ -11,7 +11,6 @@ import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -137,10 +136,15 @@ public class ImageCapActivity extends Activity implements
     private static float tolerancePosition;
     private static float toleranceRotation;
 
-    private boolean waitingForMarkerlessTrackingConfigurationToLoad = false;
     private boolean waitingToCaptureVpAfterDisambiguationProcedureSuccessful = true; //TODO
     private boolean doubleCheckingProcedureStarted = false; //TODO
     private boolean resultSpecialTrk = false; //TODO
+    private boolean singleImageTrackingIsSet = false;
+    private boolean waitingUntilSingleImageTrackingIsSet  = false;
+    private boolean multipleImageTrackingIsSet = false;
+    private boolean waitingUntilMultipleImageTrackingIsSet = false;
+    private boolean idTrackingIsSet = false;
+    private boolean waitingUntilIdTrackingIsSet = false;
 
     private short shipId;
     private String frequencyUnit;
@@ -447,7 +451,9 @@ public class ImageCapActivity extends Activity implements
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
 
-                    configureIdTracking();
+                    if (!waitingUntilMultipleImageTrackingIsSet) {
+                        setMultipleImageTrackingConfiguration();
+                    }
 
                     break;
                 default:
@@ -457,25 +463,26 @@ public class ImageCapActivity extends Activity implements
         }
     };
 
-    private boolean setSpecialDisambiguationTrackingConfiguration(int vpIndex)
+    private void setSingleImageTrackingConfiguration(int vpIndex)
     {
-        markerBuffer.clear();
+        waitingUntilSingleImageTrackingIsSet = true;
+        markerBuffer = new ArrayList<Mat>();
         try
         {
-            File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (vpIndex + 1) + ".png");
+            File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (vpIndex) + ".png");
             Mat tmpMarker = Imgcodecs.imread(markervpFile.getAbsolutePath(), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
             markerBuffer.add(tmpMarker);
         }
         catch (Exception e)
         {
-            Log.e(TAG, "configureTracking(): markerImageFileContents failed:"+e.toString());
+            Log.e(TAG, "setSingleImageTrackingConfiguration(int vpIndex): markerImageFileContents failed:"+e.toString());
         }
         ARFilter trackFilter = null;
         try {
             trackFilter = new ImageDetectionFilter(
                 ImageCapActivity.this,
                 markerBuffer.toArray(),
-                qtyVps,
+                1,
                 mCameraMatrix,
                 Constants.standardMarkerlessMarkerWidth);
         } catch (IOException e) {
@@ -486,12 +493,14 @@ public class ImageCapActivity extends Activity implements
                     new NoneARFilter(),
                     trackFilter
             };
+            singleImageTrackingIsSet = true;
+            waitingUntilSingleImageTrackingIsSet = false;
+            multipleImageTrackingIsSet = false;
         }
-        return true;
     }
 
 
-    private void configureTracking(){
+    private void setMultipleImageTrackingConfiguration(){
 
         new AsyncTask<Void, Void, Void>()
         {
@@ -500,18 +509,25 @@ public class ImageCapActivity extends Activity implements
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        waitingForMarkerlessTrackingConfigurationToLoad = true;
-                        Log.d(TAG, "BEFORE STARTING configureTracking IN BACKGROUND - Lighting Waiting Circle");
+                        waitingUntilMultipleImageTrackingIsSet = true;
+                        Log.d(TAG, "BEFORE STARTING setMultipleImageTrackingConfiguration IN BACKGROUND - Lighting Waiting Circle");
+                        Log.d(TAG,"waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
+                        Log.d(TAG,"multipleImageTrackingIsSet="+multipleImageTrackingIsSet);
+                        Log.d(TAG,"waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet);
+                        Log.d(TAG,"singleImageTrackingIsSet="+singleImageTrackingIsSet);
+                        Log.d(TAG,"isTracking="+isTracking);
+                        Log.d(TAG,"isHudOn="+isHudOn);
                         mProgress.setVisibility(View.VISIBLE);
                         mProgress.startAnimation(rotationMProgress);
                     }
                 });
+                isTracking = false;
+                isHudOn = 1;
             }
 
             @Override
             protected Void doInBackground(Void... params){
                 //mBgr = new Mat();
-
                 markerBuffer = new ArrayList<Mat>();
                 for (int i=0; i<qtyVps; i++ ){
                     try
@@ -522,7 +538,7 @@ public class ImageCapActivity extends Activity implements
                     }
                     catch (Exception e)
                     {
-                        Log.e(TAG, "configureTracking(): markerImageFileContents failed:"+e.toString());
+                        Log.e(TAG, "setMultipleImageTrackingConfiguration(): markerImageFileContents failed:"+e.toString());
                     }
                 }
                 ARFilter trackFilter = null;
@@ -542,24 +558,20 @@ public class ImageCapActivity extends Activity implements
                             trackFilter
                     };
                 }
-
-
-
-
                 return null;
             }
 
             @Override
             protected void onPostExecute(Void result)
             {
-                Log.d(TAG, "FINISHING configureTracking IN BACKGROUND");
+                Log.d(TAG, "FINISHING setMultipleImageTrackingConfiguration IN BACKGROUND");
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - Turning off Waiting Circle");
+                        Log.d(TAG, "FINISHING setMultipleImageTrackingConfiguration IN BACKGROUND - Turning off Waiting Circle");
                         mProgress.clearAnimation();
                         mProgress.setVisibility(View.GONE);
-                        Log.d(TAG, "FINISHING configureTracking IN BACKGROUND - mProgress.isShown():" + mProgress.isShown());
+                        Log.d(TAG, "FINISHING setMultipleImageTrackingConfiguration IN BACKGROUND - mProgress.isShown():" + mProgress.isShown());
                         // TURNING OFF TARGET
                         //targetImageView.setImageDrawable(drawableTargetWhite);
                         //targetImageView.setVisibility(View.GONE);
@@ -569,39 +581,44 @@ public class ImageCapActivity extends Activity implements
                             radarScanImageView.startAnimation(rotationRadarScan);
                         }
                         mImageDetectionFilterIndex = 1;
-                        waitingForMarkerlessTrackingConfigurationToLoad = false;
+                        waitingUntilMultipleImageTrackingIsSet = false;
+                        singleImageTrackingIsSet = false;
+                        multipleImageTrackingIsSet = true;
+
                     }
                 });
+                Log.d(TAG,"waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
+                Log.d(TAG,"multipleImageTrackingIsSet="+multipleImageTrackingIsSet);
+                Log.d(TAG,"waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet);
+                Log.d(TAG,"singleImageTrackingIsSet="+singleImageTrackingIsSet);
+                Log.d(TAG,"isTracking="+isTracking);
+                Log.d(TAG,"isHudOn="+isHudOn);
             }
         }.execute();
     }
 
 
-    private void configureIdTracking(){
-
-
-                ARFilter trackFilter = null;
-                try {
-                    trackFilter = new IdMarkerDetectionFilter(
-                            ImageCapActivity.this,
-                            qtyVps,
-                            mCameraMatrix,
-                            Constants.standardMarkerlessMarkerWidth);
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to load marker: "+e.toString());
-                }
-                if (trackFilter!=null){
-                    mImageDetectionFilters = new ARFilter[] {
-                            new NoneARFilter(),
-                            trackFilter
-                    };
-                }
-
-
-
-
-
-            }
+    private void setIdTrackingConfiguration(){
+        waitingUntilIdTrackingIsSet = true;
+        ARFilter trackFilter = null;
+        try {
+            trackFilter = new IdMarkerDetectionFilter(
+                    ImageCapActivity.this,
+                    qtyVps,
+                    mCameraMatrix,
+                    Constants.idMarkerStdSize);
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to load marker: "+e.toString());
+        }
+        if (trackFilter!=null){
+            mImageDetectionFilters = new ARFilter[] {
+                    new NoneARFilter(),
+                    trackFilter
+            };
+            idTrackingIsSet = true;
+            waitingUntilIdTrackingIsSet = false;
+        }
+    }
 
 
 
@@ -626,100 +643,220 @@ public class ImageCapActivity extends Activity implements
 
         // Apply the active filters.
         if (mImageDetectionFilters != null) {
-
+            Log.d(TAG,"isTracking="+isTracking);
             //TODO Introduce measures to avoid an endless tracking with no detection in special cases.
-
-            mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn);
-            if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose()!=null){
-                trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
-                vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
-                if ((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1))) {
-                    isTracking = true;
-                } else {
-                    isTracking = false;
-                }
-            } else {
-                isTracking = false;
-            }
-            if (isTracking){
-                Log.d(TAG,"trckValues: VP=" + vpTrackedInPose+" | "
-                        + "Translations = " +trackingValues.getX()+" | "+trackingValues.getY()+" | "+trackingValues.getZ()+" | "
-                        + "Rotations = "    +trackingValues.getEAX()+" | "+trackingValues.getEAX()+" | "+trackingValues.getEAX());
-                final int tmpvp = vpTrackedInPose-1;
-                runOnUiThread(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        // TURNING OFF RADAR SCAN
-                        radarScanImageView.clearAnimation();
-                        radarScanImageView.setVisibility(View.GONE);
-                        int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
-                        int lastVisiblePosition = vpsListView.getLastVisiblePosition();
-                        if (tmpvp<firstVisiblePosition || tmpvp>lastVisiblePosition){
-                            vpsListView.smoothScrollToPosition(tmpvp);
-                            firstVisiblePosition = vpsListView.getFirstVisiblePosition();
-                            lastVisiblePosition = vpsListView.getLastVisiblePosition();
+            if (!isTracking){
+                if (!singleImageTrackingIsSet){
+                    mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn, 0);
+                    if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose()!=null){
+                        trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
+                        vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
+                        if ((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1))) {
+                            isTracking = true;
+                        } else {
+                            isTracking = false;
                         }
-                        int k = firstVisiblePosition - 1;
-                        int i = -1;
-                        do {
-                            k++;
-                            i++;
-                            if (k==tmpvp){
-                                vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
-                            } else {
-                                vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
-                            }
-                        } while (k<lastVisiblePosition);
-                    }
-                });
-                if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
-                    if (!vpChecked[vpTrackedInPose - 1]){
-                        runOnUiThread(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
-                            }
-                        });
-                        if (!waitingForMarkerlessTrackingConfigurationToLoad) checkPositionToTarget(trackingValues, rgba);
                     } else {
+                        isTracking = false;
+                    }
+                    if (isTracking){
+                        Log.d(TAG,"trckValues: VP=" + vpTrackedInPose+" | "
+                                + "Translations = " +trackingValues.getX()+" | "+trackingValues.getY()+" | "+trackingValues.getZ()+" | "
+                                + "Rotations = "    +trackingValues.getEAX()+" | "+trackingValues.getEAX()+" | "+trackingValues.getEAX());
+                        final int tmpvp = vpTrackedInPose-1;
                         runOnUiThread(new Runnable()
                         {
                             @Override
                             public void run()
                             {
-                                vpCheckedView.setVisibility(View.VISIBLE);
+                                // TURNING OFF RADAR SCAN
+                                radarScanImageView.clearAnimation();
+                                radarScanImageView.setVisibility(View.GONE);
+                                int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                                int lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                                if (tmpvp<firstVisiblePosition || tmpvp>lastVisiblePosition){
+                                    vpsListView.smoothScrollToPosition(tmpvp);
+                                    firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                                    lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                                }
+                                int k = firstVisiblePosition - 1;
+                                int i = -1;
+                                do {
+                                    k++;
+                                    i++;
+                                    if (k==tmpvp){
+                                        vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
+                                    } else {
+                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                    }
+                                } while (k<lastVisiblePosition);
+                            }
+                        });
+                        if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
+                            if (!vpChecked[vpTrackedInPose - 1]){
+                                runOnUiThread(new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                                    }
+                                });
+                                if (!singleImageTrackingIsSet) {
+                                    if (!waitingUntilSingleImageTrackingIsSet){
+                                        setSingleImageTrackingConfiguration(vpTrackedInPose);
+                                    }
+
+                                }
+
+                            } else {
+                                runOnUiThread(new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        vpCheckedView.setVisibility(View.VISIBLE);
+                                    }
+                                });
+                                isTracking = false;
+                            }
+                        }
+                    } else {
+                        //Log.d(TAG,"TRKSRVEY: NOT Tracking from the !isTracking Part");
+                        runOnUiThread(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                if ((!radarScanImageView.isShown())&&(!isShowingVpPhoto)){
+                                    // TURNING ON RADAR SCAN
+                                    radarScanImageView.setVisibility(View.VISIBLE);
+                                    radarScanImageView.startAnimation(rotationRadarScan);
+                                }
+                                if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                                for (int i=0; i<(qtyVps); i++)
+                                {
+                                    if (vpsListView.getChildAt(i)!=null)
+                                    {
+                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                    }
+
+                                }
                             }
                         });
                     }
                 }
             } else {
-                Log.d(TAG,"TRKSRVEY: NOT Tracking");
-                runOnUiThread(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        if ((!radarScanImageView.isShown())&&(!isShowingVpPhoto)){
-                            // TURNING ON RADAR SCAN
-                            radarScanImageView.setVisibility(View.VISIBLE);
-                            radarScanImageView.startAnimation(rotationRadarScan);
+                if ((singleImageTrackingIsSet)&&((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1)))) {
+                    mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn, vpTrackedInPose);
+                    if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose()!=null){
+                        trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
+                        vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
+                        if ((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1))) {
+                            isTracking = true;
+                        } else {
+                            isTracking = false;
                         }
-                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
-                        for (int i=0; i<(qtyVps); i++)
+                    } else {
+                        isTracking = false;
+                    }
+                    if (isTracking){
+                        Log.d(TAG,"trckValues: VP=" + vpTrackedInPose+" | "
+                                + "Translations = " +trackingValues.getX()+" | "+trackingValues.getY()+" | "+trackingValues.getZ()+" | "
+                                + "Rotations = "    +trackingValues.getEAX()+" | "+trackingValues.getEAX()+" | "+trackingValues.getEAX());
+                        final int tmpvp = vpTrackedInPose-1;
+                        runOnUiThread(new Runnable()
                         {
-                            if (vpsListView.getChildAt(i)!=null)
+                            @Override
+                            public void run()
                             {
-                                vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                // TURNING OFF RADAR SCAN
+                                radarScanImageView.clearAnimation();
+                                radarScanImageView.setVisibility(View.GONE);
+                                int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                                int lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                                if (tmpvp<firstVisiblePosition || tmpvp>lastVisiblePosition){
+                                    vpsListView.smoothScrollToPosition(tmpvp);
+                                    firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                                    lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                                }
+                                int k = firstVisiblePosition - 1;
+                                int i = -1;
+                                do {
+                                    k++;
+                                    i++;
+                                    if (k==tmpvp){
+                                        vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
+                                    } else {
+                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                    }
+                                } while (k<lastVisiblePosition);
                             }
+                        });
+                        if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
+                            if (!vpChecked[vpTrackedInPose - 1]){
+                                runOnUiThread(new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                                    }
+                                });
+                                if (!waitingUntilMultipleImageTrackingIsSet) checkPositionToTarget(trackingValues, rgba);
 
+                            } else {
+                                runOnUiThread(new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        vpCheckedView.setVisibility(View.VISIBLE);
+                                    }
+                                });
+                                isTracking = false;
+                            }
+                        }
+                    } else {
+                        Log.d(TAG,"TRKSRVEY: NOT Tracking from the singleImageTrackingIsSet: waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet+"singleImageTrackingIsSet="+singleImageTrackingIsSet);
+                        runOnUiThread(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                if ((!radarScanImageView.isShown())&&(!isShowingVpPhoto)){
+                                    // TURNING ON RADAR SCAN
+                                    radarScanImageView.setVisibility(View.VISIBLE);
+                                    radarScanImageView.startAnimation(rotationRadarScan);
+                                }
+                                if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                                for (int i=0; i<(qtyVps); i++)
+                                {
+                                    if (vpsListView.getChildAt(i)!=null)
+                                    {
+                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                    }
+
+                                }
+                            }
+                        });
+                        if ((!waitingUntilMultipleImageTrackingIsSet)&&(!waitingUntilSingleImageTrackingIsSet)) {
+                            setMultipleImageTrackingConfiguration();
                         }
                     }
-                });
+                } else {
+                    Log.d(TAG,"We fell into a hole.... ");
+                    Log.d(TAG,"waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
+                    Log.d(TAG,"waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet);
+                    Log.d(TAG,"singleImageTrackingIsSet="+singleImageTrackingIsSet);
+                    Log.d(TAG,"isTracking="+isTracking);
+                    Log.d(TAG,"isHudOn="+isHudOn);
+
+                }
+
             }
+
+
         }
         return rgba;
     }
@@ -744,15 +881,15 @@ public class ImageCapActivity extends Activity implements
                     (Math.abs(trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose - 1]) <= (toleranceRotation)));
         }
 
-        Log.d(TAG,"native inPosition="+inPosition+" inRotation="+inRotation+" waitingForMark...="+waitingForMarkerlessTrackingConfigurationToLoad+" vpPhReqInPress="+vpPhotoRequestInProgress);
-        if ((inPosition) && (inRotation) && (!waitingForMarkerlessTrackingConfigurationToLoad) && (!vpPhotoRequestInProgress)) {
+        Log.d(TAG,"native inPosition="+inPosition+" inRotation="+inRotation+" waitingForMark...="+ waitingUntilMultipleImageTrackingIsSet +" vpPhReqInPress="+vpPhotoRequestInProgress);
+        if ((inPosition) && (inRotation) && (!waitingUntilMultipleImageTrackingIsSet) && (!vpPhotoRequestInProgress)) {
             if ((vpIsAmbiguous[vpTrackedInPose-1])&&(!doubleCheckingProcedureFinalized)) {
                 //TODO
-                configureIdTracking();
+                setIdTrackingConfiguration();
                 doubleCheckingProcedureStarted = true;
             }
             if ((!vpIsAmbiguous[vpTrackedInPose-1]) || ((vpIsAmbiguous[vpTrackedInPose-1])&&(vpIsDisambiguated)&&(doubleCheckingProcedureFinalized))) {
-                    if (!waitingForMarkerlessTrackingConfigurationToLoad) {
+                    if (!waitingUntilMultipleImageTrackingIsSet) {
                         if (isHudOn==1) {
                             isHudOn = 0;
                         } else {
@@ -871,12 +1008,13 @@ public class ImageCapActivity extends Activity implements
                     Log.d(TAG, "AWS s3 Observer: "+observer.getBucket());
                     Log.d(TAG, "AWS s3 Observer: "+observer.getKey());
 
-                    if (resultSpecialTrk)
+                    if (singleImageTrackingIsSet)
                     {
-                        waitingForMarkerlessTrackingConfigurationToLoad = true;
                         Log.d(TAG, "onNewCameraFrame: vpPhotoAccepted >>>>> calling setMarkerlessTrackingConfiguration");
-                        configureTracking();
-                        resultSpecialTrk = false;
+                        if (!waitingUntilMultipleImageTrackingIsSet) {
+                            setMultipleImageTrackingConfiguration();
+                        }
+                        singleImageTrackingIsSet = false;
                         vpIsDisambiguated = false;
                     }
                 }
@@ -892,9 +1030,10 @@ public class ImageCapActivity extends Activity implements
                 vpPhotoAccepted = false;
                 vpPhotoRequestInProgress = false;
                 Log.d(TAG, "onNewCameraFrame: vpPhotoAccepted: vpPhotoRequestInProgress = "+vpPhotoRequestInProgress);
-                waitingForMarkerlessTrackingConfigurationToLoad = true;
                 isHudOn = 1;
-                configureTracking();
+                if (!waitingUntilMultipleImageTrackingIsSet) {
+                    setMultipleImageTrackingConfiguration();
+                }
             }
 
             if (vpPhotoRejected) {
@@ -926,9 +1065,10 @@ public class ImageCapActivity extends Activity implements
                 vpPhotoRequestInProgress = false;
                 Log.d(TAG, "onNewCameraFrame: vpPhotoRejected >>>>> calling setMarkerlessTrackingConfiguration");
                 Log.d(TAG, "onNewCameraFrame: vpPhotoRejected: vpPhotoRequestInProgress = "+vpPhotoRequestInProgress);
-                waitingForMarkerlessTrackingConfigurationToLoad = true;
                 isHudOn = 1;
-                configureTracking();
+                if (!waitingUntilMultipleImageTrackingIsSet) {
+                    setMultipleImageTrackingConfiguration();
+                }
             }
         }
     }

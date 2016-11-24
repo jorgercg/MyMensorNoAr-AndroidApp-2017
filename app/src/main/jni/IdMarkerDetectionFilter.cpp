@@ -11,63 +11,8 @@ using namespace mymensor;
 IdMarkerDetectionFilter::IdMarkerDetectionFilter(int qtyVps, float realSize)
 {
     qtVp = qtyVps;
-
-    dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::PREDEFINED_DICTIONARY_NAME(16));
-    /*
-    // All reference images are with the same size
-
-    //int cols = referenceImageGray[0].cols;
-    //int rows = referenceImageGray[0].rows;
-
-    // Store the reference image's corner coordinates, in pixels.
-    //mReferenceCorners.create(4, 1, CV_32FC2);
-    //mReferenceCorners.at<cv::Vec2f>(0, 0)[0] = 0.0f;
-    //mReferenceCorners.at<cv::Vec2f>(0, 0)[1] = 0.0f;
-    //mReferenceCorners.at<cv::Vec2f>(1, 0)[0] = cols;
-    //mReferenceCorners.at<cv::Vec2f>(1, 0)[1] = 0.0f;
-    //mReferenceCorners.at<cv::Vec2f>(2, 0)[0] = cols;
-    //mReferenceCorners.at<cv::Vec2f>(2, 0)[1] = rows;
-    //mReferenceCorners.at<cv::Vec2f>(3, 0)[0] = 0.0f;
-    //mReferenceCorners.at<cv::Vec2f>(3, 0)[1] = rows;
-
-    // Compute the image's width and height in real units, based
-    // on the specified real size of the image's smaller dimension.
-    float aspectRatio = (float)cols /(float)rows;
-    float halfRealWidth;
-    float halfRealHeight;
-    if (cols > rows) {
-        halfRealHeight = 0.5f * realSize;
-        halfRealWidth = halfRealHeight * aspectRatio;
-    } else {
-        halfRealWidth = 0.5f * realSize;
-        halfRealHeight = halfRealWidth / aspectRatio;
-    }
-
-    // Define the real corner coordinates of the printed image
-    // so that it normally lies in the xy plane (like a painting
-    // or poster on a wall).
-    // That is, +z normally points out of the page toward the
-    // viewer.
-    mReferenceCorners3D.push_back(cv::Point3f(-halfRealWidth, -halfRealHeight, 0.0f));
-    mReferenceCorners3D.push_back(cv::Point3f( halfRealWidth, -halfRealHeight, 0.0f));
-    mReferenceCorners3D.push_back(cv::Point3f( halfRealWidth,  halfRealHeight, 0.0f));
-    mReferenceCorners3D.push_back(cv::Point3f(-halfRealWidth,  halfRealHeight, 0.0f));
-
-    // Create the feature detector, descriptor extractor, and
-    // descriptor matcher.
-    mFeatureDetectorAndDescriptorExtractor = cv::ORB::create(800,1.2f,8,31,0,2,cv::ORB::FAST_SCORE,31,20);
-    //mDescriptorMatcher = cv::DescriptorMatcher::create("BruteForce-HammingLUT");
-
-    for (int i=0; i<qtVp; i++){
-        // Detect the reference features and compute their descriptors.
-        mReferenceImage = referenceImageGray[i];
-        mFeatureDetectorAndDescriptorExtractor->detect(mReferenceImage, localReferenceKeypoints);
-        mFeatureDetectorAndDescriptorExtractor->compute(mReferenceImage, localReferenceKeypoints, localReferenceDescriptors);
-        mReferenceDescriptors.push_back(localReferenceDescriptors);
-        mReferenceKeypoints.push_back(localReferenceKeypoints);
-    }
-    */
-
+    markerLength = realSize;
+    dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::PREDEFINED_DICTIONARY_NAME(cv::aruco::DICT_ARUCO_ORIGINAL));
     mCandidateSceneCorners.create(4, 1, CV_32FC2);
     // Assume no distortion.
     mDistCoeffs.zeros(4, 1, CV_64F);
@@ -96,22 +41,32 @@ float *IdMarkerDetectionFilter::getPose()
 
 void IdMarkerDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatrix) {
 
-    // Convert the scene to grayscale.
-    cv::cvtColor(src, mGraySrc, cv::COLOR_RGBA2GRAY);
+    // Convert the scene from RGBA to RGB (ArUco requirement).
+    cv::cvtColor(src, src, cv::COLOR_RGBA2RGB);
 
     std::vector<int> ids;
 
-    cv::aruco::detectMarkers(mGraySrc, dictionary, corners, ids);
-
-    float markerLength = 0.03f;
+    cv::aruco::detectMarkers(src, dictionary, corners, ids);
 
     if (ids.size() > 0) {
         mTracking = true;
-        cv::aruco::estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, mDistCoeffs, mRVec, mTVec);
-        for(unsigned int i = 0; i < ids.size(); i++) LOGD("Ids: %d",ids[i]);
-        //cv::aruco::drawDetectedMarkers(src, corners, ids);
-        //for(unsigned int i = 0; i < ids.size(); i++)
-        //    cv::aruco::drawAxis(src, cameraMatrix, mDistCoeffs, mRVec[i], mTVec[i], markerLength * 0.5f);
+        if (ids.size()==1){
+            cv::aruco::estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, mDistCoeffs, mRVec, mTVec);
+            mPose[0] = (float) mTVec[0](0);// X Translation
+            mPose[1] = (float) mTVec[0](1);// Y Translation
+            mPose[2] = (float) mTVec[0](2);// Z Translation
+            mPose[3] = (float) mRVec[0](0);// X Rotation
+            mPose[4] = (float) mRVec[0](1);// Y Rotation
+            mPose[5] = (float) mRVec[0](2);// Z Rotation
+            mPose[6] = (float) ids[0]; // marker currently being tracked
+            lostTrackingCounter = 0;
+            LOGD("POSE: Id#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0],mPose[1],mPose[2],mPose[3],mPose[4],mPose[5]);
+            if (isHudOn==1) {
+                cv::aruco::drawDetectedMarkers(src, corners, ids);
+                cv::aruco::drawAxis(src, cameraMatrix, mDistCoeffs, mRVec[0], mTVec[0], markerLength * 0.5f);
+                //draw(src,isHudOn);
+            }
+        }
     } else {
         mTracking = false;
     }
@@ -214,25 +169,11 @@ void IdMarkerDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMa
 
 /*
 
-void IdMarkerDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
+void IdMarkerDetectionFilter::draw(cv::Mat src, int isHudOn)
 {
     if (((mTracking) || ((!mTracking)&&(lostTrackingCounter<12)))&&(isHudOn==1)) {
         // The target has been found.
         LOGD("isHudOn= %d",isHudOn);
-        // Outline the found target in SeaMate blue.
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160),
-                      cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160-40),
-                      cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160-40),
-                 cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2-20,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160-20),
-                 cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160-40),
-                 cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2+20,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160-20),
-                 cv::Scalar(0.0,175.0,239.0), 8);
         // Draw the rectangle guide in SeaMate green.
         cv::rectangle(src, rect,cv::Scalar(168.0,207.0,69.0), 8);
         cv::line(src, cv::Point2d(640.0,160.0), cv::Point2d(640.0,120.0), cv::Scalar(168.0,207.0,69.0), 8);
@@ -241,4 +182,4 @@ void IdMarkerDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudO
     }
 }
 
- */
+*/

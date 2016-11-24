@@ -19,11 +19,11 @@ public class Constants {
     public static final short seaMensorMarkerHeigthWhenIdIs20mm = 46;
     public static final short seaMensorMarkerWidthWhenIdIs100mm = 134;
     public static final short seaMensorMarkerHeigthWhenIdIs100mm = 134;
-    public static final int idMarkerStdSize = 20;
+    public static final float idMarkerStdSize = 0.055f;
     public static final int cameraWidthInPixels = 1280;
     public static final int cameraHeigthInPixels = 720;
-    public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440
-    public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160
+    public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440 // (1280-700)/2=290
+    public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160 // (720-700)/2=10
 
     /**
      * OpenCV

@@ -24,7 +24,7 @@ public:
 
 private:
     //void findPose(cv::Mat &projection);
-    //void draw(cv::Mat sceneCorners , cv::Mat src, int isHudOn);
+    //void draw(cv::Mat src, int isHudOn);
 
     cv::Ptr<cv::aruco::Dictionary> dictionary;
 
@@ -87,6 +87,7 @@ private:
     CvRect rect;
 
     int qtVp;
+    float markerLength;
 
     std::vector<cv::Point2f> goodReferencePoints;
     std::vector<cv::Point2f> goodScenePoints;

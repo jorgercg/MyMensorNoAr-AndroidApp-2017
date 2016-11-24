@@ -431,7 +431,7 @@ public class ConfigActivity extends Activity implements
         // Apply the active filters.
         //Log.d(TAG,"1 waitingForTrackingAcquisition="+waitingForTrackingAcquisition);
         if ((mVpConfigureFilters != null)&& waitingForTrackingAcquisition) {
-            mVpConfigureFilters[mVpConfigureFilterIndex].apply(rgba, 1);
+            mVpConfigureFilters[mVpConfigureFilterIndex].apply(rgba, 1, 0);
             trckValues = mVpConfigureFilters[mVpConfigureFilterIndex].getPose();
             Log.d(TAG,"(trckValues!=null)="+(trckValues!=null));
             if (trckValues!=null){

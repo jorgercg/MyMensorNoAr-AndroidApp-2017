@@ -19,7 +19,7 @@ class ImageDetectionFilter
 public:
     ImageDetectionFilter(std::vector<cv::Mat> &referenceImageBGR, int qtyVps, double realSize);
     float *getPose();
-    void apply(cv::Mat &src, int isHudOn, cv::Mat &projection);
+    void apply(cv::Mat &src, int isHudOn, int isSingleimage, cv::Mat &projection);
 
 private:
     //void findPose(cv::Mat &projection);
@@ -83,9 +83,15 @@ private:
 
     int qtVp;
 
+    long int frame;
+
     std::vector<cv::Point2f> goodReferencePoints;
     std::vector<cv::Point2f> goodScenePoints;
 
+    const int xShift = 440; //440;
+    const int yShift = 160; //160;
+    const int rectWidth = 400; //400;
+    const int rectHeight = 400; //400;
 
 
 };

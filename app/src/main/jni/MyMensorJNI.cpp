@@ -65,7 +65,7 @@ Java_com_mymensor_filters_ImageDetectionFilter_getPose(
 }
 
 JNIEXPORT void JNICALL
-Java_com_mymensor_filters_ImageDetectionFilter_apply(JNIEnv *env, jclass clazz, jlong selfAddr, jlong srcAddr, jint isHudOn, jlong projectionAddr)
+Java_com_mymensor_filters_ImageDetectionFilter_apply(JNIEnv *env, jclass clazz, jlong selfAddr, jlong srcAddr, jint isHudOn, jint isSingleImage, jlong projectionAddr)
 {
     if (selfAddr != 0)
     {
@@ -73,7 +73,7 @@ Java_com_mymensor_filters_ImageDetectionFilter_apply(JNIEnv *env, jclass clazz, 
         cv::Mat &src = *(cv::Mat *)srcAddr;
         //cv::Mat &dst = *(cv::Mat *)dstAddr;
         cv::Mat &projection = *(cv::Mat *)projectionAddr;
-        self->apply(src, isHudOn, projection);
+        self->apply(src, isHudOn, isSingleImage, projection);
     }
 }
 
@@ -116,7 +116,7 @@ Java_com_mymensor_filters_VpConfigFilter_getPose__J(JNIEnv *env, jclass clazz, j
 }
 
 JNIEXPORT void JNICALL
-Java_com_mymensor_filters_VpConfigFilter_apply__JJJ(JNIEnv *env, jclass type, jlong selfAddr, jlong srcAddr, jlong projectionAddr)
+Java_com_mymensor_filters_VpConfigFilter_apply__JJJ(JNIEnv *env, jclass clazz, jlong selfAddr, jlong srcAddr, jlong projectionAddr)
 {
     if (selfAddr != 0)
     {
@@ -128,7 +128,7 @@ Java_com_mymensor_filters_VpConfigFilter_apply__JJJ(JNIEnv *env, jclass type, jl
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_mymensor_filters_IdMarkerDetectionFilter_newSelf(JNIEnv *env, jint qtyVps, jfloat realSize) {
+Java_com_mymensor_filters_IdMarkerDetectionFilter_newSelf(JNIEnv *env, jclass clazz, jint qtyVps, jfloat realSize) {
 
     IdMarkerDetectionFilter *self = new IdMarkerDetectionFilter(qtyVps, realSize);
     return (jlong)self;
@@ -136,7 +136,7 @@ Java_com_mymensor_filters_IdMarkerDetectionFilter_newSelf(JNIEnv *env, jint qtyV
 }
 
 JNIEXPORT void JNICALL
-Java_com_mymensor_filters_IdMarkerDetectionFilter_deleteSelf(JNIEnv *env, jclass type,
+Java_com_mymensor_filters_IdMarkerDetectionFilter_deleteSelf(JNIEnv *env, jclass clazz,
                                                              jlong selfAddr) {
 
     if (selfAddr != 0)
@@ -148,7 +148,7 @@ Java_com_mymensor_filters_IdMarkerDetectionFilter_deleteSelf(JNIEnv *env, jclass
 }
 
 JNIEXPORT jfloatArray JNICALL
-Java_com_mymensor_filters_IdMarkerDetectionFilter_getPose__J(JNIEnv *env, jclass type,
+Java_com_mymensor_filters_IdMarkerDetectionFilter_getPose__J(JNIEnv *env, jclass clazz,
                                                              jlong selfAddr) {
 
     if (selfAddr == 0)
@@ -173,7 +173,7 @@ Java_com_mymensor_filters_IdMarkerDetectionFilter_getPose__J(JNIEnv *env, jclass
 }
 
 JNIEXPORT void JNICALL
-Java_com_mymensor_filters_IdMarkerDetectionFilter_apply__JJIJ(JNIEnv *env, jclass type,
+Java_com_mymensor_filters_IdMarkerDetectionFilter_apply__JJIJ(JNIEnv *env, jclass clazz,
                                                               jlong selfAddr, jlong srcAddr,
                                                               jint isHudOn, jlong projectionAddr) {
 

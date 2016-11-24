@@ -67,6 +67,8 @@ ImageDetectionFilter::ImageDetectionFilter(std::vector<cv::Mat> &referenceImageG
     // Assume no distortion.
     mDistCoeffs.zeros(4, 1, CV_64F);
     mTracking = false;
+
+    frame=0;
 }
 
 float *ImageDetectionFilter::getPose()
@@ -89,19 +91,30 @@ float *ImageDetectionFilter::getPose()
     }
 }
 
-void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatrix) {
+void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, cv::Mat &cameraMatrix) {
+
+    LOGD("Frame=%d Remainder=%d",frame,frame%6);
+
     cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
-    rect = CvRect(440, 160, 400, 400);
     // Convert the scene to grayscale.
     cv::cvtColor(src, mGraySrc, cv::COLOR_RGBA2GRAY);
     // Get only the center of the image to be used for detection.
+    rect = CvRect(xShift, yShift, rectWidth, rectHeight);
     mGraySrc = mGraySrc(rect);
     // Detect the scene features, compute their descriptors,
     // and match the scene descriptors to reference descriptors.
     mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
     mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
-    int k = 0;
+    if (frame>9) frame=0;
+    int k = frame * 5;
+    int kmax = k + 4;
+    if (k>=qtVp) {
+        frame = 0;
+        k = frame * 5;
+        kmax = k + 4;
+    }
     do {
+        LOGD("k=%d kmax=%d",k,kmax);
         cv::Mat localReferenceDescriptors;
         mReferenceDescriptors[k].copyTo(localReferenceDescriptors);
         matcher.match(mSceneDescriptors, localReferenceDescriptors, mMatches);
@@ -167,10 +180,14 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatri
                             mPose[3] = (float) mRVec.at<double>(0);// X Rotation
                             mPose[4] = (float) mRVec.at<double>(1);// Y Rotation
                             mPose[5] = (float) mRVec.at<double>(2);// Z Rotation
-                            mPose[6] = (float) (k + 1); // VP currently being tracked
+                            if (isSingleImage == 0){
+                                mPose[6] = (float) (k + 1); // VP currently being tracked
+                            } else {
+                                mPose[6] = (float) (isSingleImage);
+                            }
                             mTracking = true;
                             lostTrackingCounter = 0;
-                            LOGD("POSE: VP#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0]+440,mPose[1]+160,mPose[2],mPose[3],mPose[4],mPose[5]);
+                            LOGD("POSE: VP#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0]+xShift,mPose[1]+yShift,mPose[2],mPose[3],mPose[4],mPose[5]);
                             draw(mCandidateSceneCorners, src, isHudOn);
                         } else {
                             mTracking = false;
@@ -187,8 +204,8 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMatri
         }
         k++;
         if (!mTracking) lostTrackingCounter++;
-    } while ((k < qtVp) && (!mTracking));
-
+    } while (( k < (kmax+1) ) && (k < qtVp) && (!mTracking));
+    frame++;
 }
 
 void ImageDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
@@ -197,18 +214,18 @@ void ImageDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
         // The target has been found.
         LOGD("isHudOn= %d",isHudOn);
         // Outline the found target in SeaMate blue.
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+160), cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160), cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160),
-                      cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160-40),
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+yShift), cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift), cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+yShift), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+yShift), cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+yShift), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(3, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(3, 0)[1])+yShift), cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+yShift), cv::Scalar(0.0,175.0,239.0), 8);
+        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+yShift),
+                      cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift))/2,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift-40),
                       cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160-40),
-                 cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2-20,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160-20),
+        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+yShift-40),
+                 cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift))/2-20,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift-20),
                  cv::Scalar(0.0,175.0,239.0), 8);
-        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+160-40),
-                 cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+440)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+440))/2+20,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+160-20),
+        cv::line(src, cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift))/2,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+yShift-40),
+                 cv::Point2d((((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift)+((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift))/2+20,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift-20),
                  cv::Scalar(0.0,175.0,239.0), 8);
         // Draw the rectangle guide in SeaMate green.
         cv::rectangle(src, rect,cv::Scalar(168.0,207.0,69.0), 8);
