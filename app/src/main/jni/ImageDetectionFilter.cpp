@@ -106,12 +106,12 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
     mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
     mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
     if (frame>9) frame=0;
-    int k = frame * 5;
-    int kmax = k + 4;
+    int k = frame * 3;
+    int kmax = k + 2;
     if (k>=qtVp) {
         frame = 0;
-        k = frame * 5;
-        kmax = k + 4;
+        k = frame * 3;
+        kmax = k + 2;
     }
     do {
         LOGD("k=%d kmax=%d",k,kmax);

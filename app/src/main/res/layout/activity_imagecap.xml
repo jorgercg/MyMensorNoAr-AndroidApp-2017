@@ -56,21 +56,6 @@
         android:padding="0dp"
         android:visibility="gone"        />
 
-    <ImageButton
-        android:id="@+id/button3"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:adjustViewBounds="true"
-        android:onClick="onButtonClick"
-        android:clickable="true"
-        android:padding="4dp"
-        android:scaleType="fitCenter"
-        android:background="@android:color/transparent"
-        android:src="@drawable/logoseamensor300dpi"
-        android:visibility="visible" />
-
     <Button
         android:id="@+id/button2"
         style="@style/Widget.AppCompat.Button.Borderless"
@@ -260,5 +245,98 @@
         android:padding="0dp"
         android:visibility="gone"
         android:layout_alignTop="@+id/imageViewTarget" />
+
+    <LinearLayout
+        android:id="@+id/arSwitchLinearLayout"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical|center"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:background="@drawable/border_ar_switch"
+        android:layout_margin="8dp">
+
+        <Switch
+            android:id="@+id/arSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            android:visibility="visible"
+            android:theme="@style/AppTheme"
+            />
+
+        <TextView
+            android:id="@+id/arSwitchText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="0dp"
+            android:gravity="center_vertical|center"
+            android:text="@string/arSwitchText"
+            android:textColor="@android:color/white"
+            android:background="@android:color/transparent"
+            android:visibility="visible"
+            android:layout_marginEnd="16dp" />
+
+    </LinearLayout>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/cameraShutterButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_alignParentEnd="true"
+        android:clickable="true"
+        opencv:fabSize="normal"
+        opencv:srcCompat="@android:drawable/ic_menu_camera"
+        android:layout_below="@id/arSwitchLinearLayout"
+        android:visibility="invisible"
+        android:layout_margin="16dp" />
+
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="top|center"
+        android:layout_below="@id/cameraShutterButton"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/positionCertifiedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            opencv:fabSize="mini"
+            opencv:srcCompat="@android:drawable/ic_dialog_map"
+            opencv:backgroundTint="@android:color/holo_green_dark"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="8dp" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/timeCertifiedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            opencv:fabSize="mini"
+            opencv:srcCompat="@android:drawable/ic_menu_recent_history"
+            opencv:backgroundTint="@android:color/holo_green_dark"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/connectedToServerButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            opencv:fabSize="mini"
+            opencv:srcCompat="@android:drawable/stat_notify_sync"
+            opencv:backgroundTint="@android:color/holo_green_dark"
+            android:layout_marginBottom="0dp"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
 
 </RelativeLayout>

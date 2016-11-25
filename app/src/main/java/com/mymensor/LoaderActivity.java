@@ -9,6 +9,8 @@ import android.graphics.drawable.AnimationDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -53,9 +55,9 @@ public class LoaderActivity extends Activity
     private long sntpReference;
     private long sntpTime;
 
-    AnimationDrawable seamensorLogoAnimation;
     ImageView seamensorLogo;
     LinearLayout logoLinearLayout;
+    FloatingActionButton fab;
 
     SharedPreferences sharedPref;
 
@@ -91,13 +93,10 @@ public class LoaderActivity extends Activity
         logoLinearLayout = (LinearLayout)findViewById(R.id.SeaMensorLogoLinearLayout1);
         logoLinearLayout.setVisibility(View.VISIBLE);
 
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+
         seamensorLogo = (ImageView) findViewById(R.id.seamensor_logo);
-        //seamensorLogo.getDrawable().setVisible(false, true);
-        //seamensorLogo.setBackgroundResource(R.drawable.animalogoseamensor);
-        //seamensorLogoAnimation = (AnimationDrawable) seamensorLogo.getBackground();
         seamensorLogo.setVisibility(View.VISIBLE);
-        //seamensorLogoAnimation.setVisible(true, true);
-        //seamensorLogoAnimation.start();
 
 
         if (appStartState.equalsIgnoreCase("firstever")){
@@ -106,6 +105,25 @@ public class LoaderActivity extends Activity
 
         backgroundLoader.execute();
 
+        final View.OnClickListener undoOnClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                activityToBeCalled = "imagecapactivity";
+                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+                Log.d(TAG, "Reverting the call back to imagecapactivity");
+            }
+        };
+
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                    Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
+                            .setAction(getText(R.string.undo), undoOnClickListener).show();
+                    Log.d(TAG, "Changing the call to configactivity");
+                    activityToBeCalled = "configactivity";
+            }
+        });
+
     }
 
     @Override
@@ -113,8 +131,6 @@ public class LoaderActivity extends Activity
     {
         super.onStart();
         Log.d(TAG,"onStart(): CALLED");
-        //seamensorLogoAnimation.setVisible(true, true);
-        //seamensorLogoAnimation.start();
     }
 
     @Override
@@ -596,7 +612,7 @@ public class LoaderActivity extends Activity
         Log.d(TAG,"callingActivities:####### LOADING: onPostExecute: callingARVewactivity: clockSetSuccess=" + clockSetSuccess);
         Log.d(TAG,"callingActivities:####### LOADING: onPostExecute: callingARVewactivity: activityToBeCalled="+activityToBeCalled);
         TextView message = (TextView) findViewById(R.id.bottom_message);
-        if (activityToBeCalled.equalsIgnoreCase("SMC"))
+        if (activityToBeCalled.equalsIgnoreCase("configactivity"))
         {
             try
             {
@@ -620,7 +636,7 @@ public class LoaderActivity extends Activity
                 finish();
             }
         }
-        if (activityToBeCalled.equalsIgnoreCase("SeaMensor"))
+        if (activityToBeCalled.equalsIgnoreCase("imagecapactivity"))
         {
             try
             {

@@ -11,6 +11,8 @@ import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -23,8 +25,10 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -172,6 +176,15 @@ public class ImageCapActivity extends Activity implements
     Button acceptVpPhotoButton;
     Button rejectVpPhotoButton;
 
+    Switch arSwitch;
+
+    private boolean arSwitchIsOn = true;
+
+    FloatingActionButton positionCertifiedButton;
+    FloatingActionButton timeCertifiedButton;
+    FloatingActionButton connectedToServerButton;
+    FloatingActionButton cameraShutterButton;
+
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
 
@@ -200,10 +213,6 @@ public class ImageCapActivity extends Activity implements
     // Keys for storing the indices of the active filters.
     private static final String STATE_IMAGE_DETECTION_FILTER_INDEX =
             "imageDetectionFilterIndex";
-
-    // Whether an asynchronous menu action is in progress.
-    // If so, menu interaction should be disabled.
-    private boolean mIsMenuLocked;
 
     // Matrix to hold camera calibration
     // initially with absolute compute values
@@ -306,6 +315,116 @@ public class ImageCapActivity extends Activity implements
 
         vpCheckedView = (ImageView) this.findViewById(R.id.imageViewVpChecked);
         vpCheckedView.setVisibility(View.GONE);
+
+        arSwitch = (Switch) findViewById(R.id.arSwitch);
+
+        arSwitch.setChecked(true);
+
+        arSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isOn) {
+                if (isOn) {
+                    arSwitchIsOn = true;
+                    cameraShutterButton.setVisibility(View.INVISIBLE);
+                    Snackbar.make(arSwitch.getRootView(),getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+                } else {
+                    arSwitchIsOn = false;
+                    cameraShutterButton.setVisibility(View.VISIBLE);
+                    Snackbar.make(arSwitch.getRootView(), getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+                }
+                Log.d(TAG, "arSwitchIsOn="+arSwitchIsOn );
+            }
+        });
+
+
+        cameraShutterButton = (FloatingActionButton) findViewById(R.id.cameraShutterButton);
+
+        positionCertifiedButton = (FloatingActionButton) findViewById(R.id.positionCertifiedButton);
+        timeCertifiedButton = (FloatingActionButton) findViewById(R.id.timeCertifiedButton);
+        connectedToServerButton = (FloatingActionButton) findViewById(R.id.connectedToServerButton);
+
+
+        // Camera Shutter Button
+
+        final View.OnClickListener undoOnClickListenerCameraShutterButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+
+            }
+        };
+
+        positionCertifiedButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), undoOnClickListenerCameraShutterButton).show();
+
+            }
+        });
+
+        // Position Certified Button
+
+        final View.OnClickListener undoOnClickListenerPositionButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+
+            }
+        };
+
+        positionCertifiedButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), undoOnClickListenerPositionButton).show();
+
+            }
+        });
+
+        // Time Certified Button
+
+        final View.OnClickListener undoOnClickListenerTimeButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+
+            }
+        };
+
+        timeCertifiedButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), undoOnClickListenerTimeButton).show();
+
+            }
+        });
+
+        // Connected to Server Button
+
+        final View.OnClickListener undoOnClickListenerServerButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+
+            }
+        };
+
+        connectedToServerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), undoOnClickListenerServerButton).show();
+
+            }
+        });
+
+
     }
 
 
@@ -364,7 +483,6 @@ public class ImageCapActivity extends Activity implements
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
 
-        mIsMenuLocked = false;
         //if (mGoogleApiClient.isConnected()) startLocationUpdates();
         setVpsChecked();
         runOnUiThread(new Runnable() {

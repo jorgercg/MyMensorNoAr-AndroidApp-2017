@@ -59,28 +59,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/buttonlog"
-                android:gravity="center_vertical"
                 android:onClick="onButtonClick"
                 android:layout_margin="4dp" />
 
-            <Button
-                android:text="@string/start_config"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/buttonconfig"
-                android:gravity="center_vertical"
-                android:onClick="onButtonClick"
-                android:layout_margin="4dp" />
-
-            <Button
-                android:text="@string/start_cap"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/buttoncap"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:onClick="onButtonClick"
-                android:layout_margin="4dp" />
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>

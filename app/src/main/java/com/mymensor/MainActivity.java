@@ -21,8 +21,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -36,7 +34,6 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferType;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import com.mymensor.cognitoclient.AwsUtil;
@@ -64,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private AccountManager mAccountManager;
     private AlertDialog mAlertDialog;
     private boolean mInvalidate;
+    private boolean noUserLogged = true;
 
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
@@ -76,8 +74,6 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout mainLinearLayout;
     ImageView appLogo;
     Button logInOut;
-    Button startConfig;
-    Button startCap;
     TextView userLogged;
 
 
@@ -92,15 +88,6 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
         if (!getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             Toast.makeText(getBaseContext(), getString(R.string.no_camera), Toast.LENGTH_LONG).show();
         }
@@ -108,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
         permissionsRequest();
 
         mAccountManager = AccountManager.get(this);
+
+        if (ContextCompat.checkSelfPermission(this,Manifest.permission.GET_ACCOUNTS)!= PackageManager.PERMISSION_GRANTED);
 
         final Account availableAccounts[] = mAccountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
 
@@ -123,8 +112,6 @@ public class MainActivity extends AppCompatActivity {
         appLogo = (ImageView) findViewById(R.id.mainactivity_logo);
         userLogged = (TextView) findViewById(R.id.userlogstate_message);
         logInOut = (Button) findViewById(R.id.buttonlog);
-        startConfig = (Button) findViewById(R.id.buttonconfig);
-        startCap = (Button) findViewById(R.id.buttoncap);
 
         s3Client = CognitoSyncClientManager.getInstance();
 
@@ -159,18 +146,15 @@ public class MainActivity extends AppCompatActivity {
         if (availableAccounts.length == 0) {
             userLogged.setText(R.string.userstate_loggedout);
             logInOut.setVisibility(View.VISIBLE);
-            startConfig.setVisibility(View.GONE);
-            startCap.setVisibility(View.GONE);
+            noUserLogged = true;
         } else {
             logInOut.setVisibility(View.GONE);
-            startConfig.setVisibility(View.VISIBLE);
-            startCap.setVisibility(View.VISIBLE);
             if (availableAccounts.length == 1){
                 userLogged.setText(getText(R.string.userstate_loggedin)+" "+availableAccounts[0].name);
+                noUserLogged = false;
                 getExistingAccountAuthToken(availableAccounts[0], Constants.AUTHTOKEN_TYPE_FULL_ACCESS);
             }
         }
-
 
         boolean showDialog = false;
         boolean invalidate = false;
@@ -202,6 +186,17 @@ public class MainActivity extends AppCompatActivity {
         }
         */
 
+        if (!noUserLogged){
+            Log.d(TAG, "Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+            Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
+            launch_intent.putExtra("activitytobecalled", "imagecapactivity");
+            launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
+            launch_intent.putExtra("appstartstate", appStartState);
+            startActivity(launch_intent);
+            finish();
+        }
+
+
     }
 
 
@@ -230,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     /**
-     * A native method that is implemented by the 'native-lib' native library,
+     * A native method that is implemented by the project native library,
      * which is packaged with this application.
 
     public static native String stringFromJNI();
@@ -266,6 +261,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void showAccountPicker(final String authTokenType, final boolean invalidate) {
         mInvalidate = invalidate;
+
+        if (ContextCompat.checkSelfPermission(this,Manifest.permission.GET_ACCOUNTS)!= PackageManager.PERMISSION_GRANTED);
+
         final Account availableAccounts[] = mAccountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
 
         if (availableAccounts.length == 0) {
@@ -285,6 +283,14 @@ public class MainActivity extends AppCompatActivity {
                     else
                         getExistingAccountAuthToken(availableAccounts[which], authTokenType);
                     userLogged.setText(getText(R.string.userstate_loggedin)+" "+availableAccounts[which].name);
+                    noUserLogged = false;
+                    Log.d(TAG, "Calling the SeaMensor Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+                    Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
+                    launch_intent.putExtra("activitytobecalled", "seamensor");
+                    launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
+                    launch_intent.putExtra("appstartstate", appStartState);
+                    startActivity(launch_intent);
+                    finish();
                 }
             }).create();
             mAlertDialog.show();
@@ -325,8 +331,6 @@ public class MainActivity extends AppCompatActivity {
                     editor.commit();
                     Log.d(TAG, "GetToken Bundle is " + bnd);
                     logInOut.setVisibility(View.GONE);
-                    startConfig.setVisibility(View.VISIBLE);
-                    startCap.setVisibility(View.VISIBLE);
                     Log.d(TAG, "Token is " + authtoken);
                     getCognitoIdAndToken(authtoken);
                 } catch (Exception e) {
@@ -357,12 +361,17 @@ public class MainActivity extends AppCompatActivity {
                     Bundle bnd = future.getResult();
                     Log.d(TAG, "AddNewAccount Bundle is " + bnd.toString());
                     logInOut.setVisibility(View.GONE);
-                    startConfig.setVisibility(View.VISIBLE);
-                    startCap.setVisibility(View.VISIBLE);
                     userLogged.setText(getText(R.string.userstate_loggedin)+" "+ bnd.getString("authAccount"));
                     String mymtoken = sharedPref.getString(Constants.MYM_KEY," ");
                     Log.d(TAG, "AddNewAccount Token is " + mymtoken);
                     getCognitoIdAndToken(mymtoken);
+                    Log.d(TAG, "Calling the SeaMensor Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+                    Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
+                    launch_intent.putExtra("activitytobecalled", "seamensor");
+                    launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
+                    launch_intent.putExtra("appstartstate", appStartState);
+                    startActivity(launch_intent);
+                    finish();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -386,24 +395,6 @@ public class MainActivity extends AppCompatActivity {
         if (v.getId() == R.id.buttonlog) {
             Log.d(TAG, "Calling method to add a new account");
             addNewAccount(Constants.ACCOUNT_TYPE, Constants.AUTHTOKEN_TYPE_FULL_ACCESS);
-        }
-        if (v.getId() == R.id.buttonconfig) {
-            Log.d(TAG, "Calling the SeaMensor Configuration Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
-            Intent launch_intent = new Intent(this,LoaderActivity.class);
-            launch_intent.putExtra("activitytobecalled", "SMC");
-            launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
-            launch_intent.putExtra("appstartstate", appStartState);
-            startActivity(launch_intent);
-            finish();
-        }
-        if (v.getId() == R.id.buttoncap) {
-            Log.d(TAG, "Calling the SeaMensor Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
-            Intent launch_intent = new Intent(this,LoaderActivity.class);
-            launch_intent.putExtra("activitytobecalled", "seamensor");
-            launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
-            launch_intent.putExtra("appstartstate", appStartState);
-            startActivity(launch_intent);
-            finish();
         }
     }
 
@@ -472,7 +463,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case 111: {
                 if (grantResults.length > 0 && grantResults[0]== PackageManager.PERMISSION_GRANTED ) {
-
+                    Log.d(TAG,"onRequestPermissionsResult: Permissions OK");
                 } else {
                     permissionsNotSelected();
                 }
@@ -482,9 +473,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void permissionsNotSelected() {
         AlertDialog.Builder builder = new AlertDialog.Builder (this);
-        builder.setTitle("Permissions Requred");
-        builder.setMessage("Please enable the requested permissions in the app settings in order to use this demo app");
-        builder.setNeutralButton("Cancel", new DialogInterface.OnClickListener () {
+        builder.setTitle(getString(R.string.permrequired));
+        builder.setMessage(getString(R.string.permmessage));
+        builder.setNeutralButton(getString(R.string.cancel), new DialogInterface.OnClickListener () {
             public void onClick(DialogInterface dialog, int id) {
                 dialog.cancel();
                 System.exit(1);

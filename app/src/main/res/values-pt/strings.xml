@@ -71,4 +71,11 @@
     <string name="vp_capture_placeholder_description">Descrição do VP#</string>
     <string name="vp_acquisition_failure">A foto do VP capturada, mas ocorreu falha na captura da realidade aumentada, verifique instruções de configuração, tente novamente ou mude o método.</string>
     <string name="no_camera">Este aparelho não possui câmera. Fechando a app!</string>
+    <string name="permrequired">Permissões Requeridas</string>
+    <string name="permmessage">Por favor ativar as permissões pedidas para poder utlizar esta app.</string>
+    <string name="cancel">Cancelar</string>
+    <string name="undo">DESFAZER</string>
+    <string name="loadingcfgactvty">Abrindo a configuração de VPs.</string>
+    <string name="loadingimgcapactvty">Retornando a abrir a app principal.</string>
+    <string name="arSwitchText">AR</string>
 </resources>

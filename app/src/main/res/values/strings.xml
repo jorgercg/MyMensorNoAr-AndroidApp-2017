@@ -74,4 +74,11 @@
     <string name="vp_acquisition_failure">VP photo captured, but augmentation acquisiton failed, please refer to configuration instructions, try again or change method.</string>
     <string name="vp_capture_placeholder_description">Description of VP#</string>
     <string name="no_camera">This device has no camera. Closing app!</string>
+    <string name="permrequired">Permissions Requred</string>
+    <string name="permmessage">Please enable the requested permissions in the app settings in order to use this app</string>
+    <string name="cancel">Cancel</string>
+    <string name="undo">UNDO</string>
+    <string name="loadingcfgactvty">Opening VPs setup.</string>
+    <string name="loadingimgcapactvty">Back to open the main app.</string>
+    <string name="arSwitchText">AR</string>
 </resources>
