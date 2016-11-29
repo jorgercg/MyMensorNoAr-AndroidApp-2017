@@ -80,8 +80,8 @@ float *VpConfigureFilter::getPose()
 
 void VpConfigureFilter::apply(cv::Mat &src, cv::Mat &cameraMatrix)
 {
-    CvRect rect;
     rect = CvRect(440, 160, 400, 400);
+    draw(src,1);
     // Convert the scene to grayscale.
     cv::cvtColor(src, mGraySrc, cv::COLOR_RGBA2GRAY);
 
@@ -227,6 +227,20 @@ void VpConfigureFilter::findPose(cv::Mat &cameraMatrix)
 
     LOGD("POSE: %f  %f  %f  %f  %f  %f",mPose[0]+440,mPose[1]+160,mPose[2],mPose[3],mPose[4],mPose[5]);
 }
+
+void VpConfigureFilter::draw(cv::Mat src, int isHudOn)
+{
+    if (isHudOn==1) {
+        LOGD("isHudOn= %d",isHudOn);
+        // Draw the rectangle guide in SeaMate green.
+        cv::rectangle(src, rect,cv::Scalar(168.0,207.0,69.0), 8);
+        cv::line(src, cv::Point2d(640.0,160.0), cv::Point2d(640.0,120.0), cv::Scalar(168.0,207.0,69.0), 8);
+        cv::line(src, cv::Point2d(640.0,120.0), cv::Point2d(620.0,140.0), cv::Scalar(168.0,207.0,69.0), 8);
+        cv::line(src, cv::Point2d(640.0,120.0), cv::Point2d(660.0,140.0), cv::Scalar(168.0,207.0,69.0), 8);
+    }
+}
+
+
 
 //void ImageDetectionFilter::draw(cv::Mat src, cv::Mat dst)
 //{

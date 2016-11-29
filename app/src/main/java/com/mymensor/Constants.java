@@ -24,6 +24,9 @@ public class Constants {
     public static final int cameraHeigthInPixels = 720;
     public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440 // (1280-700)/2=290
     public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160 // (720-700)/2=10
+    public static final int[] validIdMarkersForMyMensor = {10,20,30,40,50,60,70,80,90,100,
+                                                            110,120,130,140,150,160,170,180,190,200,
+                                                            210,220,230,240,250,260,270,280,290,300};
 
     /**
      * OpenCV

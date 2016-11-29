@@ -14,7 +14,7 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        />
+        android:layout_alignParentTop="true" />
 
     <com.mymensor.TouchImageView
         android:id="@+id/imageView1"
@@ -33,6 +33,18 @@
         android:background="@android:color/transparent"
         android:layout_width="120dp" />
 
+    <TextView
+        android:id="@+id/idMarkerNumberTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@id/vp_list"
+        android:textColor="@android:color/white"
+        android:background="@android:color/holo_blue_dark"
+        android:visibility="visible"
+        android:layout_margin="16dp"
+        />
+
     <ImageView
         android:id="@+id/waitingTrkLoading"
         android:layout_width="252.67dp"
@@ -43,160 +55,212 @@
         android:padding="0dp"
         android:visibility="gone"        />
 
-    <ImageButton
-        android:id="@+id/button3"
-        android:layout_width="120dp"
+    <LinearLayout
+        android:id="@+id/linearLayoutQtyVps"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="top|center"
+        android:layout_toEndOf="@id/vp_list"
+        android:visibility="visible"
+        android:layout_alignParentBottom="true"
+        >
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/buttonDecreaseQtyVps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@drawable/ic_remove_black_18dp"
+                android:layout_marginBottom="16dp"
+                android:layout_marginStart="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
+                android:textColor="@android:color/white"
+                android:text="@string/button_text_decrease_qtyvps"
+                android:layout_marginBottom="8dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/buttonIncreaseQtyVps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@drawable/ic_add_black_18dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
+                android:textColor="@android:color/white"
+                android:text="@string/button_text_increase_qtyvps"
+                android:layout_marginBottom="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/linearLayoutConfigCaptureVps"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:adjustViewBounds="true"
-        android:onClick="onButtonClick"
-        android:clickable="true"
-        android:padding="4dp"
-        android:scaleType="fitCenter"
-        android:background="@android:color/transparent"
-        android:src="@drawable/logoseamensor300dpi"
-        android:visibility="visible" />
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="end">
 
-    <Button
-        android:id="@+id/button2"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@+id/button3"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_ok"
-        android:visibility="gone"
-        />
+        <LinearLayout
+            android:id="@+id/linearLayoutCaptureNewVp"
+            android:orientation="horizontal"
+            android:layout_alignParentEnd="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
-    <Button
-        android:id="@+id/buttonRequestPhoto"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@+id/button2"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_text_request_photo"
-        android:visibility="gone"
-        />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:textColor="@android:color/white"
+                android:text="@string/button_text_request_photo"
+                android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/buttonIncreaseQtyVps"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/vp_list"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_text_increase_qtyvps"
-        android:visibility="gone"
-        />
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/buttonRequestPhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@drawable/ic_add_a_photo_white_18dp"
+                android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/buttonDecreaseQtyVps"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/buttonIncreaseQtyVps"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_text_decrease_qtyvps"
-        android:visibility="gone"
-        />
+        </LinearLayout>
 
-    <Button
-        android:id="@+id/buttonSaveTrackingVpsData"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/buttonDecreaseQtyVps"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_text_save_tracking_vps_data"
-        android:visibility="gone"
-        />
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/cameraShutterButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:clickable="true"
+            opencv:fabSize="normal"
+            opencv:srcCompat="@android:drawable/ic_menu_camera"
+            android:visibility="invisible"
+            android:layout_margin="16dp" />
 
-    <Button
-        android:id="@+id/buttonAmbiguousVpToggle"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="82dp"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/imageView1"
-        android:layout_below="@+id/descVPEditText"
-        android:background="@drawable/custom_button"
-        android:textColor="#000000"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_ambiguous_vp_toggle"
-        android:visibility="gone"
-        />
+        <LinearLayout
+            android:id="@+id/linearLayoutAmbiguousVp"
+            android:orientation="horizontal"
+            android:layout_alignParentEnd="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
-    <Button
-        android:id="@+id/buttonFlashTorchVpToggle"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="82dp"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/imageView1"
-        android:layout_below="@+id/buttonAmbiguousVpToggle"
-        android:background="@drawable/custom_button"
-        android:textColor="#000000"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_flash_torch_vp_toggle"
-        android:visibility="gone"
-        />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:textColor="@android:color/white"
+                android:text="@string/button_ambiguous_vp_toggle"
+                android:layout_marginBottom="8dp"
+                android:textAlignment="gravity" />
 
-    <Button
-        android:id="@+id/buttonSuperSingleVpToggle"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="82dp"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/imageView1"
-        android:layout_below="@+id/buttonFlashTorchVpToggle"
-        android:background="@drawable/custom_button"
-        android:textColor="#000000"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_super_single_vp_toggle"
-        android:visibility="gone"
-        />
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/buttonAmbiguousVpToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@android:drawable/ic_dialog_alert"
+                android:layout_marginBottom="8dp"
+                android:layout_gravity="end" />
 
-    <Button
-        android:id="@+id/buttonId20mmToggle"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="82dp"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/imageView1"
-        android:layout_below="@+id/buttonSuperSingleVpToggle"
-        android:background="@drawable/custom_button"
-        android:textColor="#000000"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_id_20mm_vp_toggle"
-        android:visibility="gone"
-        />
+        </LinearLayout>
 
-    <Button
-        android:id="@+id/buttonId100mmToggle"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="82dp"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/imageView1"
-        android:layout_below="@+id/buttonId20mmToggle"
-        android:background="@drawable/custom_button"
-        android:textColor="#000000"
-        android:onClick="onButtonClick"
-        android:padding="10dp"
-        android:text="@string/button_id_100mm_vp_toggle"
-        android:visibility="gone"
-        />
+        <LinearLayout
+            android:id="@+id/linearLayoutSuperSingleVp"
+            android:orientation="horizontal"
+            android:layout_alignParentEnd="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:textColor="@android:color/white"
+                android:text="@string/button_super_single_vp_toggle"
+                android:layout_marginBottom="8dp"
+                android:textAlignment="gravity" />
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/buttonSuperSingleVpToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@drawable/circulo_seamensor"
+                android:layout_marginBottom="8dp"
+                android:layout_gravity="end" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/buttonId20mmToggle"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="82dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/custom_button"
+            android:textColor="#000000"
+            android:onClick="onButtonClick"
+            android:padding="10dp"
+            android:text="@string/button_id_20mm_vp_toggle"
+            android:visibility="invisible"
+            />
+
+        <Button
+            android:id="@+id/buttonId100mmToggle"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="82dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/custom_button"
+            android:textColor="#000000"
+            android:onClick="onButtonClick"
+            android:padding="10dp"
+            android:text="@string/button_id_100mm_vp_toggle"
+            android:visibility="invisible"
+            />
+
+    </LinearLayout>
 
     <EditText
         android:id="@+id/descVPEditText"
@@ -277,16 +341,5 @@
         android:text="@string/button_reject_vp_photo"
         android:visibility="gone"
         />
-
-    <ImageView
-        android:id="@+id/imageViewTarget"
-        android:layout_width="252.67dp"
-        android:layout_height="252.33dp"
-        android:src="@drawable/targetwhite"
-        android:padding="0dp"
-        android:visibility="invisible"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
-        android:background="@android:color/transparent" />
 
 </RelativeLayout>

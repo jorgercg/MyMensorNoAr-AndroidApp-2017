@@ -2,6 +2,7 @@ package com.mymensor;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
@@ -18,6 +19,7 @@ import android.support.design.widget.Snackbar;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -28,12 +30,12 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
@@ -117,6 +119,7 @@ public class ImageCapActivity extends Activity implements
     private boolean inRotation = false;
     private boolean isTracking = false;
     private boolean isShowingVpPhoto = false;
+    private boolean firstFrameAfterArSwitchOff = false;
     private int isHudOn = 1;
 
     private boolean vpIsDisambiguated = true;                   //TODO
@@ -172,6 +175,7 @@ public class ImageCapActivity extends Activity implements
     Animation rotationRadarScan;
     Animation rotationMProgress;
 
+    FloatingActionButton callConfigButton;
     FloatingActionButton alphaToggleButton;
     FloatingActionButton showVpCapturesButton;
     Button showPreviousVpCaptureButton;
@@ -351,6 +355,7 @@ public class ImageCapActivity extends Activity implements
                     mImageDetectionFilterIndex=0;
                     askForManualPhoto = false;
                     vpIsManuallySelected = false;
+                    firstFrameAfterArSwitchOff = true;
                     Snackbar.make(arSwitch.getRootView(), getText(R.string.arswitchisoff), Snackbar.LENGTH_LONG).show();
                 }
                 Log.d(TAG, "isArSwitchOn="+ isArSwitchOn);
@@ -364,8 +369,10 @@ public class ImageCapActivity extends Activity implements
         timeCertifiedButton = (FloatingActionButton) findViewById(R.id.timeCertifiedButton);
         connectedToServerButton = (FloatingActionButton) findViewById(R.id.connectedToServerButton);
 
+        callConfigButton = (FloatingActionButton) findViewById(R.id.buttonCallConfig);
         alphaToggleButton = (FloatingActionButton) findViewById(R.id.buttonAlphaToggle);
         showVpCapturesButton = (FloatingActionButton) findViewById(R.id.buttonShowVpCaptures);
+
 
 
         // Camera Shutter Button
@@ -455,6 +462,47 @@ public class ImageCapActivity extends Activity implements
             }
         });
 
+        // Call Config Button
+
+        final View.OnClickListener confirmOnClickListenerCallConfigButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Snackbar.make(view, getText(R.string.callingconfigactivity), Snackbar.LENGTH_LONG).show();
+
+                try {
+                    Intent intent = new Intent(getApplicationContext(), ConfigActivity.class);
+                    intent.putExtra("mymensoraccount", mymensorAccount);
+                    intent.putExtra("dcinumber", dciNumber);
+                    intent.putExtra("QtyVps", qtyVps);
+                    intent.putExtra("sntpTime", sntpTime);
+                    intent.putExtra("sntpReference", sntpTimeReference);
+                    intent.putExtra("isTimeCertified", isTimeCertified);
+                    startActivity(intent);
+                }
+                catch (Exception e)
+                {
+                    Toast toast = Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT);
+                    toast.setGravity(Gravity.CENTER | Gravity.CENTER_HORIZONTAL, 0, 30);
+                    toast.show();
+                }
+                finally
+                {
+                    finish();
+                }
+            }
+        };
+
+        callConfigButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.confirmconfigloading), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.confirm), confirmOnClickListenerCallConfigButton).show();
+            }
+        });
+
+
+
         // Alpha Channel Toggle Button
 
         alphaToggleButton.setOnClickListener(new View.OnClickListener() {
@@ -481,6 +529,7 @@ public class ImageCapActivity extends Activity implements
             public void onClick(View view) {
                 alphaToggleButton.setVisibility(View.GONE);
                 showVpCapturesButton.setVisibility(View.GONE);
+                callConfigButton.setVisibility(View.GONE);
                 showPreviousVpCaptureButton.setVisibility(View.VISIBLE);
                 showNextVpCaptureButton.setVisibility(View.VISIBLE);
                 imageView.resetZoom();
@@ -524,6 +573,7 @@ public class ImageCapActivity extends Activity implements
             vpLocationDesTextView.setVisibility(View.GONE);
             vpIdNumber.setVisibility(View.GONE);
             imageView.setVisibility(View.GONE);
+            callConfigButton.setVisibility(View.GONE);
             alphaToggleButton.setVisibility(View.GONE);
             showPreviousVpCaptureButton.setVisibility(View.GONE);
             showNextVpCaptureButton.setVisibility(View.GONE);
@@ -861,7 +911,10 @@ public class ImageCapActivity extends Activity implements
                     int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
                     int lastVisiblePosition = vpsListView.getLastVisiblePosition();
                     if (tmpvpfree<firstVisiblePosition || tmpvpfree>lastVisiblePosition){
-                        vpsListView.smoothScrollToPosition(tmpvpfree);
+                        if (firstFrameAfterArSwitchOff) {
+                            vpsListView.smoothScrollToPosition(tmpvpfree);
+                            firstFrameAfterArSwitchOff = false;
+                        }
                         firstVisiblePosition = vpsListView.getFirstVisiblePosition();
                         lastVisiblePosition = vpsListView.getLastVisiblePosition();
                     }
@@ -1527,7 +1580,8 @@ public class ImageCapActivity extends Activity implements
                         imageView.resetZoom();
                         imageView.setImageAlpha(255);
                     }
-                    // Dismiss Location Description Buttons
+                    // Activate Location Description Buttons
+                    callConfigButton.setVisibility(View.VISIBLE);
                     alphaToggleButton.setVisibility(View.VISIBLE);
                     if (imageView.getImageAlpha()==128) alphaToggleButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
                     if (imageView.getImageAlpha()==255) alphaToggleButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
@@ -1541,20 +1595,6 @@ public class ImageCapActivity extends Activity implements
 
     public void onButtonClick(View v)
     {
-        if (v.getId() == R.id.button3)
-        {
-            final View vFinal = v;
-            Log.d(TAG, "Show Program Version");
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    String message = getString(R.string.app_version_seamensor);
-                    Snackbar.make(vFinal, message, Snackbar.LENGTH_LONG).show();
-                }
-            });
-        }
         if (v.getId()==R.id.buttonAcceptVpPhoto)
         {
             vpPhotoAccepted = true;

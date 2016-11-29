@@ -23,7 +23,7 @@ public:
 
 private:
     void findPose(cv::Mat &projection);
-    //void draw(cv::Mat src, cv::Mat dst);
+    void draw(cv::Mat src, int isHudOn);
 
     // The reference image (this detector's target).
     cv::Mat mReferenceImage;
@@ -71,6 +71,8 @@ private:
 
     // Whether the target is currently detected.
     bool mTargetFound;
+
+    CvRect rect;
 };
 
 } // namespace mymensor

@@ -2,11 +2,11 @@
 <resources>
     <string name="double_bck_exit">Pressione Voltar rápido duas vezes para sair!</string>
     <string name="button_exit">Pressione o Botão rápido duas vezes para sair!</string>
-    <string name="starting_to_load_assets">Começando.....</string>
+    <string name="starting_to_load_assets">Iniciando.....</string>
     <string name="waiting_to_load_assets">Carregando dados.....</string>
-    <string name="still_loading_assets">Ainda carregando.....</string>
+    <string name="still_loading_assets">Carregando.....</string>
     <string name="almost_finished_loading_assets">Quase lá.....</string>
-    <string name="load_assets_finished">A espera acabou!!!</string>
+    <string name="load_assets_finished">Pronto !!!</string>
     <string name="vp_name">VP#</string>
     <string name="vp_touched">VP#</string>
     <string name="date_vp_touched_not_acquired">nunca</string>
@@ -28,8 +28,8 @@
     <string name="button_show_next_vp_capture">\u003e</string>
     <string name="button_text_request_photo">Capturar VP</string>
     <string name="button_sav_desc_vp_text">DscVpTxt</string>
-    <string name="button_text_increase_qtyvps">QtdVp++</string>
-    <string name="button_text_decrease_qtyvps">QtdVp--</string>
+    <string name="button_text_increase_qtyvps">Aum Qtd VP</string>
+    <string name="button_text_decrease_qtyvps">Red Qtd VP</string>
     <string name="button_text_save_tracking_vps_data">Grava VPs</string>
     <string name="button_ambiguous_vp_toggle">Amb VP</string>
     <string name="button_flash_torch_vp_toggle">FLASH</string>
@@ -92,4 +92,8 @@
     <string name="qtyvps_increased">"Aumentada a quantidade de VPs de "</string>
     <string name="qtyvps_decreased">"Reduzida a quantidade de VPs de "</string>
     <string name="nomymensoraccount">Não há conta MyMensor!</string>
+    <string name="confirmconfigloading">Fechar app de captura e abrir a de configuração?</string>
+    <string name="confirm">CONFIRMAR</string>
+    <string name="callingconfigactivity">Fechando e chamando app de configuração...</string>
+    <string name="takephoto">Aperte o botão da câmera para fotografar. Segure firme o celular até que o VP esteja configurado!</string>
 </resources>

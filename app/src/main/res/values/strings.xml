@@ -7,9 +7,9 @@
     <string name="button_exit">Press Button twice quickly to exit!</string>
     <string name="starting_to_load_assets">Starting.....</string>
     <string name="waiting_to_load_assets">Loading.....</string>
-    <string name="still_loading_assets">Still loading.....</string>
+    <string name="still_loading_assets">Loading.....</string>
     <string name="almost_finished_loading_assets">Almost there.....</string>
-    <string name="load_assets_finished">The wait is over!!!</string>
+    <string name="load_assets_finished">Ready !!!</string>
     <string name="vp_name">VP#</string>
     <string name="vp_touched">VP#</string>
     <string name="date_vp_touched_not_acquired">never</string>
@@ -31,8 +31,8 @@
     <string name="button_show_next_vp_capture">\u003e</string>
     <string name="button_text_request_photo">Capture VP</string>
     <string name="button_sav_desc_vp_text">DscVpTxt</string>
-    <string name="button_text_increase_qtyvps">QtyVp++</string>
-    <string name="button_text_decrease_qtyvps">QtyVp--</string>
+    <string name="button_text_increase_qtyvps">Inc VP Qty</string>
+    <string name="button_text_decrease_qtyvps">Dec VP Qty</string>
     <string name="button_text_save_tracking_vps_data">Save VPs</string>
     <string name="button_ambiguous_vp_toggle">Amb VP</string>
     <string name="button_flash_torch_vp_toggle">FLASH</string>
@@ -95,4 +95,8 @@
     <string name="qtyvps_increased">Quantity of VPs increased from</string>
     <string name="qtyvps_decreased">Quantity of VPs decreased from</string>
     <string name="nomymensoraccount">No MyMensor account!</string>
+    <string name="confirmconfigloading">Close capture app and call setup app?</string>
+    <string name="confirm">CONFIRM</string>
+    <string name="callingconfigactivity">Closing and calling setup app...</string>
+    <string name="takephoto">Press camera button to take photo. Stay still until VP is configured!!!</string>
 </resources>
