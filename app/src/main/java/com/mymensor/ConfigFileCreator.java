@@ -22,43 +22,57 @@ public class ConfigFileCreator {
     private static final String TAG = "ConfigFileCreator";
 
     public static void createVpsfile(Context context, File directory, String fileName){
-        short shipId = 1;
+        short assetId = 1;
         String frequencyUnit = Constants.frequencyUnit;
         int frequencyValue = Constants.frequencyValue;
-        short qtyVps =1;
+        short qtyVps =2;
         float tolerancePosition = Constants.tolerancePosition;
         float toleranceRotation = Constants.toleranceRotation;
         int vpXCameraDistance[] = new int[qtyVps];
         vpXCameraDistance[0]=0;
+        vpXCameraDistance[1]=0;
         int vpYCameraDistance[] = new int[qtyVps];
         vpYCameraDistance[0]=0;
+        vpYCameraDistance[1]=0;
         int vpZCameraDistance[] = new int[qtyVps];
-        vpZCameraDistance[0]=1000;
+        vpZCameraDistance[0]=0;
+        vpZCameraDistance[1]=1000;
         int vpXCameraRotation[] = new int[qtyVps];
         vpXCameraRotation[0]=0;
+        vpXCameraRotation[1]=0;
         int vpYCameraRotation[] = new int[qtyVps];
         vpYCameraRotation[0]=0;
+        vpYCameraRotation[1]=0;
         int vpZCameraRotation[] = new int[qtyVps];
         vpZCameraRotation[0]=0;
-        String vpLocationDesText[] = new String[qtyVps];
-        vpLocationDesText[0] = context.getString(R.string.vp_capture_placeholder_description)+1;
+        vpZCameraRotation[1]=0;
+        String vpLocationDesText[] = new String[qtyVps+1];
+        vpLocationDesText[0] = context.getString(R.string.vp_capture_placeholder_description_freevp);
+        vpLocationDesText[1] = context.getString(R.string.vp_capture_placeholder_description)+"1";
         short vpMarkerlessMarkerWidth[] = new short[qtyVps];
         vpMarkerlessMarkerWidth[0] = Constants.standardMarkerlessMarkerWidth;
+        vpMarkerlessMarkerWidth[1] = Constants.standardMarkerlessMarkerWidth;
         short vpMarkerlessMarkerHeigth[] = new short[qtyVps];
         vpMarkerlessMarkerHeigth[0] = Constants.standardMarkerlessMarkerHeigth;
+        vpMarkerlessMarkerHeigth[1] = Constants.standardMarkerlessMarkerHeigth;
         boolean vpIsAmbiguous[] = new boolean[qtyVps];
         vpIsAmbiguous[0]=false;
+        vpIsAmbiguous[1]=false;
         boolean vpFlashTorchIsOn[] = new boolean[qtyVps];
         vpFlashTorchIsOn[0]=false;
+        vpFlashTorchIsOn[1]=false;
         boolean vpIsSuperSingle[] = new boolean[qtyVps];
         vpIsSuperSingle[0]=false;
+        vpIsSuperSingle[1]=false;
         boolean vpSuperIdIs20mm[] = new boolean[qtyVps];
         vpSuperIdIs20mm[0]=false;
+        vpSuperIdIs20mm[1]=false;
         boolean vpSuperIdIs100mm[] = new boolean[qtyVps];
         vpSuperIdIs100mm[0]=false;
+        vpSuperIdIs100mm[1]=false;
         int vpSuperMarkerId[] = new int[qtyVps];
         vpSuperMarkerId[0] = 0;
-
+        vpSuperMarkerId[1] = 0;
         // Saving Vps Data initial configuration.
         try
         {
@@ -74,9 +88,9 @@ public class ConfigFileCreator {
             xmlSerializer.text("\n");
             xmlSerializer.text("\t");
             xmlSerializer.text("\t");
-            xmlSerializer.startTag("","ShipId");
-            xmlSerializer.text(Short.toString(shipId));
-            xmlSerializer.endTag("","ShipId");
+            xmlSerializer.startTag("","AssetId");
+            xmlSerializer.text(Short.toString(assetId));
+            xmlSerializer.endTag("","AssetId");
             xmlSerializer.text("\n");
             xmlSerializer.text("\t");
             xmlSerializer.text("\t");
@@ -110,7 +124,7 @@ public class ConfigFileCreator {
             xmlSerializer.text("\n");
             xmlSerializer.text("\t");
             xmlSerializer.endTag("","Parameters");
-            for (int i=1; i<(qtyVps+1); i++)
+            for (int i=0; i<(qtyVps); i++)
             {
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
@@ -125,93 +139,93 @@ public class ConfigFileCreator {
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpXCameraDistance");
-                xmlSerializer.text(Integer.toString(vpXCameraDistance[i-1]));
+                xmlSerializer.text(Integer.toString(vpXCameraDistance[i]));
                 xmlSerializer.endTag("","VpXCameraDistance");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpYCameraDistance");
-                xmlSerializer.text(Integer.toString(vpYCameraDistance[i-1]));
+                xmlSerializer.text(Integer.toString(vpYCameraDistance[i]));
                 xmlSerializer.endTag("","VpYCameraDistance");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpZCameraDistance");
-                xmlSerializer.text(Integer.toString(vpZCameraDistance[i-1]));
+                xmlSerializer.text(Integer.toString(vpZCameraDistance[i]));
                 xmlSerializer.endTag("","VpZCameraDistance");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpXCameraRotation");
-                xmlSerializer.text(Integer.toString(vpXCameraRotation[i-1]));
+                xmlSerializer.text(Integer.toString(vpXCameraRotation[i]));
                 xmlSerializer.endTag("","VpXCameraRotation");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpYCameraRotation");
-                xmlSerializer.text(Integer.toString(vpYCameraRotation[i-1]));
+                xmlSerializer.text(Integer.toString(vpYCameraRotation[i]));
                 xmlSerializer.endTag("","VpYCameraRotation");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpZCameraRotation");
-                xmlSerializer.text(Integer.toString(vpZCameraRotation[i-1]));
+                xmlSerializer.text(Integer.toString(vpZCameraRotation[i]));
                 xmlSerializer.endTag("","VpZCameraRotation");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpLocDescription");
-                xmlSerializer.text(vpLocationDesText[i-1]);
+                xmlSerializer.text(vpLocationDesText[i]);
                 xmlSerializer.endTag("","VpLocDescription");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpMarkerlessMarkerWidth");
-                xmlSerializer.text(Short.toString(vpMarkerlessMarkerWidth[i-1]));
+                xmlSerializer.text(Short.toString(vpMarkerlessMarkerWidth[i]));
                 xmlSerializer.endTag("","VpMarkerlessMarkerWidth");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpMarkerlessMarkerHeigth");
-                xmlSerializer.text(Short.toString(vpMarkerlessMarkerHeigth[i-1]));
+                xmlSerializer.text(Short.toString(vpMarkerlessMarkerHeigth[i]));
                 xmlSerializer.endTag("","VpMarkerlessMarkerHeigth");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpIsAmbiguous");
-                xmlSerializer.text(Boolean.toString(vpIsAmbiguous[i-1]));
+                xmlSerializer.text(Boolean.toString(vpIsAmbiguous[i]));
                 xmlSerializer.endTag("","VpIsAmbiguous");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpFlashTorchIsOn");
-                xmlSerializer.text(Boolean.toString(vpFlashTorchIsOn[i-1]));
+                xmlSerializer.text(Boolean.toString(vpFlashTorchIsOn[i]));
                 xmlSerializer.endTag("","VpFlashTorchIsOn");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpIsSuperSingle");
-                xmlSerializer.text(Boolean.toString(vpIsSuperSingle[i-1]));
+                xmlSerializer.text(Boolean.toString(vpIsSuperSingle[i]));
                 xmlSerializer.endTag("","VpIsSuperSingle");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpSuperIdIs20mm");
-                xmlSerializer.text(Boolean.toString(vpSuperIdIs20mm[i-1]));
+                xmlSerializer.text(Boolean.toString(vpSuperIdIs20mm[i]));
                 xmlSerializer.endTag("","VpSuperIdIs20mm");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","vpSuperIdIs100mm");
-                xmlSerializer.text(Boolean.toString(vpSuperIdIs100mm[i-1]));
+                xmlSerializer.text(Boolean.toString(vpSuperIdIs100mm[i]));
                 xmlSerializer.endTag("","vpSuperIdIs100mm");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpSuperMarkerId");
-                if (vpIsSuperSingle[i-1])
+                if (vpIsSuperSingle[i])
                 {
-                    xmlSerializer.text(Integer.toString(vpSuperMarkerId[i-1]));
+                    xmlSerializer.text(Integer.toString(vpSuperMarkerId[i]));
                 }
                 else
                 {
@@ -244,7 +258,7 @@ public class ConfigFileCreator {
 
     public static void createVpsCheckedFile(Context context, File directory, String fileName){
 
-        short qtyVps=1;
+        short qtyVps=2;
         // Saving vpChecked state.
         try {
             XmlSerializer xmlSerializer = Xml.newSerializer();
@@ -261,7 +275,7 @@ public class ConfigFileCreator {
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("", "VpNumber");
-                xmlSerializer.text(Integer.toString(i+1));
+                xmlSerializer.text(Integer.toString(i));
                 xmlSerializer.endTag("", "VpNumber");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");

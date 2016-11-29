@@ -105,6 +105,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
     // and match the scene descriptors to reference descriptors.
     mFeatureDetectorAndDescriptorExtractor->detect(mGraySrc, mSceneKeypoints);
     mFeatureDetectorAndDescriptorExtractor->compute(mGraySrc, mSceneKeypoints, mSceneDescriptors);
+
     if (frame>9) frame=0;
     int k = frame * 3;
     int kmax = k + 2;
@@ -122,6 +123,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
         //LOGD("Searching for VP: %d    Matches Found: %d", (k + 1), mMatches.size());
         // Attempt to find the target image's 3D pose in the scene.
         if (mMatches.size() >= 4) {
+            LOGD("Searching for VP: %d    Matches Found: %d", (k+1), mMatches.size());
             // There are sufficient matches to find the pose.
             // Calculate the max and min distances between keypoints.
             float maxDist = 0.0f;
@@ -181,7 +183,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
                             mPose[4] = (float) mRVec.at<double>(1);// Y Rotation
                             mPose[5] = (float) mRVec.at<double>(2);// Z Rotation
                             if (isSingleImage == 0){
-                                mPose[6] = (float) (k + 1); // VP currently being tracked
+                                mPose[6] = (float) (k+1); // VP currently being tracked
                             } else {
                                 mPose[6] = (float) (isSingleImage);
                             }

@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -284,9 +285,9 @@ public class MainActivity extends AppCompatActivity {
                         getExistingAccountAuthToken(availableAccounts[which], authTokenType);
                     userLogged.setText(getText(R.string.userstate_loggedin)+" "+availableAccounts[which].name);
                     noUserLogged = false;
-                    Log.d(TAG, "Calling the SeaMensor Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+                    Log.d(TAG, "Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
                     Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
-                    launch_intent.putExtra("activitytobecalled", "seamensor");
+                    launch_intent.putExtra("activitytobecalled", "imagecapactivity");
                     launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
                     launch_intent.putExtra("appstartstate", appStartState);
                     startActivity(launch_intent);
@@ -365,9 +366,9 @@ public class MainActivity extends AppCompatActivity {
                     String mymtoken = sharedPref.getString(Constants.MYM_KEY," ");
                     Log.d(TAG, "AddNewAccount Token is " + mymtoken);
                     getCognitoIdAndToken(mymtoken);
-                    Log.d(TAG, "Calling the SeaMensor Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+                    Log.d(TAG, "Calling the imagecapactivity Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
                     Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
-                    launch_intent.putExtra("activitytobecalled", "seamensor");
+                    launch_intent.putExtra("activitytobecalled", "imagecapactivity");
                     launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
                     launch_intent.putExtra("appstartstate", appStartState);
                     startActivity(launch_intent);
@@ -386,7 +387,8 @@ public class MainActivity extends AppCompatActivity {
         if (back_pressed + 2000 > System.currentTimeMillis())
             super.onBackPressed();
         else
-            Toast.makeText(getBaseContext(), getString(R.string.double_bck_exit), Toast.LENGTH_SHORT).show();
+            Snackbar.make(mainLinearLayout,getString(R.string.double_bck_exit), Snackbar.LENGTH_LONG).show();
+
         back_pressed = System.currentTimeMillis();
     }
 

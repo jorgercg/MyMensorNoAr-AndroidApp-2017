@@ -43,7 +43,7 @@
     <string name="button_reject_vp_photo">Repeat</string>
     <string name="is_photo_ok">Is Photo captured ok? (You can zoom in!!!)</string>
     <string name="desc_vp_empty">Empty</string>
-    <string name="vp_00">VP#00</string>
+    <string name="vp_00">AR OFF</string>
     <string name="vpNotAcquiredStatus">N</string>
     <string name="vpAcquiredStatus">Y</string>
     <string name="not_all_vps_acquired">Error: not all vps acquired</string>
@@ -81,4 +81,18 @@
     <string name="loadingcfgactvty">Opening VPs setup.</string>
     <string name="loadingimgcapactvty">Back to open the main app.</string>
     <string name="arSwitchText">AR</string>
+    <string name="ok">OK</string>
+    <string name="usingcerttimeistrue">App time is certified, even if device clock is not.</string>
+    <string name="usingcerttimeisfalse">App time is NOT certified, using device clock.</string>
+    <string name="certify">CERTIFY</string>
+    <string name="tryingtocertifytime">Calling time server, please assure internet connection.</string>
+    <string name="arswitchison">AR is ON, automatically capturing the configured VPs.</string>
+    <string name="arswitchisoff">AR is OFF, use the camera button to capture VPs.</string>
+    <string name="vp_notconfigurable">This is a special VP for photos without AR, thus not configurable.</string>
+    <string name="vpcfgfileloadfailed">Vps configuration file load failed.</string>
+    <string name="vp_capture_placeholder_description_freevp">Photos captured without using Augmented Reality</string>
+    <string name="to">" to "</string>
+    <string name="qtyvps_increased">Quantity of VPs increased from</string>
+    <string name="qtyvps_decreased">Quantity of VPs decreased from</string>
+    <string name="nomymensoraccount">No MyMensor account!</string>
 </resources>

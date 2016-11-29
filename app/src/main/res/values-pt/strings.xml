@@ -40,7 +40,7 @@
     <string name="button_reject_vp_photo">Repetir</string>
     <string name="is_photo_ok">A Foto foi bem capturada? (Você pode usar o zoom!!!)</string>
     <string name="desc_vp_empty">Vazio</string>
-    <string name="vp_00">VP#00</string>
+    <string name="vp_00">AR OFF</string>
     <string name="vpNotAcquiredStatus">N</string>
     <string name="vpAcquiredStatus">S</string>
     <string name="not_all_vps_acquired">Erro: nem todos vps foram capturados - capture todos antes de salvar - vps NÃO FORAM salvos"</string>
@@ -78,4 +78,18 @@
     <string name="loadingcfgactvty">Abrindo a configuração de VPs.</string>
     <string name="loadingimgcapactvty">Retornando a abrir a app principal.</string>
     <string name="arSwitchText">AR</string>
+    <string name="ok">OK</string>
+    <string name="usingcerttimeistrue">Hora da app está certificada, mesmo que o relógio do dispositivo não esteja.</string>
+    <string name="usingcerttimeisfalse">Hora da app NÃO certificada, usando relógio do dispositivo.</string>
+    <string name="certify">CERTIFICAR</string>
+    <string name="tryingtocertifytime">Chamando servidor de tempo, por favor conectar com a internet.</string>
+    <string name="arswitchison">AR está LIGADA, captura automática dos VPs configurados.</string>
+    <string name="arswitchisoff">AR está DESLIGADA, use o botão da câmera para capturar VPs.</string>
+    <string name="vp_notconfigurable">Este é um VP especial para fotos sem AR, portanto não configurável.</string>
+    <string name="vpcfgfileloadfailed">Falhou a leitura dos arquivos de configuração dos Vps.</string>
+    <string name="vp_capture_placeholder_description_freevp">Fotos capturadas sem o uso da Realidade Aumentada</string>
+    <string name="to">" para "</string>
+    <string name="qtyvps_increased">"Aumentada a quantidade de VPs de "</string>
+    <string name="qtyvps_decreased">"Reduzida a quantidade de VPs de "</string>
+    <string name="nomymensoraccount">Não há conta MyMensor!</string>
 </resources>

@@ -103,6 +103,13 @@ public class LoaderActivity extends Activity
             firstTimeLoader();
         }
 
+        if (mymensorAccount.equalsIgnoreCase("")){
+            Snackbar.make(logoLinearLayout.getRootView(), getText(R.string.nomymensoraccount), Snackbar.LENGTH_LONG)
+                            .setAction(getText(R.string.ok), null).show();
+                    Log.d(TAG, "Closing the app");
+                    finish();
+        }
+
         backgroundLoader.execute();
 
         final View.OnClickListener undoOnClickListener = new View.OnClickListener() {
@@ -148,7 +155,7 @@ public class LoaderActivity extends Activity
         if (back_pressed + 2000 > System.currentTimeMillis())
             super.onBackPressed();
         else
-            Toast.makeText(getBaseContext(), getString(R.string.double_bck_exit), Toast.LENGTH_SHORT).show();
+            Snackbar.make(logoLinearLayout,getString(R.string.double_bck_exit), Snackbar.LENGTH_LONG).show();
         back_pressed = System.currentTimeMillis();
     }
 
@@ -156,15 +163,29 @@ public class LoaderActivity extends Activity
         try {
             File vpsFile = new File(getApplicationContext().getFilesDir(), Constants.vpsConfigFileName);
             File vpsCheckedFile = new File(getApplicationContext().getFilesDir(),Constants.vpsCheckedConfigFileName);
-            File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp1.png");
-            File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp1.png");
+            File descvpFile0 = new File(getApplicationContext().getFilesDir(), "descvp0.png");
+            File descvpFile1 = new File(getApplicationContext().getFilesDir(), "descvp1.png");
+            File markervpFile0 = new File(getApplicationContext().getFilesDir(), "markervp0.png");
+            File markervpFile1 = new File(getApplicationContext().getFilesDir(), "markervp1.png");
 
             if (!vpsFile.exists()) {
-                Log.d(TAG,"firstTimeLoader: vpsFile.exists()="+vpsFile.exists());
-                ConfigFileCreator.createVpsfile(getApplicationContext(), getApplicationContext().getFilesDir(), Constants.vpsConfigFileName); }
-            if (!vpsCheckedFile.exists()) { ConfigFileCreator.createVpsCheckedFile(getApplicationContext(), getApplicationContext().getFilesDir(), Constants.vpsCheckedConfigFileName); }
-            if (!descvpFile.exists()) { ConfigFileCreator.createDescvpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "descvp1.png"); }
-            if (!markervpFile.exists()) { ConfigFileCreator.createMarkervpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "markervp1.png"); }
+                ConfigFileCreator.createVpsfile(getApplicationContext(), getApplicationContext().getFilesDir(), Constants.vpsConfigFileName);
+            }
+            if (!vpsCheckedFile.exists()) {
+                ConfigFileCreator.createVpsCheckedFile(getApplicationContext(), getApplicationContext().getFilesDir(), Constants.vpsCheckedConfigFileName);
+            }
+            if (!descvpFile0.exists()) {
+                ConfigFileCreator.createDescvpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "descvp0.png");
+            }
+            if (!descvpFile1.exists()) {
+                ConfigFileCreator.createDescvpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "descvp1.png");
+            }
+            if (!markervpFile0.exists()) {
+                ConfigFileCreator.createMarkervpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "markervp0.png");
+            }
+            if (!markervpFile1.exists()) {
+                ConfigFileCreator.createMarkervpFile(getApplicationContext(), getApplicationContext().getFilesDir(), "markervp1.png");
+            }
 
             Log.d(TAG,"firstTimeLoader: Waiting for initial config files and image to be created");
 
@@ -181,11 +202,12 @@ public class LoaderActivity extends Activity
             Boolean imageFilesOK = false;
 
             do {
-                File descvpFileCHK = new File(getApplicationContext().getFilesDir(),"descvp1.png");
-                imageFilesOK = descvpFileCHK.exists();
+                File descvpFileCHK0 = new File(getApplicationContext().getFilesDir(),"descvp0.png");
+                File descvpFileCHK1 = new File(getApplicationContext().getFilesDir(),"descvp1.png");
+                imageFilesOK = ((descvpFileCHK0.exists())&&(descvpFileCHK1.exists()));
             } while (!imageFilesOK);
 
-            Log.d(TAG,"firstTimeLoader: initial image files CREATION DONE: imageFilesOK="+configFilesOK);
+            Log.d(TAG,"firstTimeLoader: initial image files CREATION DONE: imageFilesOK="+imageFilesOK);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -435,18 +457,18 @@ public class LoaderActivity extends Activity
             {
                 // Loading Vp Location Description Images from Remote Storage and writing to local storage.
 
-                for (int j = 0; j < qtyVps; j++)
+                for (int j = 0; j < (qtyVps); j++)
                 {
                     Log.d(TAG,"loadFinalDefinitions:####### LOADING: VPDESCFILES CONTENTS j="+j);
-                    File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (j + 1) + ".png");
-                    Log.d(TAG,"loadFinalDefinitions: vpLocationDescImageFilePath Dropbox: " + descvpRemotePath+ "descvp" + (j + 1) + ".png");
+                    File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (j) + ".png");
+                    Log.d(TAG,"loadFinalDefinitions: vpLocationDescImageFilePath Dropbox: " + descvpRemotePath+ "descvp" + (j) + ".png");
                     if (MymUtils.isNewFileAvailable(  s3Client,
-                            ("descvp" + (j + 1) + ".png"),
-                            (descvpRemotePath+ "descvp" + (j + 1) + ".png"),
+                            ("descvp" + (j) + ".png"),
+                            (descvpRemotePath+ "descvp" + (j) + ".png"),
                             Constants.BUCKET_NAME,
                             getApplicationContext())) {
                         Log.d(TAG,"descvpFile loadFinalDefinitions: isNewFileAvailable= TRUE");
-                        final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (descvpRemotePath+ "descvp" + (j + 1) + ".png"), Constants.BUCKET_NAME, descvpFile);
+                        final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (descvpRemotePath+ "descvp" + (j) + ".png"), Constants.BUCKET_NAME, descvpFile);
                         observer.setTransferListener(new TransferListener() {
 
                             @Override
@@ -475,7 +497,7 @@ public class LoaderActivity extends Activity
 
                         });
                     } else {
-                        Log.d(TAG,"descvpFile loadFinalDefinitions: "+ "descvp" + (j + 1) + ".jpg"+" isNewFileAvailable= FALSE");
+                        Log.d(TAG,"descvpFile loadFinalDefinitions: "+ "descvp" + (j) + ".jpg"+" isNewFileAvailable= FALSE");
                     }
                 }
                 publishProgress(getString(R.string.almost_finished_loading_assets));
@@ -513,18 +535,18 @@ public class LoaderActivity extends Activity
             {
                 // Loading Vp Marker Images from Remote Storage and writing to local storage.
 
-                for (int j = 0; j < qtyVps; j++)
+                for (int j = 0; j < (qtyVps); j++)
                 {
                     Log.d(TAG,"loadFinalDefinitions:####### LOADING: MARKERVP CONTENTS j="+j);
-                    File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (j + 1) + ".png");
-                    Log.d(TAG,"loadFinalDefinitions: markervpRemotePath: " + markervpRemotePath+ "markervp" + (j + 1) + ".png");
+                    File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (j) + ".png");
+                    Log.d(TAG,"loadFinalDefinitions: markervpRemotePath: " + markervpRemotePath+ "markervp" + (j) + ".png");
                     if (MymUtils.isNewFileAvailable(  s3Client,
-                            ("markervp" + (j + 1) + ".png"),
-                            (markervpRemotePath+ "markervp" + (j + 1) + ".png"),
+                            ("markervp" + (j) + ".png"),
+                            (markervpRemotePath+ "markervp" + (j) + ".png"),
                             Constants.BUCKET_NAME,
                             getApplicationContext())) {
                         Log.d(TAG,"markervpFile loadFinalDefinitions: isNewFileAvailable= TRUE");
-                        final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (markervpRemotePath+ "markervp" + (j + 1) + ".png"), Constants.BUCKET_NAME, markervpFile);
+                        final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (markervpRemotePath+ "markervp" + (j) + ".png"), Constants.BUCKET_NAME, markervpFile);
                         observer.setTransferListener(new TransferListener() {
 
                             @Override
@@ -553,7 +575,7 @@ public class LoaderActivity extends Activity
 
                         });
                     } else {
-                        Log.d(TAG,"markervpFile loadFinalDefinitions: "+ "markervp" + (j + 1) + ".jpg"+" isNewFileAvailable= FALSE");
+                        Log.d(TAG,"markervpFile loadFinalDefinitions: "+ "markervp" + (j) + ".jpg"+" isNewFileAvailable= FALSE");
                     }
                 }
             }
@@ -569,10 +591,10 @@ public class LoaderActivity extends Activity
             int product = 0;
 
             do {
-                for (int k = 0; k < qtyVps; k++){
+                for (int k = 0; k < (qtyVps); k++){
                     try{
-                        File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k + 1) + ".png");
-                        File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k + 1) + ".png");
+                        File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k) + ".png");
+                        File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k) + ".png");
                         if (descvpFileCHK.exists() && markervpFileCHK.exists()) {
                             if (k == 0) {
                                 product = Math.abs(1);
@@ -609,7 +631,7 @@ public class LoaderActivity extends Activity
     public void callingActivities(int qtyVps){
 
         Log.d(TAG,"callingActivities");
-        Log.d(TAG,"callingActivities:####### LOADING: onPostExecute: callingARVewactivity: clockSetSuccess=" + clockSetSuccess);
+        Log.d(TAG,"callingActivities:####### LOADING: onPostExecute: callingARVewactivity: isTimeCertified=" + clockSetSuccess);
         Log.d(TAG,"callingActivities:####### LOADING: onPostExecute: callingARVewactivity: activityToBeCalled="+activityToBeCalled);
         TextView message = (TextView) findViewById(R.id.bottom_message);
         if (activityToBeCalled.equalsIgnoreCase("configactivity"))
@@ -622,7 +644,7 @@ public class LoaderActivity extends Activity
                 intent.putExtra("QtyVps", qtyVps);
                 intent.putExtra("sntpTime", sntpTime);
                 intent.putExtra("sntpReference", sntpReference);
-                intent.putExtra("clockSetSuccess", clockSetSuccess);
+                intent.putExtra("isTimeCertified", clockSetSuccess);
                 startActivity(intent);
             }
             catch (Exception e)
@@ -646,7 +668,7 @@ public class LoaderActivity extends Activity
                 intent.putExtra("QtyVps", qtyVps);
                 intent.putExtra("sntpTime", sntpTime);
                 intent.putExtra("sntpReference", sntpReference);
-                intent.putExtra("clockSetSuccess", clockSetSuccess);
+                intent.putExtra("isTimeCertified", clockSetSuccess);
                 startActivity(intent);
             }
             catch (Exception e)
@@ -663,179 +685,4 @@ public class LoaderActivity extends Activity
 
     }
 
-    public class SntpClient
-    {
-        private static final String TAG = "SntpClient";
-
-        private static final int REFERENCE_TIME_OFFSET = 16;
-        private static final int ORIGINATE_TIME_OFFSET = 24;
-        private static final int RECEIVE_TIME_OFFSET = 32;
-        private static final int TRANSMIT_TIME_OFFSET = 40;
-        private static final int NTP_PACKET_SIZE = 48;
-
-        private static final int NTP_PORT = 123;
-        private static final int NTP_MODE_CLIENT = 3;
-        private static final int NTP_VERSION = 3;
-
-        // Number of seconds between Jan 1, 1900 and Jan 1, 1970
-        // 70 years plus 17 leap days
-        private static final long OFFSET_1900_TO_1970 = ((365L * 70L) + 17L) * 24L * 60L * 60L;
-
-        // system time computed from NTP server response
-        private long mNtpTime;
-
-        // value of SystemClock.elapsedRealtime() corresponding to mNtpTime
-        private long mNtpTimeReference;
-
-        // round trip time in milliseconds
-        private long mRoundTripTime;
-
-        /**
-         * Sends an SNTP request to the given host and processes the response.
-         *
-         * @param host host name of the server.
-         * @param timeout network timeout in milliseconds.
-         * @return true if the transaction was successful.
-         */
-        public boolean requestTime(String host, int timeout) {
-            DatagramSocket socket = null;
-            try {
-                socket = new DatagramSocket();
-                socket.setSoTimeout(timeout);
-                InetAddress address = InetAddress.getByName(host);
-                byte[] buffer = new byte[NTP_PACKET_SIZE];
-                DatagramPacket request = new DatagramPacket(buffer, buffer.length, address, NTP_PORT);
-
-                // set mode = 3 (client) and version = 3
-                // mode is in low 3 bits of first byte
-                // version is in bits 3-5 of first byte
-                buffer[0] = NTP_MODE_CLIENT | (NTP_VERSION << 3);
-
-                // get current time and write it to the request packet
-                long requestTime = System.currentTimeMillis();
-                long requestTicks = SystemClock.elapsedRealtime();
-                writeTimeStamp(buffer, TRANSMIT_TIME_OFFSET, requestTime);
-
-                socket.send(request);
-
-                // read the response
-                DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-                socket.receive(response);
-                long responseTicks = SystemClock.elapsedRealtime();
-                long responseTime = requestTime + (responseTicks - requestTicks);
-
-                // extract the results
-                long originateTime = readTimeStamp(buffer, ORIGINATE_TIME_OFFSET);
-                long receiveTime = readTimeStamp(buffer, RECEIVE_TIME_OFFSET);
-                long transmitTime = readTimeStamp(buffer, TRANSMIT_TIME_OFFSET);
-                long roundTripTime = responseTicks - requestTicks - (transmitTime - receiveTime);
-                // receiveTime = originateTime + transit + skew
-                // responseTime = transmitTime + transit - skew
-                // clockOffset = ((receiveTime - originateTime) + (transmitTime - responseTime))/2
-                //             = ((originateTime + transit + skew - originateTime) +
-                //                (transmitTime - (transmitTime + transit - skew)))/2
-                //             = ((transit + skew) + (transmitTime - transmitTime - transit + skew))/2
-                //             = (transit + skew - transit + skew)/2
-                //             = (2 * skew)/2 = skew
-                long clockOffset = ((receiveTime - originateTime) + (transmitTime - responseTime))/2;
-                // if (false) Log.d(TAG, "round trip: " + roundTripTime + " ms");
-                // if (false) Log.d(TAG, "clock offset: " + clockOffset + " ms");
-
-                // save our results - use the times on this side of the network latency
-                // (response rather than request time)
-                mNtpTime = responseTime + clockOffset;
-                mNtpTimeReference = responseTicks;
-                mRoundTripTime = roundTripTime;
-            } catch (Exception e) {
-                if (false) Log.d(TAG, "request time failed: " + e);
-                return false;
-            } finally {
-                if (socket != null) {
-                    socket.close();
-                }
-            }
-
-            return true;
-        }
-
-        /**
-         * Returns the time computed from the NTP transaction.
-         *
-         * @return time value computed from NTP server response.
-         */
-        public long getNtpTime() {
-            return mNtpTime;
-        }
-
-        /**
-         * Returns the reference clock value (value of SystemClock.elapsedRealtime())
-         * corresponding to the NTP time.
-         *
-         * @return reference clock corresponding to the NTP time.
-         */
-        public long getNtpTimeReference() {
-            return mNtpTimeReference;
-        }
-
-        /**
-         * Returns the round trip time of the NTP transaction
-         *
-         * @return round trip time in milliseconds.
-         */
-        public long getRoundTripTime() {
-            return mRoundTripTime;
-        }
-
-        /**
-         * Reads an unsigned 32 bit big endian number from the given offset in the buffer.
-         */
-        private long read32(byte[] buffer, int offset) {
-            byte b0 = buffer[offset];
-            byte b1 = buffer[offset+1];
-            byte b2 = buffer[offset+2];
-            byte b3 = buffer[offset+3];
-
-            // convert signed bytes to unsigned values
-            int i0 = ((b0 & 0x80) == 0x80 ? (b0 & 0x7F) + 0x80 : b0);
-            int i1 = ((b1 & 0x80) == 0x80 ? (b1 & 0x7F) + 0x80 : b1);
-            int i2 = ((b2 & 0x80) == 0x80 ? (b2 & 0x7F) + 0x80 : b2);
-            int i3 = ((b3 & 0x80) == 0x80 ? (b3 & 0x7F) + 0x80 : b3);
-
-            return ((long)i0 << 24) + ((long)i1 << 16) + ((long)i2 << 8) + (long)i3;
-        }
-
-        /**
-         * Reads the NTP time stamp at the given offset in the buffer and returns
-         * it as a system time (milliseconds since January 1, 1970).
-         */
-        private long readTimeStamp(byte[] buffer, int offset) {
-            long seconds = read32(buffer, offset);
-            long fraction = read32(buffer, offset + 4);
-            return ((seconds - OFFSET_1900_TO_1970) * 1000) + ((fraction * 1000L) / 0x100000000L);
-        }
-
-        /**
-         * Writes system time (milliseconds since January 1, 1970) as an NTP time stamp
-         * at the given offset in the buffer.
-         */
-        private void writeTimeStamp(byte[] buffer, int offset, long time) {
-            long seconds = time / 1000L;
-            long milliseconds = time - seconds * 1000L;
-            seconds += OFFSET_1900_TO_1970;
-
-            // write seconds in big endian format
-            buffer[offset++] = (byte)(seconds >> 24);
-            buffer[offset++] = (byte)(seconds >> 16);
-            buffer[offset++] = (byte)(seconds >> 8);
-            buffer[offset++] = (byte)(seconds >> 0);
-
-            long fraction = milliseconds * 0x100000000L / 1000L;
-            // write fraction in big endian format
-            buffer[offset++] = (byte)(fraction >> 24);
-            buffer[offset++] = (byte)(fraction >> 16);
-            buffer[offset++] = (byte)(fraction >> 8);
-            // low order bits should be random data
-            buffer[offset++] = (byte)(Math.random() * 255.0);
-        }
-    }
 }

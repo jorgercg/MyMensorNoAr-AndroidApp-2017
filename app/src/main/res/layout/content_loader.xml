@@ -30,7 +30,7 @@
             android:paddingBottom="8dp"
             android:paddingTop="8dp"
             android:visibility="visible"
-            android:src="@drawable/animlogoseamensor20"
+            android:src="@drawable/logoseamensor300dpi"
             android:layout_height="150dp" />
 
         <TextView
