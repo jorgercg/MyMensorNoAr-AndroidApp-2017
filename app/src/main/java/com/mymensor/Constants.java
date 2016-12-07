@@ -20,6 +20,7 @@ public class Constants {
     public static final short seaMensorMarkerWidthWhenIdIs100mm = 134;
     public static final short seaMensorMarkerHeigthWhenIdIs100mm = 134;
     public static final float idMarkerStdSize = 0.055f;
+    public static final long shortVideoLength = 3000;
     public static final int cameraWidthInPixels = 1280;
     public static final int cameraHeigthInPixels = 720;
     public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440 // (1280-700)/2=290

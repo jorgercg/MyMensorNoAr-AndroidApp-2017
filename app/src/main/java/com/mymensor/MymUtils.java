@@ -16,6 +16,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.MatOfDouble;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,6 +25,9 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class MymUtils {
 
@@ -48,6 +52,32 @@ public class MymUtils {
         } catch (AmazonClientException ace){
             Log.e("MymUtils","isNewFileAvailable: exception: "+ace.toString());
             return false;
+        }
+    }
+
+    public static TransferObserver storeRemoteFileLazy( TransferUtility transferUtility,
+                                                    String fileName,
+                                                    String bucketName,
+                                                    File file,
+                                                    ObjectMetadata objectMetadata){
+
+        boolean fileOK = false;
+        long loopStart = System.currentTimeMillis();
+
+        do {
+            fileOK = file.exists();
+        } while ((!fileOK)||((System.currentTimeMillis()-loopStart)>20000));
+
+        if (fileOK) {
+            TransferObserver observer = transferUtility.upload(
+                    bucketName,		/* The bucket to upload to */
+                    fileName,		/* The key for the uploaded object */
+                    file,				/* The file where the data to upload exists */
+                    objectMetadata			/* The ObjectMetadata associated with the object*/
+            );
+            return observer;
+        } else {
+            return null;
         }
     }
 
@@ -156,10 +186,10 @@ public class MymUtils {
         MatOfDouble mCameraMatrix = new MatOfDouble();
         mCameraMatrix.create(3, 3, CvType.CV_64FC1);
 
-        final float fovAspectRatio = Constants.mFOVX/Constants.mFOVY;
-        final double diagonalPx = Math.sqrt((Math.pow(mWidth, 2.0)+Math.pow(mWidth / fovAspectRatio, 2.0)));
-        final double focalLengthPx = 0.5*diagonalPx/Math.sqrt(Math.pow(Math.tan(0.5 * Constants.mFOVX * Math.PI / 180f), 2.0) +
-                        Math.pow(Math.tan(0.5 * Constants.mFOVY * Math.PI / 180f), 2.0));
+        final float fovAspectRatio = Constants.mFOVX / Constants.mFOVY;
+        final double diagonalPx = Math.sqrt((Math.pow(mWidth, 2.0) + Math.pow(mWidth / fovAspectRatio, 2.0)));
+        final double focalLengthPx = 0.5 * diagonalPx / Math.sqrt(Math.pow(Math.tan(0.5 * Constants.mFOVX * Math.PI / 180f), 2.0) +
+                Math.pow(Math.tan(0.5 * Constants.mFOVY * Math.PI / 180f), 2.0));
 
         mCameraMatrix.put(0, 0, focalLengthPx);
         mCameraMatrix.put(0, 1, 0.0);
@@ -174,6 +204,38 @@ public class MymUtils {
         return mCameraMatrix;
     }
 
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
+    public static String getFileHash(File file) throws IOException {
+
+        MessageDigest md;
+        byte[] digest = null;
+        InputStream is = new FileInputStream(file);
+        try{
+            md = MessageDigest.getInstance("SHA-256");
+            byte[] buf = new byte[1024];
+            is = new DigestInputStream(is, md);
+            while(is.read(buf, 0, buf.length) != -1);
+            digest = md.digest();
+        } catch (NoSuchAlgorithmException eNSAE){
+            Log.d(TAG,"NoSuchAlgorithmException:"+eNSAE.toString());
+        } catch (Exception e) {
+            Log.d(TAG,"Exception:"+e.toString());
+        } finally {
+            is.close();
+        }
+        return bytesToHex(digest);
+    }
 
 
     public static class IsRemoteServerAvailable {

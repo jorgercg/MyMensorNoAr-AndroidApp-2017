@@ -26,12 +26,12 @@
 
         <ImageView
             android:id="@+id/seamensor_logo"
-            android:layout_width="300dp"
             android:paddingBottom="8dp"
             android:paddingTop="8dp"
             android:visibility="visible"
-            android:src="@drawable/logoseamensor300dpi"
-            android:layout_height="150dp" />
+            android:src="@drawable/logo_mymensor_new3"
+            android:layout_height="200dp"
+            android:layout_width="200dp" />
 
         <TextView
             android:id="@+id/bottom_message"

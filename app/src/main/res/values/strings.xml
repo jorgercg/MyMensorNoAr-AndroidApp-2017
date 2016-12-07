@@ -95,8 +95,12 @@
     <string name="qtyvps_increased">Quantity of VPs increased from</string>
     <string name="qtyvps_decreased">Quantity of VPs decreased from</string>
     <string name="nomymensoraccount">No MyMensor account!</string>
-    <string name="confirmconfigloading">Close capture app and call setup app?</string>
+    <string name="confirmconfigloading">Close image capture and call setup?</string>
     <string name="confirm">CONFIRM</string>
-    <string name="callingconfigactivity">Closing and calling setup app...</string>
+    <string name="callingconfigactivity">Closing and calling setup...</string>
     <string name="takephoto">Press camera button to take photo. Stay still until VP is configured!!!</string>
+    <string name="confirmimagecaploading">Close setup and call image capture?</string>
+    <string name="callingimagecapactivity">Closing and calling image capture...</string>
+    <string name="configready">Ready to setup.</string>
+    <string name="imagecapready">Ready to capture images.</string>
 </resources>

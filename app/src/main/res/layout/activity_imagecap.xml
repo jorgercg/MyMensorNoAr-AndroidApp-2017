@@ -276,13 +276,25 @@
         android:visibility="invisible"
         android:layout_margin="16dp" />
 
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/videoCameraShutterButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_alignParentEnd="true"
+        android:clickable="true"
+        opencv:fabSize="normal"
+        opencv:srcCompat="@android:drawable/ic_menu_camera"
+        android:layout_below="@id/cameraShutterButton"
+        android:visibility="invisible"
+        android:layout_margin="16dp" />
 
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="top|center"
-        android:layout_below="@id/cameraShutterButton"
+        android:layout_below="@id/videoCameraShutterButton"
         android:layout_alignParentEnd="true"
         android:layout_margin="16dp">
 

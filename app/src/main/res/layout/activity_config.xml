@@ -33,12 +33,57 @@
         android:background="@android:color/transparent"
         android:layout_width="120dp" />
 
+    <EditText
+        android:id="@+id/descVPEditText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:lines="2"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/textView2"
+        android:gravity="left|top"
+        android:text="@string/desc_vp_empty"
+        android:textColor="@android:color/holo_blue_light"
+        android:background="@android:color/background_dark"
+        android:visibility="gone"
+        android:inputType="text|textCapSentences|textAutoCorrect"
+        android:imeOptions="actionDone"
+        />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@id/vp_list"
+        android:gravity="center"
+        android:text="@string/vp_00"
+        android:background="@android:color/holo_blue_dark"
+        android:visibility="invisible"
+        />
+
+    <TextView
+        android:id="@+id/vpAcquiredStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:layout_toEndOf="@id/vp_list"
+        android:layout_below="@+id/textView2"
+        android:gravity="center"
+        android:text="@string/vpNotAcquiredStatus"
+        android:textColor="@android:color/holo_blue_light"
+        android:background="@android:color/background_dark"
+        android:visibility="invisible"
+        />
+
     <TextView
         android:id="@+id/idMarkerNumberTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@id/vp_list"
+        android:layout_below="@+id/vpAcquiredStatus"
         android:textColor="@android:color/white"
         android:background="@android:color/holo_blue_dark"
         android:visibility="visible"
@@ -54,6 +99,18 @@
         android:src="@drawable/circulo_seamensor"
         android:padding="0dp"
         android:visibility="gone"        />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/buttonCallImagecap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:clickable="true"
+        opencv:fabSize="mini"
+        opencv:srcCompat="@drawable/logo_mymensor_new3"
+        android:visibility="visible"
+        android:layout_margin="16dp" />
 
     <LinearLayout
         android:id="@+id/linearLayoutQtyVps"
@@ -262,49 +319,6 @@
 
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/descVPEditText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="4dp"
-        android:lines="2"
-        android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/textView2"
-        android:gravity="left|top"
-        android:text="@string/desc_vp_empty"
-        android:textColor="@android:color/holo_blue_light"
-        android:background="@android:color/background_dark"
-        android:visibility="gone"
-        android:inputType="text|textCapSentences|textAutoCorrect"
-        android:imeOptions="actionDone"
-        />
-
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="4dp"
-        android:layout_alignParentTop="true"
-        android:layout_toEndOf="@id/vp_list"
-        android:gravity="center"
-        android:text="@string/vp_00"
-        android:background="@android:color/holo_blue_dark"
-        android:visibility="invisible"
-        />
-
-    <TextView
-        android:id="@+id/vpAcquiredStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="4dp"
-        android:layout_toEndOf="@id/vp_list"
-        android:layout_below="@+id/textView2"
-        android:gravity="center"
-        android:text="@string/vpNotAcquiredStatus"
-        android:textColor="@android:color/holo_blue_light"
-        android:background="@android:color/background_dark"
-        android:visibility="invisible"
-        />
     <Button
         android:id="@+id/buttonAcceptVpPhoto"
         android:layout_width="100dp"

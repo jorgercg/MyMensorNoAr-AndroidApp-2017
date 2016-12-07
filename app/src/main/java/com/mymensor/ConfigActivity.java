@@ -2,6 +2,7 @@ package com.mymensor;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
@@ -12,6 +13,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.util.Xml;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -27,6 +29,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
@@ -34,6 +37,7 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensor.filters.ARFilter;
 import com.mymensor.filters.Filter;
@@ -42,6 +46,7 @@ import com.mymensor.filters.NoneARFilter;
 import com.mymensor.filters.VpConfigFilter;
 
 import org.apache.commons.io.FileUtils;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -52,6 +57,7 @@ import org.opencv.core.MatOfDouble;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
@@ -81,8 +87,6 @@ public class ConfigActivity extends Activity implements
     private String descvpRemotePath;
     private String markervpRemotePath;
     private String vpsRemotePath;
-    private String vpsCheckedRemotePath;
-    private String capRemotePath;
 
     private short qtyVps = 0;
     private short vpIndex;
@@ -159,6 +163,8 @@ public class ConfigActivity extends Activity implements
     LinearLayout linearLayoutSuperSingleVp;
     LinearLayout linearLayoutConfigCaptureVps;
 
+    FloatingActionButton buttonCallImagecap;
+
 
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
@@ -167,7 +173,7 @@ public class ConfigActivity extends Activity implements
 
     public long sntpTime;
     public long sntpTimeReference;
-    public boolean clockSetSuccess;
+    public boolean isTimeCertified;
     private long acquisitionStartTime;
 
     // The camera view.
@@ -256,13 +262,11 @@ public class ConfigActivity extends Activity implements
         qtyVps = Short.parseShort(getIntent().getExtras().get("QtyVps").toString());
         sntpTime = Long.parseLong(getIntent().getExtras().get("sntpTime").toString());
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
-        clockSetSuccess = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
+        isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
 
         descvpRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"dsc"+"/";
         markervpRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"mrk"+"/";
         vpsRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/";
-        vpsCheckedRemotePath = mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
-        capRemotePath = mymensorAccount+"/"+"cap"+"/";
 
         if (savedInstanceState != null) {
             mCameraIndex = savedInstanceState.getInt(STATE_CAMERA_INDEX, 0);
@@ -377,6 +381,47 @@ public class ConfigActivity extends Activity implements
         linearLayoutSuperSingleVp = (LinearLayout) findViewById(R.id.linearLayoutSuperSingleVp);
         linearLayoutConfigCaptureVps = (LinearLayout) findViewById(R.id.linearLayoutConfigCaptureVps);
 
+        buttonCallImagecap = (FloatingActionButton) findViewById(R.id.buttonCallImagecap);
+
+        // Call Config Button
+
+        final View.OnClickListener confirmOnClickListenerButtonCallImagecap = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Snackbar.make(view, getText(R.string.callingimagecapactivity), Snackbar.LENGTH_LONG).show();
+
+                try {
+                    Intent intent = new Intent(getApplicationContext(), ImageCapActivity.class);
+                    intent.putExtra("mymensoraccount", mymensorAccount);
+                    intent.putExtra("dcinumber", dciNumber);
+                    intent.putExtra("QtyVps", qtyVps);
+                    intent.putExtra("sntpTime", sntpTime);
+                    intent.putExtra("sntpReference", sntpTimeReference);
+                    intent.putExtra("isTimeCertified", isTimeCertified);
+                    startActivity(intent);
+                }
+                catch (Exception e)
+                {
+                    Toast toast = Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT);
+                    toast.setGravity(Gravity.CENTER | Gravity.CENTER_HORIZONTAL, 0, 30);
+                    toast.show();
+                }
+                finally
+                {
+                    finish();
+                }
+            }
+        };
+
+        buttonCallImagecap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.confirmimagecaploading), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.confirm), confirmOnClickListenerButtonCallImagecap).show();
+            }
+        });
+
         increaseQtyVps.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -403,6 +448,7 @@ public class ConfigActivity extends Activity implements
                 imageView.setVisibility(View.GONE);
                 requestPhotoButton.setVisibility(View.INVISIBLE);
                 qtyVpsLinearLayout.setVisibility(View.INVISIBLE);
+                buttonCallImagecap.setVisibility(View.INVISIBLE);
                 linearLayoutCaptureNewVp.setVisibility(View.INVISIBLE);
                 linearLayoutConfigCaptureVps.setVisibility(View.INVISIBLE);
                 linearLayoutAmbiguousVp.setVisibility(View.INVISIBLE);
@@ -555,12 +601,13 @@ public class ConfigActivity extends Activity implements
                 {
                     mProgress.clearAnimation();
                     mProgress.setVisibility(View.GONE);
+                    Snackbar.make(vpsListView.getRootView(),getString(R.string.configready), Snackbar.LENGTH_LONG).show();
+
                 }
 
             }
         });
     }
-
 
     // The OpenCV loader callback.
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -901,7 +948,7 @@ public class ConfigActivity extends Activity implements
                     userMetadata.put("mymensorAccount", mymensorAccount);
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                    String formattedDateTime = sdf.format(MymUtils.timeNow(clockSetSuccess, sntpTime, sntpTimeReference));
+                    String formattedDateTime = sdf.format(MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference));
                     userMetadata.put("DateTime", formattedDateTime);
                     //call setUserMetadata on our ObjectMetadata object, passing it our map
                     myObjectMetadata.setUserMetadata(userMetadata);
@@ -930,7 +977,7 @@ public class ConfigActivity extends Activity implements
                 userMetadata.put("mymensorAccount", mymensorAccount);
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                String formattedDateTime = sdf.format(MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference));
+                String formattedDateTime = sdf.format(MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference));
                 userMetadata.put("DateTime", formattedDateTime);
                 //call setUserMetadata on our ObjectMetadata object, passing it our map
                 myObjectMetadata.setUserMetadata(userMetadata);
@@ -996,6 +1043,7 @@ public class ConfigActivity extends Activity implements
             imageView.setVisibility(View.GONE);
             requestPhotoButton.setVisibility(View.INVISIBLE);
             qtyVpsLinearLayout.setVisibility(View.VISIBLE);
+            buttonCallImagecap.setVisibility(View.VISIBLE);
             linearLayoutCaptureNewVp.setVisibility(View.INVISIBLE);
             linearLayoutConfigCaptureVps.setVisibility(View.INVISIBLE);
             linearLayoutAmbiguousVp.setVisibility(View.INVISIBLE);
@@ -1307,7 +1355,7 @@ public class ConfigActivity extends Activity implements
             ObjectMetadata myObjectMetadata = new ObjectMetadata();
             //create a map to store user metadata
             Map<String, String> userMetadata = new HashMap<String,String>();
-            userMetadata.put("TimeStamp", MymUtils.timeNow(clockSetSuccess,sntpTime,sntpTimeReference).toString());
+            userMetadata.put("TimeStamp", MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference).toString());
             myObjectMetadata.setUserMetadata(userMetadata);
             TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsRemotePath + Constants.vpsConfigFileName), Constants.BUCKET_NAME, vpsConfigFile, myObjectMetadata);
             observer.setTransferListener(new TransferListener() {
@@ -1441,6 +1489,7 @@ public class ConfigActivity extends Activity implements
                 // Draw Location Description Button and other buttons
                 requestPhotoButton.setVisibility(View.VISIBLE);
                 qtyVpsLinearLayout.setVisibility(View.INVISIBLE);
+                buttonCallImagecap.setVisibility(View.INVISIBLE);
                 linearLayoutConfigCaptureVps.setVisibility(View.VISIBLE);
                 linearLayoutCaptureNewVp.setVisibility(View.VISIBLE);
                 linearLayoutAmbiguousVp.setVisibility(View.VISIBLE);

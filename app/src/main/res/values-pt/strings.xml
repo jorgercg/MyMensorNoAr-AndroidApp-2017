@@ -92,8 +92,12 @@
     <string name="qtyvps_increased">"Aumentada a quantidade de VPs de "</string>
     <string name="qtyvps_decreased">"Reduzida a quantidade de VPs de "</string>
     <string name="nomymensoraccount">Não há conta MyMensor!</string>
-    <string name="confirmconfigloading">Fechar app de captura e abrir a de configuração?</string>
+    <string name="confirmconfigloading">Fechar captura de imagens e abrir a configuração?</string>
     <string name="confirm">CONFIRMAR</string>
-    <string name="callingconfigactivity">Fechando e chamando app de configuração...</string>
+    <string name="callingconfigactivity">Fechando e chamando a configuração...</string>
     <string name="takephoto">Aperte o botão da câmera para fotografar. Segure firme o celular até que o VP esteja configurado!</string>
+    <string name="confirmimagecaploading">Fechar a configuração e abrir a captura de imagens?</string>
+    <string name="callingimagecapactivity">Fechando e chamando a captura de imagens...</string>
+    <string name="configready">Prontos para configurar.</string>
+    <string name="imagecapready">Prontos para capturar imagens.</string>
 </resources>

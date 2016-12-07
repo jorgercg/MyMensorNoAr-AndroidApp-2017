@@ -446,6 +446,8 @@ public class MainActivity extends AppCompatActivity {
                 ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA)!= PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this,Manifest.permission.LOCATION_HARDWARE)!= PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this,Manifest.permission.CAPTURE_VIDEO_OUTPUT)!= PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this,Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this,Manifest.permission.GET_ACCOUNTS)!= PackageManager.PERMISSION_GRANTED)
         {
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.INTERNET,
@@ -454,6 +456,8 @@ public class MainActivity extends AppCompatActivity {
                                                                 Manifest.permission.CAMERA,
                                                                 Manifest.permission.ACCESS_FINE_LOCATION,
                                                                 Manifest.permission.LOCATION_HARDWARE,
+                                                                Manifest.permission.CAPTURE_VIDEO_OUTPUT,
+                                                                Manifest.permission.RECORD_AUDIO,
                                                                 Manifest.permission.GET_ACCOUNTS},111);
         }
     }

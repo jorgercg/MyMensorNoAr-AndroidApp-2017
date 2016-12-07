@@ -1,5 +1,6 @@
 package com.mymensor;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -11,16 +12,20 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
+import android.media.CamcorderProfile;
+import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TabLayout;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -43,6 +48,7 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensor.filters.ARFilter;
 import com.mymensor.filters.Filter;
@@ -51,6 +57,7 @@ import com.mymensor.filters.ImageDetectionFilter;
 import com.mymensor.filters.NoneARFilter;
 
 import org.apache.commons.io.FileUtils;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -58,7 +65,11 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoWriter;
+
+import org.opencv.videoio.Videoio;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
@@ -80,7 +91,9 @@ import java.util.Map;
 import java.util.TimeZone;
 
 
+import static com.mymensor.Constants.cameraWidthInPixels;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opencv.videoio.Videoio.CV_CAP_PROP_FRAME_WIDTH;
 
 public class ImageCapActivity extends Activity implements
         CameraBridgeViewBase.CvCameraViewListener2,
@@ -193,6 +206,7 @@ public class ImageCapActivity extends Activity implements
     FloatingActionButton timeCertifiedButton;
     FloatingActionButton connectedToServerButton;
     FloatingActionButton cameraShutterButton;
+    FloatingActionButton videoCameraShutterButton;
 
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
@@ -202,9 +216,16 @@ public class ImageCapActivity extends Activity implements
     public long sntpTime;
     public long sntpTimeReference;
     public boolean isTimeCertified;
+    public long videoCaptureStartmillis;
 
     private boolean askForManualPhoto = false;
+    private boolean askForManualVideo = false;
+    private boolean capturingManualVideo = false;
 
+    protected MediaRecorder mMediaRecorder;
+
+    private String videoFileName;
+    private String videoFileNameLong;
 
     public boolean isPositionCertified = false; // Or true ???????????
     public boolean isConnectedToServer = false; // Or true ???????????
@@ -236,7 +257,7 @@ public class ImageCapActivity extends Activity implements
     private float x1 = 0;
     private float x2 = 0;
 
-
+    @TargetApi(21)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -280,9 +301,21 @@ public class ImageCapActivity extends Activity implements
         final Parameters parameters = camera.getParameters();
         camera.release();
 
+        mMediaRecorder = new MediaRecorder();
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
+        profile.videoFrameWidth = Constants.cameraWidthInPixels;
+        profile.videoFrameHeight = Constants.cameraHeigthInPixels;
+        mMediaRecorder.setProfile(profile);
+        //mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        //mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        //mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        //mMediaRecorder.setVideoSize(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
+
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.imagecap_javaCameraView);
         mCameraView.setCameraIndex(0);
-        mCameraView.setMaxFrameSize(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
+        mCameraView.setMaxFrameSize(cameraWidthInPixels, Constants.cameraHeigthInPixels);
         mCameraView.setCvCameraViewListener(this);
 
         loadConfigurationFile();
@@ -339,6 +372,9 @@ public class ImageCapActivity extends Activity implements
 
         arSwitch = (Switch) findViewById(R.id.arSwitch);
 
+        cameraShutterButton = (FloatingActionButton) findViewById(R.id.cameraShutterButton);
+        videoCameraShutterButton = (FloatingActionButton) findViewById(R.id.videoCameraShutterButton);
+
         arSwitch.setChecked(true);
 
         arSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -347,11 +383,13 @@ public class ImageCapActivity extends Activity implements
                 if (isOn) {
                     isArSwitchOn = true;
                     cameraShutterButton.setVisibility(View.INVISIBLE);
+                    videoCameraShutterButton.setVisibility(View.INVISIBLE);
                     mImageDetectionFilterIndex=1;
                     Snackbar.make(arSwitch.getRootView(),getText(R.string.arswitchison), Snackbar.LENGTH_LONG).show();
                 } else {
                     isArSwitchOn = false;
                     cameraShutterButton.setVisibility(View.VISIBLE);
+                    videoCameraShutterButton.setVisibility(View.VISIBLE);
                     mImageDetectionFilterIndex=0;
                     askForManualPhoto = false;
                     vpIsManuallySelected = false;
@@ -361,9 +399,6 @@ public class ImageCapActivity extends Activity implements
                 Log.d(TAG, "isArSwitchOn="+ isArSwitchOn);
             }
         });
-
-
-        cameraShutterButton = (FloatingActionButton) findViewById(R.id.cameraShutterButton);
 
         positionCertifiedButton = (FloatingActionButton) findViewById(R.id.positionCertifiedButton);
         timeCertifiedButton = (FloatingActionButton) findViewById(R.id.timeCertifiedButton);
@@ -375,6 +410,9 @@ public class ImageCapActivity extends Activity implements
 
 
 
+
+
+
         // Camera Shutter Button
 
         cameraShutterButton.setOnClickListener(new View.OnClickListener() {
@@ -382,6 +420,17 @@ public class ImageCapActivity extends Activity implements
             public void onClick(View view) {
                 Log.d(TAG,"Camera Button clicked!!!");
                 askForManualPhoto = true;
+
+            }
+        });
+
+        // videoCamera Shutter Button
+
+        videoCameraShutterButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG,"Video Camera Button clicked!!!");
+                askForManualVideo = true;
 
             }
         });
@@ -608,12 +657,10 @@ public class ImageCapActivity extends Activity implements
 
     }
 
-
     @Override
     public void recreate() {
             super.recreate();
     }
-
 
     @Override
     protected void onResume()
@@ -635,6 +682,7 @@ public class ImageCapActivity extends Activity implements
                 {
                     mProgress.clearAnimation();
                     mProgress.setVisibility(View.GONE);
+                    Snackbar.make(vpsListView.getRootView(),getString(R.string.imagecapready), Snackbar.LENGTH_LONG).show();
                 }
 
             }
@@ -709,7 +757,7 @@ public class ImageCapActivity extends Activity implements
                 case LoaderCallbackInterface.SUCCESS:
                     Log.d(TAG, "OpenCV loaded successfully");
                     //TODO: Fix this
-                    mCameraMatrix = MymUtils.getCameraMatrix(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
+                    mCameraMatrix = MymUtils.getCameraMatrix(cameraWidthInPixels, Constants.cameraHeigthInPixels);
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
 
@@ -893,13 +941,14 @@ public class ImageCapActivity extends Activity implements
     public void onCameraViewStopped() {
     }
 
-
+    @TargetApi(21)
     @Override
     public Mat onCameraFrame(final CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
         verifyVpsChecked();
         if (!isArSwitchOn){
             if (!vpIsManuallySelected) vpTrackedInPose = 0;
+            setVpsChecked();
             final int tmpvpfree = vpTrackedInPose;
             runOnUiThread(new Runnable() {
                 @Override
@@ -936,6 +985,121 @@ public class ImageCapActivity extends Activity implements
             Log.d(TAG,"Requesting manual photo");
             takePhoto(rgba);
         }
+
+        // OFF Video Recorder
+
+
+        if ((!isArSwitchOn)&&(askForManualVideo) || (!isArSwitchOn)&&(capturingManualVideo)) {
+            if (askForManualVideo) {
+                Log.d(TAG,"A manual video was requested");
+
+
+                askForManualVideo = false;
+                capturingManualVideo = true;
+                videoCaptureStartmillis = System.currentTimeMillis();
+                long momentoLong = MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference);
+                String momento = String.valueOf(momentoLong);
+                videoFileName= "cap_vid_"+mymensorAccount+"_"+vpNumber[vpTrackedInPose]+"_"+momento+".mp4";
+                videoFileNameLong = getApplicationContext().getFilesDir()+"/"+videoFileName;
+                mMediaRecorder.setOutputFile(videoFileNameLong);
+
+                //mMediaRecorder.setOnInfoListener(this);
+                //mMediaRecorder.setOnErrorListener(this);
+                try {
+                    mMediaRecorder.prepare();
+                } catch (Exception e) {
+                    Log.e(TAG,"Error when preparinf media recorder: "+e.toString());
+                }
+                mCameraView.setRecorder(mMediaRecorder);
+                //mMediaRecorder.setMaxDuration((int) Constants.shortVideoLength);
+                mMediaRecorder.start();
+
+            }
+            if ((System.currentTimeMillis() - videoCaptureStartmillis)<Constants.shortVideoLength) {
+                Log.d(TAG,"Waiting for video recording to end");
+            } else {
+                capturingManualVideo = false;
+                try
+                {
+                    mMediaRecorder.stop();
+                    mCameraView.setRecorder(null);
+                    String path = getApplicationContext().getFilesDir().getPath();
+                    File directory = new File(path);
+                    String[] fileInDirectory = directory.list(new FilenameFilter() {
+                        @Override
+                        public boolean accept(File dir, String filename) {
+                            return filename.equalsIgnoreCase(videoFileName);
+                        }
+                    });
+                    if (fileInDirectory!=null){
+                        File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
+                        Log.d(TAG,"videoFile.getName()="+videoFile.getName());
+                        Log.d(TAG,"videoFile.getPath()="+videoFile.getPath());
+                        Log.d(TAG,"videoFileName="+videoFileName);
+                        String fileSha256Hash = MymUtils.getFileHash(videoFile);
+                        ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                        //create a map to store user metadata
+                        Map<String, String> userMetadata = new HashMap<String,String>();
+                        /*
+                        userMetadata.put("GPSLatitude", locPhotoToExif[0]);
+                        userMetadata.put("GPSLongitude", locPhotoToExif[1]);
+                        */
+                        userMetadata.put("VP", ""+(vpTrackedInPose));
+                        userMetadata.put("seamensorAccount", mymensorAccount);
+                        /*
+                        userMetadata.put("Precisioninm", locPhotoToExif[4]);
+                        userMetadata.put("LocationMillis", locPhotoToExif[5]);
+                        userMetadata.put("LocationMethod", locPhotoToExif[6]);
+                        */
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                        String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
+                        userMetadata.put("DateTime", formattedDateTime);
+                        userMetadata.put("SHA-256", fileSha256Hash);
+                        //call setUserMetadata on our ObjectMetadata object, passing it our map
+                        myObjectMetadata.setUserMetadata(userMetadata);
+                        //uploading the objects
+                        TransferObserver observer = MymUtils.storeRemoteFileLazy(
+                                transferUtility,
+                                "cap/"+videoFileName,
+                                Constants.BUCKET_NAME,
+                                videoFile,
+                                myObjectMetadata);
+                        if (observer!=null){
+                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getState().toString());
+                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getAbsoluteFilePath());
+                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getBucket());
+                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getKey());
+                        } else {
+                            Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                            vpChecked[vpTrackedInPose] = false;
+                            setVpsChecked();
+                            saveVpsChecked();
+                        }
+
+                    } else {
+                        Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                        vpChecked[vpTrackedInPose] = false;
+                        setVpsChecked();
+                        saveVpsChecked();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.e(TAG, "Failure to save video to remote storage:"+e.toString());
+                    vpChecked[vpTrackedInPose] = false;
+                    setVpsChecked();
+                    saveVpsChecked();
+                    //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
+                    e.printStackTrace();
+                }
+                mMediaRecorder.release();    ????????????????????????
+            }
+        }
+
+
+        // End of OFF Video Recorder
+
         // Apply the active filters.
         if ((mImageDetectionFilters != null)&&(isArSwitchOn)) {
             //Log.d(TAG,"isTracking="+isTracking);
@@ -1270,11 +1434,11 @@ public class ImageCapActivity extends Activity implements
                 saveVpsChecked();
                 try
                 {
-
                     //pictureFile.renameTo(new File(getApplicationContext().getFilesDir(), pictureFileName));
                     FileOutputStream fos = new FileOutputStream(pictureFile);
                     bitmapImage.compress(Bitmap.CompressFormat.JPEG, 95, fos);
                     fos.close();
+                    String fileSha256Hash = MymUtils.getFileHash(pictureFile);
                     ObjectMetadata myObjectMetadata = new ObjectMetadata();
                     //create a map to store user metadata
                     Map<String, String> userMetadata = new HashMap<String,String>();
@@ -1293,6 +1457,7 @@ public class ImageCapActivity extends Activity implements
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                     userMetadata.put("DateTime", formattedDateTime);
+                    userMetadata.put("SHA-256", fileSha256Hash);
                     //call setUserMetadata on our ObjectMetadata object, passing it our map
                     myObjectMetadata.setUserMetadata(userMetadata);
                     //uploading the objects
@@ -1386,6 +1551,7 @@ public class ImageCapActivity extends Activity implements
             }
         }
     }
+
 
 
     private void saveVpsChecked()

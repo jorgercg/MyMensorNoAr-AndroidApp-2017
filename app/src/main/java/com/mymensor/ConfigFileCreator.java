@@ -28,6 +28,9 @@ public class ConfigFileCreator {
         short qtyVps =2;
         float tolerancePosition = Constants.tolerancePosition;
         float toleranceRotation = Constants.toleranceRotation;
+        boolean vpArIsConfigured[] = new boolean[qtyVps];
+        vpArIsConfigured[0]=false;
+        vpArIsConfigured[1]=false;
         int vpXCameraDistance[] = new int[qtyVps];
         vpXCameraDistance[0]=0;
         vpXCameraDistance[1]=0;
@@ -36,7 +39,7 @@ public class ConfigFileCreator {
         vpYCameraDistance[1]=0;
         int vpZCameraDistance[] = new int[qtyVps];
         vpZCameraDistance[0]=0;
-        vpZCameraDistance[1]=1000;
+        vpZCameraDistance[1]=0;
         int vpXCameraRotation[] = new int[qtyVps];
         vpXCameraRotation[0]=0;
         vpXCameraRotation[1]=0;
@@ -135,6 +138,12 @@ public class ConfigFileCreator {
                 xmlSerializer.startTag("","VpNumber");
                 xmlSerializer.text(Integer.toString(i));
                 xmlSerializer.endTag("","VpNumber");
+                xmlSerializer.text("\n");
+                xmlSerializer.text("\t");
+                xmlSerializer.text("\t");
+                xmlSerializer.startTag("","VpArIsConfigured");
+                xmlSerializer.text(Boolean.toString(vpArIsConfigured[i]));
+                xmlSerializer.endTag("","VpArIsConfigured");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
@@ -313,7 +322,7 @@ public class ConfigFileCreator {
 
     public static void createDescvpFile(Context context, File directory, String fileName){
 
-        String internalAssetsFileName = "seamensormarker.png";
+        String internalAssetsFileName = "mymensordescvp.png";
         AssetManager assetManager = context.getAssets();
         InputStream in = null;
         OutputStream out = null;
@@ -346,7 +355,7 @@ public class ConfigFileCreator {
 
     public static void createMarkervpFile(Context context, File directory, String fileName){
 
-        String internalAssetsFileName = "seamensormarker.png";
+        String internalAssetsFileName = "mymensormarkervpbw.jpg";
         AssetManager assetManager = context.getAssets();
         InputStream in = null;
         OutputStream out = null;
