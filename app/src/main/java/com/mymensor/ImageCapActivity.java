@@ -12,20 +12,22 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.media.SoundPool;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.design.widget.TabLayout;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -34,6 +36,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -65,11 +68,8 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
-import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.videoio.VideoWriter;
 
-import org.opencv.videoio.Videoio;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
@@ -93,7 +93,7 @@ import java.util.TimeZone;
 
 import static com.mymensor.Constants.cameraWidthInPixels;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opencv.videoio.Videoio.CV_CAP_PROP_FRAME_WIDTH;
+
 
 public class ImageCapActivity extends Activity implements
         CameraBridgeViewBase.CvCameraViewListener2,
@@ -185,8 +185,11 @@ public class ImageCapActivity extends Activity implements
     TextView vpLocationDesTextView;
     TextView vpIdNumber;
 
+    TextView recText;
+
     Animation rotationRadarScan;
     Animation rotationMProgress;
+    Animation blinkingText;
 
     FloatingActionButton callConfigButton;
     FloatingActionButton alphaToggleButton;
@@ -197,6 +200,9 @@ public class ImageCapActivity extends Activity implements
     Button rejectVpPhotoButton;
 
     LinearLayout arSwitchLinearLayout;
+    LinearLayout videoRecorderTimeLayout;
+
+    Chronometer videoRecorderChronometer;
 
     Switch arSwitch;
 
@@ -207,6 +213,7 @@ public class ImageCapActivity extends Activity implements
     FloatingActionButton connectedToServerButton;
     FloatingActionButton cameraShutterButton;
     FloatingActionButton videoCameraShutterButton;
+    FloatingActionButton videoCameraShutterStopButton;
 
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
@@ -221,6 +228,8 @@ public class ImageCapActivity extends Activity implements
     private boolean askForManualPhoto = false;
     private boolean askForManualVideo = false;
     private boolean capturingManualVideo = false;
+    private boolean videoRecorderPrepared = false;
+    private boolean stopManualVideo = false;
 
     protected MediaRecorder mMediaRecorder;
 
@@ -247,8 +256,7 @@ public class ImageCapActivity extends Activity implements
     private int mImageDetectionFilterIndex;
 
     // Keys for storing the indices of the active filters.
-    private static final String STATE_IMAGE_DETECTION_FILTER_INDEX =
-            "imageDetectionFilterIndex";
+    private static final String STATE_IMAGE_DETECTION_FILTER_INDEX="imageDetectionFilterIndex";
 
     // Matrix to hold camera calibration
     // initially with absolute compute values
@@ -256,6 +264,16 @@ public class ImageCapActivity extends Activity implements
 
     private float x1 = 0;
     private float x2 = 0;
+
+
+    private SoundPool.Builder soundPoolBuilder;
+    private SoundPool soundPool;
+    private int camShutterSoundID;
+    private int videoRecordStartedSoundID;
+    private int videoRecordStopedSoundID;
+    boolean camShutterSoundIDLoaded = false;
+    boolean videoRecordStartedSoundIDLoaded = false;
+    boolean videoRecordStopedSoundIDLoaded = false;
 
     @TargetApi(21)
     @Override
@@ -293,6 +311,36 @@ public class ImageCapActivity extends Activity implements
             mImageDetectionFilterIndex = 0;
         }
 
+        this.setVolumeControlStream(AudioManager.STREAM_NOTIFICATION);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+
+            AudioAttributes audioAttrib = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            soundPool = new SoundPool.Builder().setAudioAttributes(audioAttrib).setMaxStreams(6).build();
+        }
+        else {
+
+            soundPool = new SoundPool(6, AudioManager.STREAM_NOTIFICATION, 0);
+        }
+
+        soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int i, int i1) {
+                if (i==camShutterSoundID) camShutterSoundIDLoaded=true;
+                if (i==videoRecordStartedSoundID) videoRecordStartedSoundIDLoaded=true;
+                if (i==videoRecordStopedSoundID) videoRecordStopedSoundIDLoaded=true;
+            }
+        });
+
+        camShutterSoundID = soundPool.load(this, R.raw.camerashutter,1);
+        videoRecordStartedSoundID = soundPool.load(this, R.raw.minidvcamerabeepchimeup, 1);
+        videoRecordStopedSoundID = soundPool.load(this, R.raw.minidvcamerabeepchimedown, 1);
+
+
+
         final Camera camera;
         CameraInfo cameraInfo = new CameraInfo();
         Camera.getCameraInfo(0, cameraInfo);
@@ -300,18 +348,6 @@ public class ImageCapActivity extends Activity implements
 
         final Parameters parameters = camera.getParameters();
         camera.release();
-
-        mMediaRecorder = new MediaRecorder();
-        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
-        profile.videoFrameWidth = Constants.cameraWidthInPixels;
-        profile.videoFrameHeight = Constants.cameraHeigthInPixels;
-        mMediaRecorder.setProfile(profile);
-        //mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        //mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-        //mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-        //mMediaRecorder.setVideoSize(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
 
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.imagecap_javaCameraView);
         mCameraView.setCameraIndex(0);
@@ -345,6 +381,8 @@ public class ImageCapActivity extends Activity implements
         vpLocationDesTextView = (TextView) this.findViewById(R.id.textView1);
         vpIdNumber = (TextView) this.findViewById(R.id.textView2);
 
+        recText = (TextView) this.findViewById(R.id.cronoText);
+
 
         showPreviousVpCaptureButton = (Button) this.findViewById(R.id.buttonShowPreviousVpCapture);
         showNextVpCaptureButton = (Button) this.findViewById(R.id.buttonShowNextVpCapture);
@@ -363,6 +401,8 @@ public class ImageCapActivity extends Activity implements
         mProgress.setVisibility(View.GONE);
         mProgress.startAnimation(rotationMProgress);
 
+        blinkingText = AnimationUtils.loadAnimation(this, R.anim.textblink);
+
         imageView = (TouchImageView) this.findViewById(R.id.imageView1);
 
         vpCheckedView = (ImageView) this.findViewById(R.id.imageViewVpChecked);
@@ -370,10 +410,15 @@ public class ImageCapActivity extends Activity implements
 
         arSwitchLinearLayout = (LinearLayout) this.findViewById(R.id.arSwitchLinearLayout);
 
+        videoRecorderTimeLayout = (LinearLayout) this.findViewById(R.id.videoRecorderTimeLayout);
+
+        videoRecorderChronometer = (Chronometer) this.findViewById(R.id.recordingChronometer);
+
         arSwitch = (Switch) findViewById(R.id.arSwitch);
 
         cameraShutterButton = (FloatingActionButton) findViewById(R.id.cameraShutterButton);
         videoCameraShutterButton = (FloatingActionButton) findViewById(R.id.videoCameraShutterButton);
+        videoCameraShutterStopButton = (FloatingActionButton) findViewById(R.id.videoCameraShutterStopButton);
 
         arSwitch.setChecked(true);
 
@@ -384,6 +429,8 @@ public class ImageCapActivity extends Activity implements
                     isArSwitchOn = true;
                     cameraShutterButton.setVisibility(View.INVISIBLE);
                     videoCameraShutterButton.setVisibility(View.INVISIBLE);
+                    videoCameraShutterStopButton.setVisibility(View.GONE);
+                    videoRecorderTimeLayout.setVisibility(View.GONE);
                     mImageDetectionFilterIndex=1;
                     Snackbar.make(arSwitch.getRootView(),getText(R.string.arswitchison), Snackbar.LENGTH_LONG).show();
                 } else {
@@ -408,11 +455,6 @@ public class ImageCapActivity extends Activity implements
         alphaToggleButton = (FloatingActionButton) findViewById(R.id.buttonAlphaToggle);
         showVpCapturesButton = (FloatingActionButton) findViewById(R.id.buttonShowVpCaptures);
 
-
-
-
-
-
         // Camera Shutter Button
 
         cameraShutterButton.setOnClickListener(new View.OnClickListener() {
@@ -420,7 +462,15 @@ public class ImageCapActivity extends Activity implements
             public void onClick(View view) {
                 Log.d(TAG,"Camera Button clicked!!!");
                 askForManualPhoto = true;
-
+                AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+                float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+                float volume = actualVolume / maxVolume;
+                // Is the sound loaded already?
+                if (camShutterSoundIDLoaded) {
+                    soundPool.play(camShutterSoundID, volume, volume, 1, 0, 1f);
+                    Log.d(TAG, "cameraShutterButton.setOnClickListener: Played sound");
+                }
             }
         });
 
@@ -429,8 +479,45 @@ public class ImageCapActivity extends Activity implements
         videoCameraShutterButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.d(TAG,"Video Camera Button clicked!!!");
+                Log.d(TAG,"Video Camera Start Button clicked!!!");
                 askForManualVideo = true;
+                videoCameraShutterButton.setVisibility(View.GONE);
+                videoCameraShutterStopButton.setVisibility(View.VISIBLE);
+                videoRecorderChronometer.setBase(SystemClock.elapsedRealtime());
+                videoRecorderChronometer.start();
+                videoRecorderTimeLayout.setVisibility(View.VISIBLE);
+                recText.startAnimation(blinkingText);
+                AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+                float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+                float volume = actualVolume / maxVolume;
+                if (videoRecordStartedSoundIDLoaded) {
+                    soundPool.play(videoRecordStartedSoundID, volume, volume, 1, 0, 1f);
+                    Log.d(TAG, "videoCameraShutterButton.setOnClickListener START: Played sound");
+                }
+
+            }
+        });
+
+        // videoCamera Shutter Stop Button
+
+        videoCameraShutterStopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG,"Video Camera Stop Button clicked!!!");
+                stopManualVideo = true;
+                videoCameraShutterButton.setVisibility(View.VISIBLE);
+                videoCameraShutterStopButton.setVisibility(View.GONE);
+                videoRecorderChronometer.stop();
+                recText.clearAnimation();
+                AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+                float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+                float volume = actualVolume / maxVolume;
+                if (videoRecordStopedSoundIDLoaded) {
+                    soundPool.play(videoRecordStopedSoundID, volume, volume, 1, 0, 1f);
+                    Log.d(TAG, "videoCameraShutterButton.setOnClickListener STOP: Played sound");
+                }
 
             }
         });
@@ -725,6 +812,11 @@ public class ImageCapActivity extends Activity implements
         super.onStop();
         Log.d(TAG,"onStop CALLED");
         saveVpsChecked();
+        if (mMediaRecorder!=null){
+            mMediaRecorder.reset();
+            mMediaRecorder.release();
+            mMediaRecorder = null;
+        }
         //mGoogleApiClient.disconnect();
     }
 
@@ -931,6 +1023,48 @@ public class ImageCapActivity extends Activity implements
     }
 
 
+    private void releaseMediaRecorder(){
+        if (mMediaRecorder != null) {
+            // clear recorder configuration
+            mMediaRecorder.reset();
+            // release the recorder object
+            mMediaRecorder.release();
+            mMediaRecorder = null;
+        }
+    }
+
+    @TargetApi(21)
+    private boolean prepareVideoRecorder(String videoFileName){
+        mMediaRecorder = new MediaRecorder();
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
+        profile.videoFrameWidth = Constants.cameraWidthInPixels;
+        profile.videoFrameHeight = Constants.cameraHeigthInPixels;
+        mMediaRecorder.setProfile(profile);
+        mMediaRecorder.setOutputFile(videoFileName);
+
+        try {
+            mMediaRecorder.prepare();
+            mCameraView.setRecorder(mMediaRecorder);
+            mMediaRecorder.start();
+            capturingManualVideo = true;
+            videoRecorderPrepared = true;
+        } catch (IllegalStateException e) {
+            Log.d(TAG, "IllegalStateException preparing MediaRecorder: " + e.getMessage());
+            releaseMediaRecorder();
+            return false;
+        } catch (IOException e) {
+            Log.d(TAG, "IOException preparing MediaRecorder: " + e.getMessage());
+            releaseMediaRecorder();
+            return false;
+        }
+        return true;
+    }
+
+
+
+
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
@@ -986,119 +1120,126 @@ public class ImageCapActivity extends Activity implements
             takePhoto(rgba);
         }
 
-        // OFF Video Recorder
-
+        // Start of AR OFF Video Recorder
 
         if ((!isArSwitchOn)&&(askForManualVideo) || (!isArSwitchOn)&&(capturingManualVideo)) {
             if (askForManualVideo) {
-                Log.d(TAG,"A manual video was requested");
-
-
+                Log.d(TAG, "A manual video was requested");
                 askForManualVideo = false;
-                capturingManualVideo = true;
                 videoCaptureStartmillis = System.currentTimeMillis();
-                long momentoLong = MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference);
+                long momentoLong = MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference);
                 String momento = String.valueOf(momentoLong);
-                videoFileName= "cap_vid_"+mymensorAccount+"_"+vpNumber[vpTrackedInPose]+"_"+momento+".mp4";
-                videoFileNameLong = getApplicationContext().getFilesDir()+"/"+videoFileName;
-                mMediaRecorder.setOutputFile(videoFileNameLong);
-
-                //mMediaRecorder.setOnInfoListener(this);
-                //mMediaRecorder.setOnErrorListener(this);
-                try {
-                    mMediaRecorder.prepare();
-                } catch (Exception e) {
-                    Log.e(TAG,"Error when preparinf media recorder: "+e.toString());
-                }
-                mCameraView.setRecorder(mMediaRecorder);
-                //mMediaRecorder.setMaxDuration((int) Constants.shortVideoLength);
-                mMediaRecorder.start();
-
+                videoFileName = "cap_vid_" + mymensorAccount + "_" + vpNumber[vpTrackedInPose] + "_" + momento + ".mp4";
+                videoFileNameLong = getApplicationContext().getFilesDir() + "/" + videoFileName;
+                if (!capturingManualVideo) prepareVideoRecorder(videoFileNameLong);
             }
-            if ((System.currentTimeMillis() - videoCaptureStartmillis)<Constants.shortVideoLength) {
-                Log.d(TAG,"Waiting for video recording to end");
-            } else {
-                capturingManualVideo = false;
-                try
-                {
-                    mMediaRecorder.stop();
-                    mCameraView.setRecorder(null);
-                    String path = getApplicationContext().getFilesDir().getPath();
-                    File directory = new File(path);
-                    String[] fileInDirectory = directory.list(new FilenameFilter() {
+            if (videoRecorderPrepared){
+                if (((System.currentTimeMillis() - videoCaptureStartmillis) < Constants.shortVideoLength)&&(!stopManualVideo)) {
+                    Log.d(TAG,"Waiting for video recording to end:"+(System.currentTimeMillis() - videoCaptureStartmillis));
+                } else {
+                    capturingManualVideo = false;
+                    stopManualVideo = false;
+                    runOnUiThread(new Runnable() {
                         @Override
-                        public boolean accept(File dir, String filename) {
-                            return filename.equalsIgnoreCase(videoFileName);
+                        public void run() {
+                            recText.clearAnimation();
+                            videoCameraShutterButton.setVisibility(View.VISIBLE);
+                            videoCameraShutterStopButton.setVisibility(View.GONE);
                         }
                     });
-                    if (fileInDirectory!=null){
-                        File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
-                        Log.d(TAG,"videoFile.getName()="+videoFile.getName());
-                        Log.d(TAG,"videoFile.getPath()="+videoFile.getPath());
-                        Log.d(TAG,"videoFileName="+videoFileName);
-                        String fileSha256Hash = MymUtils.getFileHash(videoFile);
-                        ObjectMetadata myObjectMetadata = new ObjectMetadata();
-                        //create a map to store user metadata
-                        Map<String, String> userMetadata = new HashMap<String,String>();
-                        /*
-                        userMetadata.put("GPSLatitude", locPhotoToExif[0]);
-                        userMetadata.put("GPSLongitude", locPhotoToExif[1]);
-                        */
-                        userMetadata.put("VP", ""+(vpTrackedInPose));
-                        userMetadata.put("seamensorAccount", mymensorAccount);
-                        /*
-                        userMetadata.put("Precisioninm", locPhotoToExif[4]);
-                        userMetadata.put("LocationMillis", locPhotoToExif[5]);
-                        userMetadata.put("LocationMethod", locPhotoToExif[6]);
-                        */
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
-                        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                        String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
-                        userMetadata.put("DateTime", formattedDateTime);
-                        userMetadata.put("SHA-256", fileSha256Hash);
-                        //call setUserMetadata on our ObjectMetadata object, passing it our map
-                        myObjectMetadata.setUserMetadata(userMetadata);
-                        //uploading the objects
-                        TransferObserver observer = MymUtils.storeRemoteFileLazy(
-                                transferUtility,
-                                "cap/"+videoFileName,
-                                Constants.BUCKET_NAME,
-                                videoFile,
-                                myObjectMetadata);
-                        if (observer!=null){
-                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getState().toString());
-                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getAbsoluteFilePath());
-                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getBucket());
-                            Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getKey());
+                    AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                    float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+                    float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+                    float volume = actualVolume / maxVolume;
+                    if (videoRecordStopedSoundIDLoaded) {
+                        soundPool.play(videoRecordStopedSoundID, volume, volume, 1, 0, 1f);
+                        Log.d(TAG, "Video STOP: Duartion limit exceeded Played sound");
+                    }
+
+                    try
+                    {
+                        mMediaRecorder.stop();
+                        mCameraView.setRecorder(null);
+                        videoRecorderPrepared = false;
+                        String path = getApplicationContext().getFilesDir().getPath();
+                        File directory = new File(path);
+                        String[] fileInDirectory = directory.list(new FilenameFilter() {
+                            @Override
+                            public boolean accept(File dir, String filename) {
+                                return filename.equalsIgnoreCase(videoFileName);
+                            }
+                        });
+                        if (fileInDirectory!=null){
+                            File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
+                            Log.d(TAG,"videoFile.getName()="+videoFile.getName());
+                            Log.d(TAG,"videoFile.getPath()="+videoFile.getPath());
+                            Log.d(TAG,"videoFileName="+videoFileName);
+                            String fileSha256Hash = MymUtils.getFileHash(videoFile);
+                            ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                            //create a map to store user metadata
+                            Map<String, String> userMetadata = new HashMap<String,String>();
+                    /*
+                    userMetadata.put("GPSLatitude", locPhotoToExif[0]);
+                    userMetadata.put("GPSLongitude", locPhotoToExif[1]);
+                    */
+                            userMetadata.put("VP", ""+(vpTrackedInPose));
+                            userMetadata.put("seamensorAccount", mymensorAccount);
+                    /*
+                    userMetadata.put("Precisioninm", locPhotoToExif[4]);
+                    userMetadata.put("LocationMillis", locPhotoToExif[5]);
+                    userMetadata.put("LocationMethod", locPhotoToExif[6]);
+                    */
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
+                            userMetadata.put("DateTime", formattedDateTime);
+                            userMetadata.put("SHA-256", fileSha256Hash);
+                            //call setUserMetadata on our ObjectMetadata object, passing it our map
+                            myObjectMetadata.setUserMetadata(userMetadata);
+                            //uploading the objects
+                            TransferObserver observer = MymUtils.storeRemoteFileLazy(
+                                    transferUtility,
+                                    "cap/"+videoFileName,
+                                    Constants.BUCKET_NAME,
+                                    videoFile,
+                                    myObjectMetadata);
+                            if (observer!=null){
+                                Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getState().toString());
+                                Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getAbsoluteFilePath());
+                                Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getBucket());
+                                Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getKey());
+                            } else {
+                                Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                                vpChecked[vpTrackedInPose] = false;
+                                setVpsChecked();
+                                saveVpsChecked();
+                            }
+                            videoRecorderChronometer.stop();
                         } else {
                             Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
                             vpChecked[vpTrackedInPose] = false;
                             setVpsChecked();
                             saveVpsChecked();
                         }
-
-                    } else {
-                        Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                    }
+                    catch (Exception e)
+                    {
+                        Log.e(TAG, "Failure to save video to remote storage:"+e.toString());
                         vpChecked[vpTrackedInPose] = false;
                         setVpsChecked();
                         saveVpsChecked();
+                        //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
+                        e.printStackTrace();
                     }
                 }
-                catch (Exception e)
-                {
-                    Log.e(TAG, "Failure to save video to remote storage:"+e.toString());
-                    vpChecked[vpTrackedInPose] = false;
-                    setVpsChecked();
-                    saveVpsChecked();
-                    //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
-                    e.printStackTrace();
-                }
-                mMediaRecorder.release();    ????????????????????????
+            } else {
+                // prepare didn't work, release the camera
+                releaseMediaRecorder();
             }
+
         }
 
-
-        // End of OFF Video Recorder
+        // End of AR OFF Video Recorder
 
         // Apply the active filters.
         if ((mImageDetectionFilters != null)&&(isArSwitchOn)) {
@@ -1392,6 +1533,17 @@ public class ImageCapActivity extends Activity implements
         {
             // Turning tracking OFF
             mImageDetectionFilterIndex = 0;
+
+            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+            float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+            float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+            float volume = actualVolume / maxVolume;
+            // Is the sound loaded already?
+            if (camShutterSoundIDLoaded) {
+                soundPool.play(camShutterSoundID, volume, volume, 1, 0, 1f);
+                Log.d(TAG, "takePhoto: Camera Shutter Played sound");
+            }
+
             if ((!vpPhotoAccepted) && (!vpPhotoRejected))
             {
                 final Bitmap tmpBitmapImage = bitmapImage;
