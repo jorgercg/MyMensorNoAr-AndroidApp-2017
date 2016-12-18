@@ -9,6 +9,7 @@ import android.util.Log;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
@@ -114,6 +115,7 @@ public class MymUtils {
             return null;
         }
     }
+
 
     public static Long timeNow (Boolean clockSetSuccess, Long sntpTime, Long sntpTimeReference){
 

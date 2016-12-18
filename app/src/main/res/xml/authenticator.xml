@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
     android:accountType="com.mymensor.app"
-    android:icon="@drawable/logoseamensor300dpi"
+    android:icon="@drawable/logo_mymensor"
     android:smallIcon="@drawable/ic_launcher"
     android:label="@string/authlabel"
     android:accountPreferences="@xml/account_preferences"

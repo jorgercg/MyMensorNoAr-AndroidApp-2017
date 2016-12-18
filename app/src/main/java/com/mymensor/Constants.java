@@ -15,19 +15,15 @@ public class Constants {
     public static final short captureMarkerHeight = 400;
     public static final short standardMarkerlessMarkerWidth = 400;
     public static final short standardMarkerlessMarkerHeigth = 400;
-    public static final short seaMensorMarkerWidthWhenIdIs20mm = 46;
-    public static final short seaMensorMarkerHeigthWhenIdIs20mm = 46;
-    public static final short seaMensorMarkerWidthWhenIdIs100mm = 134;
-    public static final short seaMensorMarkerHeigthWhenIdIs100mm = 134;
-    public static final float idMarkerStdSize = 0.055f;
+    public static final float idMarkerStdSize = 5.0f;
     public static final long shortVideoLength = 10000;
     public static final int cameraWidthInPixels = 1280;
     public static final int cameraHeigthInPixels = 720;
     public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440 // (1280-700)/2=290
     public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160 // (720-700)/2=10
-    public static final int[] validIdMarkersForMyMensor = {10,20,30,40,50,60,70,80,90,100,
-                                                            110,120,130,140,150,160,170,180,190,200,
-                                                            210,220,230,240,250,260,270,280,290,300};
+    public static final int[] validIdMarkersForMyMensor = {1,2,3,4,5,6,7,8,9,10,
+                                                            11,12,13,14,15,16,17,18,19,20,
+                                                            21,22,23,24,25,26,27,28,29,30};
 
     /**
      * OpenCV

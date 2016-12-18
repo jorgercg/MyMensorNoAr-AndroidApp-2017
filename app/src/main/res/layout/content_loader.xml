@@ -14,7 +14,7 @@
     tools:showIn="@layout/activity_loader">
 
     <LinearLayout
-        android:id="@+id/SeaMensorLogoLinearLayout1"
+        android:id="@+id/MyMensorLogoLinearLayout1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -24,14 +24,30 @@
         android:padding="2dp"
         android:layout_centerInParent="true">
 
-        <ImageView
-            android:id="@+id/seamensor_logo"
-            android:paddingBottom="8dp"
-            android:paddingTop="8dp"
-            android:visibility="visible"
-            android:src="@drawable/logo_mymensor_new3"
-            android:layout_height="200dp"
-            android:layout_width="200dp" />
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <ImageView
+                android:id="@+id/mymensor_logo_txt"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:visibility="visible"
+                android:src="@drawable/logo_mym_name"
+                android:layout_height="200dp"
+                android:layout_width="200dp" />
+
+            <ImageView
+                android:id="@+id/mymensor_rot_logo"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:visibility="visible"
+                android:src="@drawable/logo_mym_circles"
+                android:layout_height="200dp"
+                android:layout_width="200dp" />
+
+        </RelativeLayout>
+
+
 
         <TextView
             android:id="@+id/bottom_message"

@@ -27,7 +27,7 @@
         <ImageView
             android:id="@+id/mainactivity_logo"
             android:visibility="visible"
-            android:src="@drawable/logo_mymensor_new3"
+            android:src="@drawable/logo_mymensor"
             android:layout_width="200dp"
             android:layout_height="200dp">
         </ImageView>

@@ -5,6 +5,13 @@ import android.content.res.AssetManager;
 import android.util.Log;
 import android.util.Xml;
 
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
+
 import org.apache.commons.io.FileUtils;
 import org.xmlpull.v1.XmlSerializer;
 
@@ -14,6 +21,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -21,7 +32,12 @@ public class ConfigFileCreator {
 
     private static final String TAG = "ConfigFileCreator";
 
-    public static void createVpsfile(Context context, File directory, String fileName){
+    public static void createVpsfile(Context context,
+                                     File directory,
+                                     String fileName,
+                                     TransferUtility transferUtility,
+                                     String vpsRemotePath,
+                                     String mymensorAccount){
         short assetId = 1;
         String frequencyUnit = Constants.frequencyUnit;
         int frequencyValue = Constants.frequencyValue;
@@ -31,6 +47,9 @@ public class ConfigFileCreator {
         boolean vpArIsConfigured[] = new boolean[qtyVps];
         vpArIsConfigured[0]=false;
         vpArIsConfigured[1]=false;
+        boolean vpIsVideo[] = new boolean[qtyVps];
+        vpIsVideo[0]=false;
+        vpIsVideo[1]=false;
         int vpXCameraDistance[] = new int[qtyVps];
         vpXCameraDistance[0]=0;
         vpXCameraDistance[1]=0;
@@ -67,12 +86,6 @@ public class ConfigFileCreator {
         boolean vpIsSuperSingle[] = new boolean[qtyVps];
         vpIsSuperSingle[0]=false;
         vpIsSuperSingle[1]=false;
-        boolean vpSuperIdIs20mm[] = new boolean[qtyVps];
-        vpSuperIdIs20mm[0]=false;
-        vpSuperIdIs20mm[1]=false;
-        boolean vpSuperIdIs100mm[] = new boolean[qtyVps];
-        vpSuperIdIs100mm[0]=false;
-        vpSuperIdIs100mm[1]=false;
         int vpSuperMarkerId[] = new int[qtyVps];
         vpSuperMarkerId[0] = 0;
         vpSuperMarkerId[1] = 0;
@@ -144,6 +157,12 @@ public class ConfigFileCreator {
                 xmlSerializer.startTag("","VpArIsConfigured");
                 xmlSerializer.text(Boolean.toString(vpArIsConfigured[i]));
                 xmlSerializer.endTag("","VpArIsConfigured");
+                xmlSerializer.text("\n");
+                xmlSerializer.text("\t");
+                xmlSerializer.text("\t");
+                xmlSerializer.startTag("","VpIsVideo");
+                xmlSerializer.text(Boolean.toString(vpIsVideo[i]));
+                xmlSerializer.endTag("","VpIsVideo");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
@@ -219,18 +238,6 @@ public class ConfigFileCreator {
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
-                xmlSerializer.startTag("","VpSuperIdIs20mm");
-                xmlSerializer.text(Boolean.toString(vpSuperIdIs20mm[i]));
-                xmlSerializer.endTag("","VpSuperIdIs20mm");
-                xmlSerializer.text("\n");
-                xmlSerializer.text("\t");
-                xmlSerializer.text("\t");
-                xmlSerializer.startTag("","vpSuperIdIs100mm");
-                xmlSerializer.text(Boolean.toString(vpSuperIdIs100mm[i]));
-                xmlSerializer.endTag("","vpSuperIdIs100mm");
-                xmlSerializer.text("\n");
-                xmlSerializer.text("\t");
-                xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpSuperMarkerId");
                 if (vpIsSuperSingle[i])
                 {
@@ -252,8 +259,36 @@ public class ConfigFileCreator {
             try {
                 File vpsConfigFile = new File(directory,fileName);
                 FileUtils.writeStringToFile(vpsConfigFile,vpsConfigFileContents, UTF_8);
-            } catch (Exception e)
-            {
+                ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                //create a map to store user metadata
+                Map<String, String> userMetadata = new HashMap<String,String>();
+                userMetadata.put("mymensorAccount", mymensorAccount);
+                myObjectMetadata.setUserMetadata(userMetadata);
+                TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsRemotePath + Constants.vpsConfigFileName), Constants.BUCKET_NAME, vpsConfigFile, myObjectMetadata);
+                observer.setTransferListener(new TransferListener() {
+                    @Override
+                    public void onStateChanged(int id, TransferState state) {
+                        if (state.equals(TransferState.COMPLETED)) {
+                            Log.d(TAG,"TransferListener="+state.toString());
+                        }
+                    }
+
+                    @Override
+                    public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                        if (bytesTotal>0){
+                            int percentage = (int) (bytesCurrent / bytesTotal * 100);
+                        }
+
+                        //Display percentage transfered to user
+                    }
+
+                    @Override
+                    public void onError(int id, Exception ex) {
+                        Log.e(TAG, "saveVpsData(): vpsConfigFile saving failed, see stack trace"+ ex.toString());
+                    }
+
+                });
+            } catch (Exception e) {
                 Log.e(TAG, "createVpsfile(): vpsFile creation failed:"+e.toString());
             }
         }
@@ -265,7 +300,12 @@ public class ConfigFileCreator {
     }
 
 
-    public static void createVpsCheckedFile(Context context, File directory, String fileName){
+    public static void createVpsCheckedFile(Context context,
+                                            File directory,
+                                            String fileName,
+                                            TransferUtility transferUtility,
+                                            String vpsCheckedRemotePath,
+                                            String mymensorAccount){
 
         short qtyVps=2;
         // Saving vpChecked state.
@@ -309,6 +349,35 @@ public class ConfigFileCreator {
             try {
                 File vpsCheckedFile = new File(directory,fileName);
                 FileUtils.writeStringToFile(vpsCheckedFile,vpsCheckedFileContents, UTF_8);
+                ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                //create a map to store user metadata
+                Map<String, String> userMetadata = new HashMap<String,String>();
+                userMetadata.put("mymensorAccount", mymensorAccount);
+                myObjectMetadata.setUserMetadata(userMetadata);
+                TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile, myObjectMetadata);
+                observer.setTransferListener(new TransferListener() {
+                    @Override
+                    public void onStateChanged(int id, TransferState state) {
+                        if (state.equals(TransferState.COMPLETED)) {
+                            Log.d(TAG,"SaveVpsChecked(): TransferListener="+state.toString());
+                        }
+                    }
+
+                    @Override
+                    public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                        if (bytesTotal>0){
+                            int percentage = (int) (bytesCurrent / bytesTotal * 100);
+                        }
+
+                        //Display percentage transfered to user
+                    }
+
+                    @Override
+                    public void onError(int id, Exception ex) {
+                        Log.e(TAG, "SaveVpsChecked(): vpsCheckedFile saving failed:"+ ex.toString());
+                    }
+
+                });
             } catch (Exception e)
             {
                 Log.e(TAG, "createVpsCheckedFile(): file creation failed, see stack trace"+e.toString());
@@ -320,7 +389,13 @@ public class ConfigFileCreator {
     }
 
 
-    public static void createDescvpFile(Context context, File directory, String fileName){
+    public static void createDescvpFile(Context context,
+                                        File directory,
+                                        String fileName,
+                                        TransferUtility transferUtility,
+                                        String descvpRemotePath,
+                                        int vpIndex,
+                                        String mymensorAccount){
 
         String internalAssetsFileName = "mymensordescvp.png";
         AssetManager assetManager = context.getAssets();
@@ -350,12 +425,56 @@ public class ConfigFileCreator {
                 }
             }
         }
+        File pictureFile = new File(context.getFilesDir(), fileName);
+        ObjectMetadata myObjectMetadata = new ObjectMetadata();
+        //create a map to store user metadata
+        Map<String, String> userMetadata = new HashMap<String,String>();
+        userMetadata.put("VP", ""+(vpIndex));
+        userMetadata.put("mymensorAccount", mymensorAccount);
+        //call setUserMetadata on our ObjectMetadata object, passing it our map
+        myObjectMetadata.setUserMetadata(userMetadata);
+        //uploading the objects
+        TransferObserver observer = MymUtils.storeRemoteFile(
+                transferUtility,
+                descvpRemotePath+pictureFile.getName(),
+                Constants.BUCKET_NAME,
+                pictureFile,
+                myObjectMetadata);
+        observer.setTransferListener(new TransferListener() {
+            @Override
+            public void onStateChanged(int id, TransferState state) {
+                if (state.equals(TransferState.COMPLETED)) {
+                    Log.d(TAG,"createDescvpFile(): TransferListener="+state.toString());
+                }
+            }
+
+            @Override
+            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                if (bytesTotal>0){
+                    int percentage = (int) (bytesCurrent / bytesTotal * 100);
+                }
+
+                //Display percentage transfered to user
+            }
+
+            @Override
+            public void onError(int id, Exception ex) {
+                Log.e(TAG, "createDescvpFile(): createDescvpFile saving failed:"+ ex.toString());
+            }
+
+        });
     }
 
 
-    public static void createMarkervpFile(Context context, File directory, String fileName){
+    public static void createMarkervpFile(Context context,
+                                          File directory,
+                                          String fileName,
+                                          TransferUtility transferUtility,
+                                          String markervpRemotePath,
+                                          int vpIndex,
+                                          String mymensorAccount){
 
-        String internalAssetsFileName = "mymensormarkervpbw.jpg";
+        String internalAssetsFileName = "mymensormarkervpbw.png";
         AssetManager assetManager = context.getAssets();
         InputStream in = null;
         OutputStream out = null;
@@ -383,6 +502,44 @@ public class ConfigFileCreator {
                 }
             }
         }
+        File markerFile = new File(context.getFilesDir(), fileName);
+        ObjectMetadata myObjectMetadata = new ObjectMetadata();
+        //create a map to store user metadata
+        Map<String, String> userMetadata = new HashMap<String, String>();
+        userMetadata.put("VP", "" + (vpIndex));
+        userMetadata.put("mymensorAccount", mymensorAccount);
+        //call setUserMetadata on our ObjectMetadata object, passing it our map
+        myObjectMetadata.setUserMetadata(userMetadata);
+        //uploading the objects
+        TransferObserver observer = MymUtils.storeRemoteFile(
+                transferUtility,
+                markervpRemotePath + markerFile.getName(),
+                Constants.BUCKET_NAME,
+                markerFile,
+                myObjectMetadata);
+        observer.setTransferListener(new TransferListener() {
+            @Override
+            public void onStateChanged(int id, TransferState state) {
+                if (state.equals(TransferState.COMPLETED)) {
+                    Log.d(TAG,"createMarkervpFile(): TransferListener="+state.toString());
+                }
+            }
+
+            @Override
+            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                if (bytesTotal>0){
+                    int percentage = (int) (bytesCurrent / bytesTotal * 100);
+                }
+
+                //Display percentage transfered to user
+            }
+
+            @Override
+            public void onError(int id, Exception ex) {
+                Log.e(TAG, "createMarkervpFile(): createDescvpFile saving failed:"+ ex.toString());
+            }
+
+        });
     }
 
 

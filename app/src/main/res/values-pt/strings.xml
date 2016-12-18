@@ -41,8 +41,8 @@
     <string name="is_photo_ok">A Foto foi bem capturada? (Você pode usar o zoom!!!)</string>
     <string name="desc_vp_empty">Vazio</string>
     <string name="vp_00">AR OFF</string>
-    <string name="vpNotAcquiredStatus">N</string>
-    <string name="vpAcquiredStatus">S</string>
+    <string name="vpNotAcquiredStatus">--</string>
+    <string name="vpAcquiredStatus">OK</string>
     <string name="not_all_vps_acquired">Erro: nem todos vps foram capturados - capture todos antes de salvar - vps NÃO FORAM salvos"</string>
     <string name="vp_location_des_text_missing">Erro: faltando texto de descrição de VP</string>
     <string name="no_photo_captured_in_this_vp">Nenhuma foto capturada neste vp!!!</string>
@@ -100,4 +100,7 @@
     <string name="callingimagecapactivity">Fechando e chamando a captura de imagens...</string>
     <string name="configready">Prontos para configurar.</string>
     <string name="imagecapready">Prontos para capturar imagens.</string>
+    <string name="markerid_already_used">Este id marker já foi utilizado em outro VP, por favor utilize um diferente.</string>
+    <string name="button_marker_id">ID</string>
+    <string name="textview_vp_ar">AR</string>
 </resources>

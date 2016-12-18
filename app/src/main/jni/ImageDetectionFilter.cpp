@@ -114,6 +114,9 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
         k = frame * 3;
         kmax = k + 2;
     }
+    if (kmax>=qtVp){
+        kmax = qtVp - 1;
+    }
     do {
         LOGD("k=%d kmax=%d",k,kmax);
         cv::Mat localReferenceDescriptors;

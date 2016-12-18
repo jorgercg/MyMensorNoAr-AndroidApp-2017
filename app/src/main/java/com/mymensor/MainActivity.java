@@ -187,6 +187,10 @@ public class MainActivity extends AppCompatActivity {
         }
         */
 
+
+
+
+
         if (!noUserLogged){
             Log.d(TAG, "Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
             Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);

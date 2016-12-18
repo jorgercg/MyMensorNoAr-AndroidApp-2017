@@ -44,13 +44,13 @@
     <string name="is_photo_ok">Is Photo captured ok? (You can zoom in!!!)</string>
     <string name="desc_vp_empty">Empty</string>
     <string name="vp_00">AR OFF</string>
-    <string name="vpNotAcquiredStatus">N</string>
-    <string name="vpAcquiredStatus">Y</string>
+    <string name="vpNotAcquiredStatus">--</string>
+    <string name="vpAcquiredStatus">OK</string>
     <string name="not_all_vps_acquired">Error: not all vps acquired</string>
     <string name="vp_location_des_text_missing">Error: vp location text missing</string>
     <string name="no_photo_captured_in_this_vp">No photo captured in this vp!!!</string>
     <string name="logging_in">Logging in to server...</string>
-    <string name="authlabel" translatable="false">SeaMensor</string>
+    <string name="authlabel" translatable="false">MyMensor</string>
     <string name="userstate_loggedout">Please log in.</string>
     <string name="userstate_loggedin">Authorized, using credentials from</string>
     <string name="start_config">Configuration</string>
@@ -103,4 +103,7 @@
     <string name="callingimagecapactivity">Closing and calling image capture...</string>
     <string name="configready">Ready to setup.</string>
     <string name="imagecapready">Ready to capture images.</string>
+    <string name="markerid_already_used">This id marker was used already in another VP, please use a different one.</string>
+    <string name="button_marker_id">ID</string>
+    <string name="textview_vp_ar">AR</string>
 </resources>

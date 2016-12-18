@@ -66,10 +66,18 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.calib3d.Calib3d;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.MatOfPoint3f;
+import org.opencv.core.Point;
+import org.opencv.core.Point3;
+import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 
+import org.opencv.imgproc.Imgproc;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
@@ -93,6 +101,8 @@ import java.util.TimeZone;
 
 import static com.mymensor.Constants.cameraWidthInPixels;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opencv.core.CvType.CV_64F;
+import static org.opencv.core.CvType.CV_64FC1;
 
 
 public class ImageCapActivity extends Activity implements
@@ -124,19 +134,15 @@ public class ImageCapActivity extends Activity implements
 
     private boolean[] vpIsAmbiguous;
     private boolean[] vpIsSuperSingle;
-    private boolean[] vpSuperIdIs20mm;
-    private boolean[] vpSuperIdIs100mm;
     private int[] vpSuperMarkerId;
 
     private boolean inPosition = false;
     private boolean inRotation = false;
-    private boolean isTracking = false;
     private boolean isShowingVpPhoto = false;
     private boolean firstFrameAfterArSwitchOff = false;
     private int isHudOn = 1;
 
-    private boolean vpIsDisambiguated = true;                   //TODO
-    private boolean doubleCheckingProcedureFinalized = true;    //TODO
+
 
     private boolean vpIsManuallySelected=false;
 
@@ -148,6 +154,9 @@ public class ImageCapActivity extends Activity implements
     public boolean lastVpPhotoRejected = false;
     public int lastVpSelectedByUser;
     public int photoSelected = 0;
+
+    private boolean[] vpArIsConfigured;
+    private boolean[] vpIsVideo;
 
     private int[] vpXCameraDistance;
     private int[] vpYCameraDistance;
@@ -161,15 +170,19 @@ public class ImageCapActivity extends Activity implements
     private static float tolerancePosition;
     private static float toleranceRotation;
 
-    private boolean waitingToCaptureVpAfterDisambiguationProcedureSuccessful = true; //TODO
-    private boolean doubleCheckingProcedureStarted = false; //TODO
+    private boolean waitingToCaptureVpAfterDisambiguationProcedureSuccessful = false;
+    private boolean vpIsDisambiguated = true;
+    private boolean doubleCheckingProcedureFinalized = false;
+    private boolean doubleCheckingProcedureStarted = false;
     private boolean resultSpecialTrk = false; //TODO
     private boolean singleImageTrackingIsSet = false;
     private boolean waitingUntilSingleImageTrackingIsSet  = false;
     private boolean multipleImageTrackingIsSet = false;
     private boolean waitingUntilMultipleImageTrackingIsSet = false;
     private boolean idTrackingIsSet = false;
-    private boolean waitingUntilIdTrackingIsSet = false;
+    private boolean validMarkerFound = false;
+
+    private long idTrackingIsSetMillis;
 
     private short assetId;
     private String frequencyUnit;
@@ -275,6 +288,17 @@ public class ImageCapActivity extends Activity implements
     boolean videoRecordStartedSoundIDLoaded = false;
     boolean videoRecordStopedSoundIDLoaded = false;
 
+    Point pt1;
+    Point pt2;
+    Point pt3;
+    Point pt4;
+    Point pt5;
+    Point pt6;
+    Scalar color;
+
+    MatOfPoint3f objectPoints;
+    MatOfPoint2f imagePoints;
+
     @TargetApi(21)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -292,6 +316,8 @@ public class ImageCapActivity extends Activity implements
         sntpTime = Long.parseLong(getIntent().getExtras().get("sntpTime").toString());
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
+
+        Log.d(TAG,"onCreate: Starting ImageCapActivity with qtyVps="+qtyVps);
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
@@ -339,6 +365,13 @@ public class ImageCapActivity extends Activity implements
         videoRecordStartedSoundID = soundPool.load(this, R.raw.minidvcamerabeepchimeup, 1);
         videoRecordStopedSoundID = soundPool.load(this, R.raw.minidvcamerabeepchimedown, 1);
 
+        pt1 = new Point((double)Constants.xAxisTrackingCorrection,(double)Constants.yAxisTrackingCorrection);
+        pt2 = new Point((double)(Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth),(double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth));
+        pt3 = new Point((double)(Constants.xAxisTrackingCorrection+(Constants.standardMarkerlessMarkerWidth/2)),(double)Constants.yAxisTrackingCorrection);
+        pt4 = new Point((double)(Constants.xAxisTrackingCorrection+(Constants.standardMarkerlessMarkerWidth/2)),(double)(Constants.yAxisTrackingCorrection-40));
+        pt5 = new Point((double)(Constants.xAxisTrackingCorrection+(Constants.standardMarkerlessMarkerWidth/2)-20),(double)(Constants.yAxisTrackingCorrection)-20);
+        pt6 = new Point((double)(Constants.xAxisTrackingCorrection+(Constants.standardMarkerlessMarkerWidth/2)+20),(double)(Constants.yAxisTrackingCorrection)-20);
+        color = new Scalar((double)168,(double)207,(double)69);
 
 
         final Camera camera;
@@ -857,6 +890,7 @@ public class ImageCapActivity extends Activity implements
                         setMultipleImageTrackingConfiguration();
                     }
 
+
                     break;
                 default:
                     super.onManagerConnected(status);
@@ -868,6 +902,7 @@ public class ImageCapActivity extends Activity implements
     private void setSingleImageTrackingConfiguration(int vpIndex)
     {
         waitingUntilSingleImageTrackingIsSet = true;
+        idTrackingIsSet = false;
         markerBuffer = new ArrayList<Mat>();
         try
         {
@@ -912,19 +947,17 @@ public class ImageCapActivity extends Activity implements
                     @Override
                     public void run() {
                         waitingUntilMultipleImageTrackingIsSet = true;
-                        Log.d(TAG, "BEFORE STARTING setMultipleImageTrackingConfiguration IN BACKGROUND - Lighting Waiting Circle");
+                        Log.d(TAG, "onPreExecute(): setMultipleImageTrackingConfiguration IN BACKGROUND - Lighting Waiting Circle");
                         Log.d(TAG,"waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
                         Log.d(TAG,"multipleImageTrackingIsSet="+multipleImageTrackingIsSet);
                         Log.d(TAG,"waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet);
                         Log.d(TAG,"singleImageTrackingIsSet="+singleImageTrackingIsSet);
-                        Log.d(TAG,"isTracking="+isTracking);
                         Log.d(TAG,"isHudOn="+isHudOn);
                         mProgress.setVisibility(View.VISIBLE);
                         mProgress.startAnimation(rotationMProgress);
                     }
                 });
-                isTracking = false;
-                isHudOn = 1;
+
             }
 
             @Override
@@ -944,6 +977,7 @@ public class ImageCapActivity extends Activity implements
                     }
                 }
                 ARFilter trackFilter = null;
+                Log.d(TAG,"markerBuffer.toArray().length="+markerBuffer.toArray().length);
                 try {
                     trackFilter = new ImageDetectionFilter(
                             ImageCapActivity.this,
@@ -985,15 +1019,16 @@ public class ImageCapActivity extends Activity implements
                         mImageDetectionFilterIndex = 1;
                         waitingUntilMultipleImageTrackingIsSet = false;
                         singleImageTrackingIsSet = false;
+                        idTrackingIsSet = false;
                         multipleImageTrackingIsSet = true;
+                        isHudOn = 1;
 
                     }
                 });
-                Log.d(TAG,"waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
+                Log.d(TAG,"onPostExecute: waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
                 Log.d(TAG,"multipleImageTrackingIsSet="+multipleImageTrackingIsSet);
                 Log.d(TAG,"waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet);
                 Log.d(TAG,"singleImageTrackingIsSet="+singleImageTrackingIsSet);
-                Log.d(TAG,"isTracking="+isTracking);
                 Log.d(TAG,"isHudOn="+isHudOn);
             }
         }.execute();
@@ -1001,12 +1036,12 @@ public class ImageCapActivity extends Activity implements
 
 
     private void setIdTrackingConfiguration(){
-        waitingUntilIdTrackingIsSet = true;
+        singleImageTrackingIsSet = false;
         ARFilter trackFilter = null;
         try {
             trackFilter = new IdMarkerDetectionFilter(
                     ImageCapActivity.this,
-                    (qtyVps-1),
+                    1,
                     mCameraMatrix,
                     Constants.idMarkerStdSize);
         } catch (IOException e) {
@@ -1017,8 +1052,12 @@ public class ImageCapActivity extends Activity implements
                     new NoneARFilter(),
                     trackFilter
             };
-            idTrackingIsSet = true;
-            waitingUntilIdTrackingIsSet = false;
+            if (mImageDetectionFilterIndex==1){
+                idTrackingIsSet = true;
+                idTrackingIsSetMillis = System.currentTimeMillis();
+            } else {
+                idTrackingIsSet = false;
+            }
         }
     }
 
@@ -1079,7 +1118,9 @@ public class ImageCapActivity extends Activity implements
     @Override
     public Mat onCameraFrame(final CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
+
         verifyVpsChecked();
+
         if (!isArSwitchOn){
             if (!vpIsManuallySelected) vpTrackedInPose = 0;
             setVpsChecked();
@@ -1115,14 +1156,20 @@ public class ImageCapActivity extends Activity implements
                 }
             });
         }
+
+        // Start of AR OFF Photo
+
         if ((!isArSwitchOn)&&(askForManualPhoto)) {
             Log.d(TAG,"Requesting manual photo");
             takePhoto(rgba);
         }
 
+        // End of AR OFF Photo
+
         // Start of AR OFF Video Recorder
 
-        if ((!isArSwitchOn)&&(askForManualVideo) || (!isArSwitchOn)&&(capturingManualVideo)) {
+        if ((!isArSwitchOn)&&(askForManualVideo) || (!isArSwitchOn)&&(capturingManualVideo))
+        {
             if (askForManualVideo) {
                 Log.d(TAG, "A manual video was requested");
                 askForManualVideo = false;
@@ -1241,222 +1288,287 @@ public class ImageCapActivity extends Activity implements
 
         // End of AR OFF Video Recorder
 
-        // Apply the active filters.
-        if ((mImageDetectionFilters != null)&&(isArSwitchOn)) {
-            //Log.d(TAG,"isTracking="+isTracking);
-            //TODO Introduce measures to avoid an endless tracking with no detection in special cases.
-            if (!isTracking){
-                if (!singleImageTrackingIsSet){
-                    mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn, 0);
-                    if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose()!=null){
-                        trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
-                        vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
-                        if ((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1))) {
-                            isTracking = true;
-                        } else {
-                            isTracking = false;
-                        }
-                    } else {
-                        isTracking = false;
-                    }
-                    if (isTracking){
-                        Log.d(TAG,"trckValues: VP=" + vpTrackedInPose+" | "
-                                + "Translations = " +trackingValues.getX()+" | "+trackingValues.getY()+" | "+trackingValues.getZ()+" | "
-                                + "Rotations = "    +trackingValues.getEAX()+" | "+trackingValues.getEAX()+" | "+trackingValues.getEAX());
-                        final int tmpvp = vpTrackedInPose;
-                        runOnUiThread(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                // TURNING OFF RADAR SCAN
-                                radarScanImageView.clearAnimation();
-                                radarScanImageView.setVisibility(View.GONE);
-                                int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
-                                int lastVisiblePosition = vpsListView.getLastVisiblePosition();
-                                if (tmpvp<firstVisiblePosition || tmpvp>lastVisiblePosition){
-                                    vpsListView.smoothScrollToPosition(tmpvp);
-                                    firstVisiblePosition = vpsListView.getFirstVisiblePosition();
-                                    lastVisiblePosition = vpsListView.getLastVisiblePosition();
-                                }
-                                int k = firstVisiblePosition - 1;
-                                int i = -1;
-                                do {
-                                    k++;
-                                    i++;
-                                    if (k==tmpvp){
-                                        vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
-                                    } else {
-                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
-                                    }
-                                } while (k<lastVisiblePosition);
-                            }
-                        });
-                        if ((!vpIsAmbiguous[vpTrackedInPose]) || ((vpIsAmbiguous[vpTrackedInPose]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
-                            if (!vpChecked[vpTrackedInPose]){
-                                runOnUiThread(new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
-                                    }
-                                });
-                                if (!singleImageTrackingIsSet) {
-                                    if (!waitingUntilSingleImageTrackingIsSet){
-                                        setSingleImageTrackingConfiguration(vpTrackedInPose);
-                                    }
 
-                                }
+        // Start of Photos with AR
 
-                            } else {
-                                runOnUiThread(new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        vpCheckedView.setVisibility(View.VISIBLE);
-                                    }
-                                });
-                                isTracking = false;
-                            }
-                        }
-                    } else {
-                        //Log.d(TAG,"TRKSRVEY: NOT Tracking from the !isTracking Part");
-                        runOnUiThread(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                if ((!radarScanImageView.isShown())&&(!isShowingVpPhoto)){
-                                    // TURNING ON RADAR SCAN
-                                    radarScanImageView.setVisibility(View.VISIBLE);
-                                    radarScanImageView.startAnimation(rotationRadarScan);
-                                }
-                                if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
-                                for (int i=0; i<(qtyVps); i++)
-                                {
-                                    if (vpsListView.getChildAt(i)!=null)
-                                    {
-                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
-                                    }
-
-                                }
-                            }
-                        });
-                    }
+        if ((mImageDetectionFilters!=null) && (isArSwitchOn)) {
+            mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn, 0);
+            if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose() != null)
+            {
+                trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
+                if (!singleImageTrackingIsSet) {
+                    vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
                 }
-            } else {
-                if ((singleImageTrackingIsSet)&&((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1)))) {
-                    mImageDetectionFilters[mImageDetectionFilterIndex].apply(rgba, isHudOn, vpTrackedInPose);
-                    if (mImageDetectionFilters[mImageDetectionFilterIndex].getPose()!=null){
-                        trackingValues = trackingValues.setTrackingValues(mImageDetectionFilters[mImageDetectionFilterIndex].getPose());
-                        vpTrackedInPose = trackingValues.getVpNumberTrackedInPose();
-                        if ((vpTrackedInPose>0)&&(vpTrackedInPose<(qtyVps+1))) {
-                            isTracking = true;
-                        } else {
-                            isTracking = false;
+                if (idTrackingIsSet){
+                    int markerIdInPose = trackingValues.getVpNumberTrackedInPose();
+                    validMarkerFound = false;
+                    Log.d(TAG, "idTrackingIsSet: markerIdInPose=" + markerIdInPose);
+                    for (int j = 0; j < Constants.validIdMarkersForMyMensor.length; j++) {
+                        if (Constants.validIdMarkersForMyMensor[j] == markerIdInPose) {
+                            for (int k = 1; k < (qtyVps); k++) {
+                                Log.d(TAG, "idTrackingIsSet: vpSuperMarkerId[" + k + "]=" + vpSuperMarkerId[k]);
+                                if (vpSuperMarkerId[k] == markerIdInPose) {
+                                    vpTrackedInPose = k;
+                                    validMarkerFound = true;
+                                    Log.d(TAG, "idTrackingIsSet: vpTrackedInPose=" + vpTrackedInPose);
+                                }
+                            }
                         }
-                    } else {
-                        isTracking = false;
                     }
-                    if (isTracking){
-                        Log.d(TAG,"trckValues: VP=" + vpTrackedInPose+" | "
-                                + "Translations = " +trackingValues.getX()+" | "+trackingValues.getY()+" | "+trackingValues.getZ()+" | "
-                                + "Rotations = "    +trackingValues.getEAX()+" | "+trackingValues.getEAX()+" | "+trackingValues.getEAX());
-                        final int tmpvp = vpTrackedInPose;
-                        runOnUiThread(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                // TURNING OFF RADAR SCAN
-                                radarScanImageView.clearAnimation();
-                                radarScanImageView.setVisibility(View.GONE);
-                                int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
-                                int lastVisiblePosition = vpsListView.getLastVisiblePosition();
-                                if (tmpvp<firstVisiblePosition || tmpvp>lastVisiblePosition){
-                                    vpsListView.smoothScrollToPosition(tmpvp);
-                                    firstVisiblePosition = vpsListView.getFirstVisiblePosition();
-                                    lastVisiblePosition = vpsListView.getLastVisiblePosition();
-                                }
-                                int k = firstVisiblePosition - 1;
-                                int i = -1;
-                                do {
-                                    k++;
-                                    i++;
-                                    if (k==tmpvp){
-                                        vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255,0,175,239));
-                                    } else {
-                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
-                                    }
-                                } while (k<lastVisiblePosition);
-                            }
-                        });
-                        if ((!vpIsAmbiguous[vpTrackedInPose]) || ((vpIsAmbiguous[vpTrackedInPose]) && (vpIsDisambiguated)) || (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)){
-                            if (!vpChecked[vpTrackedInPose]){
-                                runOnUiThread(new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
-                                    }
-                                });
-                                if (!waitingUntilMultipleImageTrackingIsSet) checkPositionToTarget(trackingValues, rgba);
+                    if (!validMarkerFound) setMultipleImageTrackingConfiguration();
+                }
 
+                if ((vpTrackedInPose > 0) && (vpTrackedInPose < (qtyVps + 1)))
+                {
+                    final int tmpvp = vpTrackedInPose;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // TURNING OFF RADAR SCAN
+                            radarScanImageView.clearAnimation();
+                            radarScanImageView.setVisibility(View.GONE);
+                            if (vpChecked[vpTrackedInPose]) {
+                                vpCheckedView.setVisibility(View.VISIBLE);
                             } else {
-                                runOnUiThread(new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        vpCheckedView.setVisibility(View.VISIBLE);
-                                    }
-                                });
-                                isTracking = false;
-                            }
-                        }
-                    } else {
-                        Log.d(TAG,"TRKSRVEY: NOT Tracking from the singleImageTrackingIsSet: waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet+"singleImageTrackingIsSet="+singleImageTrackingIsSet);
-                        runOnUiThread(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                if ((!radarScanImageView.isShown())&&(!isShowingVpPhoto)){
-                                    // TURNING ON RADAR SCAN
-                                    radarScanImageView.setVisibility(View.VISIBLE);
-                                    radarScanImageView.startAnimation(rotationRadarScan);
-                                }
                                 if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
-                                for (int i=0; i<(qtyVps); i++)
-                                {
-                                    if (vpsListView.getChildAt(i)!=null)
-                                    {
-                                        vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
-                                    }
-
-                                }
                             }
-                        });
-                        if ((!waitingUntilMultipleImageTrackingIsSet)&&(!waitingUntilSingleImageTrackingIsSet)) {
-                            setMultipleImageTrackingConfiguration();
+                            int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                            int lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                            if (tmpvp < firstVisiblePosition || tmpvp > lastVisiblePosition) {
+                                vpsListView.smoothScrollToPosition(tmpvp);
+                                firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                                lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                            }
+                            int k = firstVisiblePosition - 1;
+                            int i = -1;
+                            do {
+                                k++;
+                                i++;
+                                if (k == tmpvp) {
+                                    vpsListView.getChildAt(i).setBackgroundColor(Color.argb(255, 0, 175, 239));
+                                } else {
+                                    vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                                }
+                            } while (k < lastVisiblePosition);
                         }
+                    });
+
+                    // If it is a NORMAL VP DETECTED, then set Single Image Tracking until capture, to speed up things.
+
+                    if ((!vpIsAmbiguous[vpTrackedInPose]) ||
+                            ((vpIsAmbiguous[vpTrackedInPose]) && (vpIsDisambiguated) && (!vpIsSuperSingle[vpTrackedInPose])) ||
+                            (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)) {
+                        if (!vpChecked[vpTrackedInPose]) {
+                            if (!singleImageTrackingIsSet) {
+                                if (!waitingUntilSingleImageTrackingIsSet) {
+                                    if (vpArIsConfigured[vpTrackedInPose])
+                                        setSingleImageTrackingConfiguration(vpTrackedInPose);
+                                }
+
+                            }
+                        }
+                    }
+
+                    // If it is a AMBIGUOUS VP DETECTED AND NOT SUPER then set Id tracking to disambiguate.
+
+                    if (((vpIsAmbiguous[vpTrackedInPose])&&(!idTrackingIsSet)&&(!waitingToCaptureVpAfterDisambiguationProcedureSuccessful))||(doubleCheckingProcedureStarted))
+                    {
+                        Log.d(TAG, "MULTIIMAGE: AMBIGUOUS VP DETECTED then set Id tracking to disambiguate");
+                        mImageDetectionFilterIndex = 1;
+                        setIdTrackingConfiguration();
+                        singleImageTrackingIsSet = false;
+                        vpIsDisambiguated = false;
+                        waitingToCaptureVpAfterDisambiguationProcedureSuccessful = false;
+                        if (doubleCheckingProcedureStarted){
+                            doubleCheckingProcedureStarted = false;
+                            doubleCheckingProcedureFinalized = true;
+                        }
+                    }
+
+                    if (idTrackingIsSet)
+                    {
+                        Log.d(TAG, "idTrackingIsSet: validMarkerFound=" + validMarkerFound);
+                        if (validMarkerFound) {
+                            if (!vpIsSuperSingle[vpTrackedInPose]) {
+                                vpIsDisambiguated = true;
+                                waitingToCaptureVpAfterDisambiguationProcedureSuccessful = true;
+                                Log.d(TAG, "Disambiguation SUCCESFULL: waiting for vp capture: vpTrackedInPose=" + vpTrackedInPose);
+                                setSingleImageTrackingConfiguration(vpTrackedInPose);
+                            } else {
+                                if (isHudOn==1){
+
+                                    float multiplyFactor = 1f;
+
+                                    float deltaX = (trackingValues.getXid() - vpXCameraDistance[vpTrackedInPose])*multiplyFactor;
+                                    float deltaY = (trackingValues.getYid() - vpYCameraDistance[vpTrackedInPose])*multiplyFactor;
+                                    float deltaZ = (trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose])*multiplyFactor;
+
+                                    float deltaRX = trackingValues.getEAX() - vpXCameraRotation[vpTrackedInPose];
+                                    float deltaRY = trackingValues.getEAY() - vpYCameraRotation[vpTrackedInPose];
+                                    float deltaRZ = trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose];
+
+
+
+
+                                    double rotZ = deltaRY;
+
+
+                                    double xp1 = (double)Constants.xAxisTrackingCorrection+deltaX+deltaZ;
+                                    double yp1 = (double)Constants.yAxisTrackingCorrection+deltaY+deltaZ;
+
+                                    double xp2 = (double)Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth+deltaX-deltaZ;
+                                    double yp2 = (double)Constants.yAxisTrackingCorrection+deltaY+deltaZ;
+
+                                    double xp3 = (double)(Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth+deltaX-deltaZ);
+                                    double yp3 = (double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth+deltaY-deltaZ);
+
+                                    double xp4 = (double)(Constants.xAxisTrackingCorrection+deltaX+deltaZ);
+                                    double yp4 = (double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth+deltaY-deltaZ);
+
+                                    double xp5 = (xp1 + xp2) / 2;
+                                    double yp5 = (yp1 + yp2) / 2;
+
+                                    double xp6 = xp5;
+                                    double yp6 = yp5-40;
+
+                                    double xp7 = xp6-20;
+                                    double yp7 = yp6+20;
+
+                                    double xp8 = xp6+20;
+                                    double yp8 = yp6+20;
+
+                                    double deltaXAxis = (xp2 + xp1)/2;
+                                    double deltaYAxis = (yp4 + yp1)/2;
+
+                                    double xp1a = -(deltaXAxis-xp1)*Math.cos(rotZ*Math.PI/180)-(deltaYAxis-yp1)*Math.sin(rotZ*Math.PI/180);
+                                    double yp1a = -(deltaXAxis-xp1)*Math.sin(rotZ*Math.PI/180)+(deltaYAxis-yp1)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb1 = new Point(xp1a+deltaXAxis, deltaYAxis-yp1a);
+
+                                    double xp2a = (xp2-deltaXAxis)*Math.cos(rotZ*Math.PI/180)-(deltaYAxis-yp2)*Math.sin(rotZ*Math.PI/180);
+                                    double yp2a = (xp2-deltaXAxis)*Math.sin(rotZ*Math.PI/180)+(deltaYAxis-yp2)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb1a = new Point(xp2a+deltaXAxis, deltaYAxis-yp2a);
+
+                                    double xp3a = (xp3-deltaXAxis)*Math.cos(rotZ*Math.PI/180)+(yp3-deltaYAxis)*Math.sin(rotZ*Math.PI/180);
+                                    double yp3a = (xp3-deltaXAxis)*Math.sin(rotZ*Math.PI/180)-(yp3-deltaYAxis)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb2 = new Point(xp3a+deltaXAxis, deltaYAxis-yp3a);
+
+                                    double xp4a = -(deltaXAxis-xp4)*Math.cos(rotZ*Math.PI/180)+(yp4-deltaYAxis)*Math.sin(rotZ*Math.PI/180);
+                                    double yp4a = -(deltaXAxis-xp4)*Math.sin(rotZ*Math.PI/180)-(yp4-deltaYAxis)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb2a = new Point(xp4a+deltaXAxis, deltaYAxis-yp4a);
+
+                                    double xp5a = (xp1a + xp2a) / 2;
+                                    double yp5a = (yp1a + yp2a) / 2;
+
+                                    Point ptb3 = new Point(xp5a+deltaXAxis, deltaYAxis-yp5a);
+
+                                    double xp6a = (xp5-deltaXAxis)*Math.cos(rotZ*Math.PI/180)-(deltaYAxis-yp5+40)*Math.sin(rotZ*Math.PI/180);
+                                    double yp6a = (xp5-deltaXAxis)*Math.sin(rotZ*Math.PI/180)+(deltaYAxis-yp5+40)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb4 = new Point(xp6a+deltaXAxis, deltaYAxis-yp6a);
+
+                                    double xp7a = (xp7 - deltaXAxis)*Math.cos(rotZ*Math.PI/180)-(deltaYAxis-yp7)*Math.sin(rotZ*Math.PI/180);
+                                    double yp7a = (xp7 - deltaXAxis)*Math.sin(rotZ*Math.PI/180)+(deltaYAxis-yp7)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb5 = new Point(xp7a+deltaXAxis, deltaYAxis-yp7a);
+
+                                    double xp8a = (xp8 - deltaXAxis)*Math.cos(rotZ*Math.PI/180)-(deltaYAxis-yp8)*Math.sin(rotZ*Math.PI/180);
+                                    double yp8a = (xp8 - deltaXAxis)*Math.sin(rotZ*Math.PI/180)+(deltaYAxis-yp8)*Math.cos(rotZ*Math.PI/180);
+
+                                    Point ptb6 = new Point(xp8a+deltaXAxis, deltaYAxis-yp8a);
+
+                                    Scalar colorb = new Scalar((double)0,(double)175,(double)239);
+
+
+                                    Log.d(TAG,"TST deltaX="+deltaX+" deltaY="+deltaY+" deltaZ="+deltaZ);
+                                    Log.d(TAG,"TST deltaRX="+deltaRX+" deltaRY="+deltaRY+" deltaRZ="+deltaRZ);
+
+                                    //Imgproc.rectangle(rgba,ptb1,ptb2,colorb,8);
+                                    Imgproc.line(rgba,ptb1,ptb1a,colorb,8);
+                                    Imgproc.line(rgba,ptb1a,ptb2,colorb,8);
+                                    Imgproc.line(rgba,ptb2,ptb2a,colorb,8);
+                                    Imgproc.line(rgba,ptb2a,ptb1,colorb,8);
+                                    Imgproc.line(rgba,ptb3,ptb4,colorb,8);
+                                    Imgproc.line(rgba,ptb4,ptb5,colorb,8);
+                                    Imgproc.line(rgba,ptb4,ptb6,colorb,8);
+
+                                    /*
+                                    Drawing the initial Hud in MyMensor green
+                                     */
+                                    Imgproc.rectangle(rgba,pt1,pt2,color,8);
+                                    Imgproc.line(rgba,pt3,pt4,color,8);
+                                    Imgproc.line(rgba,pt4,pt5,color,8);
+                                    Imgproc.line(rgba,pt4,pt6,color,8);
+                                }
+                                checkPositionToTarget(trackingValues, rgba);
+                            }
+                        }
+
+                    }
+
+                    if (singleImageTrackingIsSet)
+                    {
+                        if (((!vpIsAmbiguous[vpTrackedInPose]) ||
+                                ((vpIsAmbiguous[vpTrackedInPose]) && (vpIsDisambiguated)) ||
+                                (waitingToCaptureVpAfterDisambiguationProcedureSuccessful)) && (!vpIsSuperSingle[vpTrackedInPose])) {
+                            if (!vpChecked[vpTrackedInPose]) {
+                                if (!waitingUntilMultipleImageTrackingIsSet)
+                                    checkPositionToTarget(trackingValues, rgba);
+                            }
+                        }
+
                     }
                 } else {
-                    Log.d(TAG,"We fell into a hole.... ");
-                    Log.d(TAG,"waitingUntilMultipleImageTrackingIsSet="+ waitingUntilMultipleImageTrackingIsSet);
-                    Log.d(TAG,"waitingUntilSingleImageTrackingIsSet="+waitingUntilSingleImageTrackingIsSet);
-                    Log.d(TAG,"singleImageTrackingIsSet="+singleImageTrackingIsSet);
-                    Log.d(TAG,"isTracking="+isTracking);
-                    Log.d(TAG,"isHudOn="+isHudOn);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                            int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                            int lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                            int k = firstVisiblePosition - 1;
+                            int i = -1;
+                            do {
+                                k++;
+                                i++;
+                                vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                            } while (k<lastVisiblePosition);
 
+                        }
+                    });
+                    if (isHudOn==0) isHudOn=1;
+                    Log.d(TAG,"Else 1: INVALID VP TRACKED IN POSE");
                 }
 
+            } else {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (vpCheckedView.isShown()) vpCheckedView.setVisibility(View.GONE);
+                        int firstVisiblePosition = vpsListView.getFirstVisiblePosition();
+                        int lastVisiblePosition = vpsListView.getLastVisiblePosition();
+                        int k = firstVisiblePosition - 1;
+                        int i = -1;
+                        do {
+                            k++;
+                            i++;
+                            vpsListView.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);
+                        } while (k<lastVisiblePosition);
+                        if ((!radarScanImageView.isShown()) && (isArSwitchOn) && (!isShowingVpPhoto)){
+                            radarScanImageView.setVisibility(View.VISIBLE);
+                            radarScanImageView.startAnimation(rotationRadarScan);
+                        }
+                    }
+                });
+                //Log.d(TAG,"Else 2="+singleImageTrackingIsSet);
+                if (singleImageTrackingIsSet){
+                    singleImageTrackingIsSet = false;
+                    setMultipleImageTrackingConfiguration();
+                }
+                if (isHudOn==0) isHudOn=1;
             }
-
-
         }
         return rgba;
     }
@@ -1473,27 +1585,31 @@ public class ImageCapActivity extends Activity implements
                     (Math.abs(trackingValues.getEAZ() - 0) <= toleranceRotation));
         } else {
 
-            inPosition = ((Math.abs(trackingValues.getX() - vpXCameraDistance[vpTrackedInPose]) <= (tolerancePosition)) &&
-                    (Math.abs(trackingValues.getY() - vpYCameraDistance[vpTrackedInPose]) <= (tolerancePosition)) &&
-                    (Math.abs(trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose]) <= (tolerancePosition)));
-            inRotation = ((Math.abs(trackingValues.getEAX() - vpXCameraRotation[vpTrackedInPose]) <= (toleranceRotation)) &&
-                    (Math.abs(trackingValues.getEAY() - vpYCameraRotation[vpTrackedInPose]) <= (toleranceRotation)) &&
-                    (Math.abs(trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose]) <= (toleranceRotation)));
+            inPosition = ((Math.abs(trackingValues.getXid() - vpXCameraDistance[vpTrackedInPose]) <= (tolerancePosition/2)) &&
+                    (Math.abs(trackingValues.getYid() - vpYCameraDistance[vpTrackedInPose]) <= (tolerancePosition/2)) &&
+                    (Math.abs(trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose]) <= (tolerancePosition/2)));
+            inRotation = ((Math.abs(trackingValues.getEAX() - vpXCameraRotation[vpTrackedInPose]) <= (toleranceRotation/2)) &&
+                    (Math.abs(trackingValues.getEAY() - vpYCameraRotation[vpTrackedInPose]) <= (toleranceRotation/2)) &&
+                    (Math.abs(trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose]) <= (toleranceRotation/2)));
         }
 
-        Log.d(TAG,"native inPosition="+inPosition+" inRotation="+inRotation+" waitingForMark...="+ waitingUntilMultipleImageTrackingIsSet +" vpPhReqInPress="+vpPhotoRequestInProgress);
+        Log.d(TAG,"TST inPosition="+inPosition+" inRotation="+inRotation+" waitingForMark...="+ waitingUntilMultipleImageTrackingIsSet +" vpPhReqInPress="+vpPhotoRequestInProgress);
         if ((inPosition) && (inRotation) && (!waitingUntilMultipleImageTrackingIsSet) && (!vpPhotoRequestInProgress)) {
-            if ((vpIsAmbiguous[vpTrackedInPose])&&(!doubleCheckingProcedureFinalized)) {
-                //TODO
+
+            if ((vpIsAmbiguous[vpTrackedInPose])&&(!doubleCheckingProcedureStarted)) {
+                mImageDetectionFilterIndex=1;
                 setIdTrackingConfiguration();
                 doubleCheckingProcedureStarted = true;
+
             }
-            if ((!vpIsAmbiguous[vpTrackedInPose]) || ((vpIsAmbiguous[vpTrackedInPose])&&(vpIsDisambiguated)&&(doubleCheckingProcedureFinalized))) {
+
+            if ((!vpIsAmbiguous[vpTrackedInPose]) || ((vpIsAmbiguous[vpTrackedInPose])&&(vpIsDisambiguated)&&(doubleCheckingProcedureFinalized)) || vpIsSuperSingle[vpTrackedInPose]) {
                     if (!waitingUntilMultipleImageTrackingIsSet) {
                         if (isHudOn==1) {
                             isHudOn = 0;
                         } else {
-                            takePhoto(rgba);
+                            Log.d(TAG,"Calling takePhoto: doubleCheckingProcedureFinalized="+doubleCheckingProcedureFinalized);
+                            if (!vpChecked[vpTrackedInPose]) takePhoto(rgba);
                         }
                     }
             }
@@ -2084,6 +2200,8 @@ public class ImageCapActivity extends Activity implements
     {
         vpTrackedInPose = 1;
         vpLocationDesText = new String[qtyVps];
+        vpArIsConfigured = new boolean[qtyVps];
+        vpIsVideo = new boolean[qtyVps];
         vpXCameraDistance = new int[qtyVps];
         vpYCameraDistance = new int[qtyVps];
         vpZCameraDistance = new int[qtyVps];
@@ -2099,8 +2217,6 @@ public class ImageCapActivity extends Activity implements
         vpIsAmbiguous = new boolean[qtyVps];
         vpFlashTorchIsOn = new boolean[qtyVps];
         vpIsSuperSingle = new boolean[qtyVps];
-        vpSuperIdIs20mm = new boolean[qtyVps];
-        vpSuperIdIs100mm = new boolean[qtyVps];
         vpSuperMarkerId = new int[qtyVps];
         photoTakenTimeMillis = new long[qtyVps];
         vpNextCaptureMillis = new long[qtyVps];
@@ -2181,6 +2297,16 @@ public class ImageCapActivity extends Activity implements
                             eventType = myparser.next();
                             vpNumber[vpListOrder] = Short.parseShort(myparser.getText());
                         }
+                        else if(myparser.getName().equalsIgnoreCase("VpArIsConfigured"))
+                        {
+                            eventType = myparser.next();
+                            vpArIsConfigured[vpListOrder] = Boolean.parseBoolean(myparser.getText());
+                        }
+                        else if(myparser.getName().equalsIgnoreCase("VpIsVideo"))
+                        {
+                            eventType = myparser.next();
+                            vpIsVideo[vpListOrder] = Boolean.parseBoolean(myparser.getText());
+                        }
                         else if(myparser.getName().equalsIgnoreCase("VpXCameraDistance"))
                         {
                             eventType = myparser.next();
@@ -2240,16 +2366,6 @@ public class ImageCapActivity extends Activity implements
                         {
                             eventType = myparser.next();
                             vpIsSuperSingle[vpListOrder] = Boolean.parseBoolean(myparser.getText());
-                        }
-                        else if(myparser.getName().equalsIgnoreCase("VpSuperIdIs20mm"))
-                        {
-                            eventType = myparser.next();
-                            vpSuperIdIs20mm[vpListOrder] = Boolean.parseBoolean(myparser.getText());
-                        }
-                        else if(myparser.getName().equalsIgnoreCase("vpSuperIdIs100mm"))
-                        {
-                            eventType = myparser.next();
-                            vpSuperIdIs100mm[vpListOrder] = Boolean.parseBoolean(myparser.getText());
                         }
                         else if(myparser.getName().equalsIgnoreCase("VpSuperMarkerId"))
                         {

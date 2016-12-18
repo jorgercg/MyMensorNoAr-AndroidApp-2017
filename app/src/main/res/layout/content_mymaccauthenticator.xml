@@ -29,7 +29,7 @@
             android:paddingBottom="8dp"
             android:paddingTop="8dp"
             android:scaleType="centerInside"
-            android:src="@drawable/logoseamensor300dpi"
+            android:src="@drawable/logo_mymensor"
             android:layout_gravity="center_horizontal">
         </ImageView>
 

@@ -3,4 +3,10 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="mymensorblue">#00AFEF</color>
+    <color name="mymensorbluedark">#008dc1</color>
+    <color name="mymensorgreen">#A8CF45</color>
+    <color name="mymensorgreendark">#8dae39</color>
+    <color name="Red">#FF0000</color>
+    <color name="Gray">#A9A9A9</color>
 </resources>
