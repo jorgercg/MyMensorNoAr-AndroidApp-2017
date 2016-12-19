@@ -1,10 +1,14 @@
 package com.mymensor;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,9 +16,11 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
+import android.location.Location;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.CamcorderProfile;
+import android.media.ExifInterface;
 import android.media.MediaRecorder;
 import android.media.SoundPool;
 import android.os.AsyncTask;
@@ -23,6 +29,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -45,13 +52,20 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensor.filters.ARFilter;
 import com.mymensor.filters.Filter;
@@ -101,13 +115,14 @@ import java.util.TimeZone;
 
 import static com.mymensor.Constants.cameraWidthInPixels;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opencv.core.CvType.CV_64F;
-import static org.opencv.core.CvType.CV_64FC1;
 
 
 public class ImageCapActivity extends Activity implements
         CameraBridgeViewBase.CvCameraViewListener2,
-        AdapterView.OnItemClickListener {
+        AdapterView.OnItemClickListener,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
     private static final String TAG = "ImageCapActvty";
 
@@ -117,13 +132,10 @@ public class ImageCapActivity extends Activity implements
     private int dciNumber;
     private short qtyVps = 0;
 
-    private String descvpRemotePath;
-    private String vpsRemotePath;
     private String vpsCheckedRemotePath;
-    private String capRemotePath;
+    private String vpsRemotePath;
 
     private static Bitmap vpLocationDescImageFileContents;
-    private static Bitmap selectedVpPhotoImageFileContents;
 
     private short[] vpNumber;
     private boolean[] vpChecked;
@@ -142,8 +154,6 @@ public class ImageCapActivity extends Activity implements
     private boolean firstFrameAfterArSwitchOff = false;
     private int isHudOn = 1;
 
-
-
     private boolean vpIsManuallySelected=false;
 
     private TrackingValues trackingValues;
@@ -154,6 +164,8 @@ public class ImageCapActivity extends Activity implements
     public boolean lastVpPhotoRejected = false;
     public int lastVpSelectedByUser;
     public int photoSelected = 0;
+
+    private short assetId;
 
     private boolean[] vpArIsConfigured;
     private boolean[] vpIsVideo;
@@ -182,9 +194,6 @@ public class ImageCapActivity extends Activity implements
     private boolean idTrackingIsSet = false;
     private boolean validMarkerFound = false;
 
-    private long idTrackingIsSetMillis;
-
-    private short assetId;
     private String frequencyUnit;
     private int frequencyValue;
 
@@ -230,6 +239,7 @@ public class ImageCapActivity extends Activity implements
 
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
+    private AmazonS3 s3Amazon;
 
     SharedPreferences sharedPref;
 
@@ -250,7 +260,7 @@ public class ImageCapActivity extends Activity implements
     private String videoFileNameLong;
 
     public boolean isPositionCertified = false; // Or true ???????????
-    public boolean isConnectedToServer = false; // Or true ???????????
+    public boolean isConnectedToServer = false;
 
     // The camera view.
     private CameraBridgeViewBase mCameraView;
@@ -296,8 +306,47 @@ public class ImageCapActivity extends Activity implements
     Point pt6;
     Scalar color;
 
-    MatOfPoint3f objectPoints;
-    MatOfPoint2f imagePoints;
+    protected GoogleApiClient mGoogleApiClient;
+    protected Location mLastLocation;
+    /**
+     * Stores parameters for requests to the FusedLocationProviderApi.
+     */
+    protected LocationRequest mLocationRequest;
+
+    /**
+     * Represents a geographical location.
+     */
+    protected Location mCurrentLocation;
+
+    /**
+     * The desired interval for location updates. Inexact. Updates may be more or less frequent.
+     */
+    public static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    /**
+     * The fastest rate for active location updates. Exact. Updates will never be more frequent
+     * than this value.
+     */
+    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
+            UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+    // Keys for storing activity state in the Bundle.
+    protected final static String REQUESTING_LOCATION_UPDATES_KEY = "requesting-location-updates-key";
+    protected final static String LOCATION_KEY = "location-key";
+    protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
+    /**
+     * Tracks the status of the location updates request. Value changes when the user presses the
+     * Start Updates and Stop Updates buttons.
+     */
+    protected Boolean mRequestingLocationUpdates;
+    protected Boolean mLocationUpdated;
+
+    /**
+     * Time when the location was updated represented as a Long.
+     */
+    protected Long mLastUpdateTime;
+
+    protected String[] locPhotoToExif;
+
+
 
     @TargetApi(21)
     @Override
@@ -321,14 +370,23 @@ public class ImageCapActivity extends Activity implements
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
+        // Update values using data stored in the Bundle.
+        updateValuesFromBundle(savedInstanceState);
+
+        // Create an instance of GoogleAPIClient and request Location Services API.
+        buildGoogleApiClient();
+
+        mRequestingLocationUpdates = true;
+        mLocationUpdated = false;
+
         s3Client = CognitoSyncClientManager.getInstance();
 
         transferUtility = AwsUtil.getTransferUtility(s3Client, getApplicationContext());
 
-        descvpRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"dsc"+"/"+"descvp";
-        vpsRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/";
+        s3Amazon = CognitoSyncClientManager.getInstance();
+
+        vpsRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
         vpsCheckedRemotePath = mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
-        capRemotePath = mymensorAccount+"/"+"cap"+"/";
 
         if (savedInstanceState != null) {
             mImageDetectionFilterIndex = savedInstanceState.getInt(
@@ -557,11 +615,23 @@ public class ImageCapActivity extends Activity implements
 
         // Position Certified Button
 
-        final View.OnClickListener undoOnClickListenerPositionButton = new View.OnClickListener() {
+        final View.OnClickListener turnOffClickListenerPositionButton = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                stopLocationUpdates();
+                Snackbar.make(view, getText(R.string.position_not_certified), Snackbar.LENGTH_LONG).show();
 
-                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
+            }
+        };
+
+        final View.OnClickListener turnOnClickListenerPositionButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startLocationUpdates();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MMM.dd HH:mm:ss");
+                String lastUpdatedOn = sdf.format(mLastUpdateTime);
+                lastUpdatedOn = " ("+lastUpdatedOn+")";
+                Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG).show();
 
             }
         };
@@ -569,11 +639,22 @@ public class ImageCapActivity extends Activity implements
         positionCertifiedButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
-                        .setAction(getText(R.string.undo), undoOnClickListenerPositionButton).show();
+                if (mLocationUpdated) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MMM.dd HH:mm:ss");
+                    String lastUpdatedOn = sdf.format(mLastUpdateTime);
+                    lastUpdatedOn = " ("+lastUpdatedOn+")";
+                    Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG)
+                            .setAction(getText(R.string.turn_off_location_updates), turnOffClickListenerPositionButton).show();
+                } else {
+                    Snackbar.make(view, getText(R.string.position_not_certified), Snackbar.LENGTH_LONG)
+                            .setAction(getText(R.string.turn_on_location_updates), turnOnClickListenerPositionButton).show();
+                }
+
 
             }
         });
+
+        positionCertifiedButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
 
         // Time Certified Button
         if (isTimeCertified) {
@@ -613,20 +694,33 @@ public class ImageCapActivity extends Activity implements
 
         // Connected to Server Button
 
+
+        checkConnectionToServer();
+
+        if (isConnectedToServer) {
+            connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
+        } else {
+            connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+        }
+
         final View.OnClickListener undoOnClickListenerServerButton = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                Snackbar.make(view, getText(R.string.loadingimgcapactvty), Snackbar.LENGTH_LONG).show();
-
+                Snackbar.make(view, getText(R.string.tryingtoconnecttoserver), Snackbar.LENGTH_LONG).show();
+                checkConnectionToServer();
             }
         };
 
         connectedToServerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.loadingcfgactvty), Snackbar.LENGTH_LONG)
-                        .setAction(getText(R.string.undo), undoOnClickListenerServerButton).show();
+                if (isConnectedToServer) {
+                    Snackbar.make(view, getText(R.string.connectedtoserver), Snackbar.LENGTH_LONG).show();
+                } else {
+                    Snackbar.make(view, getText(R.string.notconnectedtoserver), Snackbar.LENGTH_LONG)
+                            .setAction(getText(R.string.trytoconnect), undoOnClickListenerServerButton).show();
+                }
+
 
             }
         });
@@ -711,6 +805,286 @@ public class ImageCapActivity extends Activity implements
             }
         });
 
+
+        IntentFilter intentFilter = new IntentFilter("android.intent.action.AIRPLANE_MODE");
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d(TAG,"User has put mobile in airplane mode");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        isConnectedToServer = false;
+                        connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+                    }
+                });
+            }
+        };
+
+        this.registerReceiver(receiver, intentFilter);
+
+    }
+
+
+    private void checkConnectionToServer(){
+
+        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            protected void onPreExecute() {
+                Log.d(TAG,"checkConnectionToServer: onPreExecute");
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                boolean result = MymUtils.isS3Available(s3Amazon, vpsRemotePath);
+                return result;
+            }
+
+            @Override
+            protected void onPostExecute(final Boolean result) {
+                Log.d(TAG,"checkConnectionToServer: onPostExecute: result="+result);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (result) {
+                            isConnectedToServer = true;
+                            connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
+                        } else {
+                            isConnectedToServer = false;
+                            connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+                        }
+                    }
+                });
+            }
+
+        }.execute();
+
+
+    }
+
+
+    /**
+     * Updates fields based on data stored in the bundle.
+     *
+     * @param savedInstanceState The activity state saved in the Bundle.
+     */
+    private void updateValuesFromBundle(Bundle savedInstanceState) {
+        Log.i(TAG, "Updating values from bundle");
+        if (savedInstanceState != null) {
+            // Update the value of mRequestingLocationUpdates from the Bundle, and make sure that
+            // the Start Updates and Stop Updates buttons are correctly enabled or disabled.
+            if (savedInstanceState.keySet().contains(REQUESTING_LOCATION_UPDATES_KEY)) {
+                mRequestingLocationUpdates = savedInstanceState.getBoolean(
+                        REQUESTING_LOCATION_UPDATES_KEY);
+                //setButtonsEnabledState();
+            }
+
+            // Update the value of mCurrentLocation from the Bundle and update the UI to show the
+            // correct latitude and longitude.
+            if (savedInstanceState.keySet().contains(LOCATION_KEY)) {
+                // Since LOCATION_KEY was found in the Bundle, we can be sure that mCurrentLocation
+                // is not null.
+                mCurrentLocation = savedInstanceState.getParcelable(LOCATION_KEY);
+            }
+
+            // Update the value of mLastUpdateTime from the Bundle and update the UI.
+            if (savedInstanceState.keySet().contains(LAST_UPDATED_TIME_STRING_KEY)) {
+                mLastUpdateTime = savedInstanceState.getLong(LAST_UPDATED_TIME_STRING_KEY);
+            }
+            //updateUI();
+        }
+    }
+
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        Log.i(TAG, "Connected to GoogleApiClient");
+
+        if (mCurrentLocation == null) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
+            }
+            mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            mLastUpdateTime = MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference);
+            //updateUI();
+        }
+
+        if (mRequestingLocationUpdates) {
+            startLocationUpdates();
+        }
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult result) {
+        // Refer to the javadoc for ConnectionResult to see what error codes might be returned in
+        // onConnectionFailed.
+        mLocationUpdated = false;
+        Log.i(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + result.getErrorCode());
+    }
+
+
+    @Override
+    public void onConnectionSuspended(int cause) {
+        // The connection to Google Play services was lost for some reason. We call connect() to
+        // attempt to re-establish the connection.
+        Log.i(TAG, "Connection suspended");
+        mLocationUpdated = false;
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
+        mLastUpdateTime = MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference);
+        mLocationUpdated = true;
+        Log.d(TAG,"onLocationChanged: mLastUpdateTime="+mLastUpdateTime+" mCurrentLocation="+mCurrentLocation.toString());
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                positionCertifiedButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
+            }
+        });
+    }
+
+    /**
+     * Builds a GoogleApiClient. Uses the {@code #addApi} method to request the
+     * LocationServices API.
+     */
+    protected synchronized void buildGoogleApiClient() {
+        Log.i(TAG, "Building GoogleApiClient");
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        createLocationRequest();
+    }
+
+    /**
+     * Sets up the location request. Android has two location request settings:
+     * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
+     * the accuracy of the current location. This sample uses ACCESS_FINE_LOCATION, as defined in
+     * the AndroidManifest.xml.
+     * <p/>
+     * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast update
+     * interval (5 seconds), the Fused Location Provider API returns location updates that are
+     * accurate to within a few feet.
+     * <p/>
+     * These settings are appropriate for mapping applications that show real-time location
+     * updates.
+     */
+    protected void createLocationRequest() {
+        mLocationRequest = new LocationRequest();
+
+        // Sets the desired interval for active location updates. This interval is
+        // inexact. You may not receive updates at all if no location sources are available, or
+        // you may receive them slower than requested. You may also receive updates faster than
+        // requested if other applications are requesting location at a faster interval.
+        mLocationRequest.setInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS); //UPDATE_INTERVAL_IN_MILLISECONDS
+
+        // Sets the fastest rate for active location updates. This interval is exact, and your
+        // application will never receive updates faster than this value.
+        mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
+
+    protected void startLocationUpdates() {
+        // The final argument to {@code requestLocationUpdates()} is a LocationListener
+        // (http://developer.android.com/reference/com/google/android/gms/location/LocationListener.html).
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
+        }
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+    }
+
+    protected void stopLocationUpdates() {
+        // It is a good practice to remove location requests when the activity is in a paused or
+        // stopped state. Doing so helps battery performance and is especially
+        // recommended in applications that request frequent location updates.
+
+        // The final argument to {@code requestLocationUpdates()} is a LocationListener
+        // (http://developer.android.com/reference/com/google/android/gms/location/LocationListener.html).
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                positionCertifiedButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+            }
+        });
+        mLocationUpdated = false;
+    }
+
+
+    public String[] getLocationToExifStrings(Location location)
+    {
+        String[] locationString = new String[10];
+        try
+        {
+            double[] gps = new double[2];
+            if (location != null)
+            {
+                gps[0] = location.getLatitude();
+                gps[1] = location.getLongitude();
+
+                if (gps[0]<0)
+                {
+                    locationString[1]="S";
+                    gps[0]=(-1)*gps[0];
+                }
+                else
+                {
+                    locationString[1]="N";
+                }
+                if (gps[1]<0)
+                {
+                    locationString[3]="W";
+                    gps[1]=(-1)*gps[1];
+                }
+                else
+                {
+                    locationString[3]="E";
+                }
+                long latDegInteger = (long) (gps[0] - (gps[0] % 1));
+                long latMinInteger = (long) ((60*(gps[0]-latDegInteger))-((60*(gps[0]-latDegInteger)) % 1));
+                long latSecInteger = (long) (((60*(gps[0]-latDegInteger)) % 1)*60*1000);
+                locationString[0]=""+latDegInteger+"/1,"+latMinInteger+"/1,"+latSecInteger+"/1000";
+
+                long lonDegInteger = (long) (gps[1] - (gps[1] % 1));
+                long lonMinInteger = (long) ((60*(gps[1]-lonDegInteger))-((60*(gps[1]-lonDegInteger)) % 1));
+                long lonSecInteger = (long) (((60*(gps[1]-lonDegInteger)) % 1)*60*1000);
+                locationString[2]=""+lonDegInteger+"/1,"+lonMinInteger+"/1,"+lonSecInteger+"/1000";
+                locationString[8]= Double.toString(gps[0]);
+                locationString[9]= Double.toString(gps[1]);
+                locationString[4]= Float.toString(location.getAccuracy());
+                locationString[5]= mLastUpdateTime.toString();
+                locationString[6]= location.getProvider();
+                locationString[7]= Double.toString(location.getAltitude());
+                Log.d(TAG, "getLocationToExifStrings: LAT:"+gps[0]+" "+(gps[0] % 1)+" "+locationString[0]+locationString[1]+" LON:"+gps[1]+" "+locationString[2]+locationString[3]);
+            }
+            else
+            {
+                locationString[0] = " ";
+                locationString[1] = " ";
+                locationString[2] = " ";
+                locationString[3] = " ";
+                locationString[4] = " ";
+                locationString[5] = " ";
+                locationString[6] = " ";
+                locationString[7] = " ";
+
+            }
+            for (int index = 0; index<7; index++)
+            {
+                if (locationString[index]==null) locationString[index]=" ";
+                Log.d(TAG, "getLocationToExifStrings: locationString[index]="+locationString[index]);
+            }
+
+        }
+        catch (Exception e)
+        {
+            Log.d(TAG, "getLocationToExifStrings: failed:"+e.toString());
+        }
+        return locationString;
     }
 
 
@@ -718,7 +1092,9 @@ public class ImageCapActivity extends Activity implements
     public void onSaveInstanceState(Bundle savedInstanceState) {
         // Save the current filter indices.
         savedInstanceState.putInt(STATE_IMAGE_DETECTION_FILTER_INDEX, mImageDetectionFilterIndex);
-
+        savedInstanceState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, mRequestingLocationUpdates);
+        savedInstanceState.putParcelable(LOCATION_KEY, mCurrentLocation);
+        savedInstanceState.putLong(LAST_UPDATED_TIME_STRING_KEY, mLastUpdateTime);
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -726,8 +1102,8 @@ public class ImageCapActivity extends Activity implements
     @Override
     protected void onStart()
     {
+        mGoogleApiClient.connect();
         super.onStart();
-
 
     }
 
@@ -794,7 +1170,9 @@ public class ImageCapActivity extends Activity implements
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
 
-        //if (mGoogleApiClient.isConnected()) startLocationUpdates();
+        if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
+            startLocationUpdates();
+        }
         setVpsChecked();
         runOnUiThread(new Runnable() {
             @Override
@@ -835,7 +1213,9 @@ public class ImageCapActivity extends Activity implements
             mCameraView.disableView();
         }
         super.onPause();
-        //stopLocationUpdates();
+        if (mGoogleApiClient.isConnected()) {
+            stopLocationUpdates();
+        }
 
     }
 
@@ -844,13 +1224,13 @@ public class ImageCapActivity extends Activity implements
     {
         super.onStop();
         Log.d(TAG,"onStop CALLED");
+        mGoogleApiClient.disconnect();
         saveVpsChecked();
         if (mMediaRecorder!=null){
             mMediaRecorder.reset();
             mMediaRecorder.release();
             mMediaRecorder = null;
         }
-        //mGoogleApiClient.disconnect();
     }
 
     @Override
@@ -1054,7 +1434,7 @@ public class ImageCapActivity extends Activity implements
             };
             if (mImageDetectionFilterIndex==1){
                 idTrackingIsSet = true;
-                idTrackingIsSetMillis = System.currentTimeMillis();
+                //idTrackingIsSetMillis = System.currentTimeMillis();
             } else {
                 idTrackingIsSet = false;
             }
@@ -1222,20 +1602,18 @@ public class ImageCapActivity extends Activity implements
                             Log.d(TAG,"videoFile.getPath()="+videoFile.getPath());
                             Log.d(TAG,"videoFileName="+videoFileName);
                             String fileSha256Hash = MymUtils.getFileHash(videoFile);
+                            locPhotoToExif = getLocationToExifStrings(mCurrentLocation);
                             ObjectMetadata myObjectMetadata = new ObjectMetadata();
                             //create a map to store user metadata
                             Map<String, String> userMetadata = new HashMap<String,String>();
-                    /*
-                    userMetadata.put("GPSLatitude", locPhotoToExif[0]);
-                    userMetadata.put("GPSLongitude", locPhotoToExif[1]);
-                    */
+                            userMetadata.put("GPSLatitude", locPhotoToExif[8]);
+                            userMetadata.put("GPSLongitude", locPhotoToExif[9]);
                             userMetadata.put("VP", ""+(vpTrackedInPose));
                             userMetadata.put("seamensorAccount", mymensorAccount);
-                    /*
-                    userMetadata.put("Precisioninm", locPhotoToExif[4]);
-                    userMetadata.put("LocationMillis", locPhotoToExif[5]);
-                    userMetadata.put("LocationMethod", locPhotoToExif[6]);
-                    */
+                            userMetadata.put("Precisioninm", locPhotoToExif[4]);
+                            userMetadata.put("Altitude", locPhotoToExif[7]);
+                            userMetadata.put("LocationMillis", locPhotoToExif[5]);
+                            userMetadata.put("LocationMethod", locPhotoToExif[6]);
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
@@ -1268,6 +1646,20 @@ public class ImageCapActivity extends Activity implements
                             setVpsChecked();
                             saveVpsChecked();
                         }
+                    }
+                    catch (AmazonServiceException ase) {
+                        Log.e(TAG, "Failure to save video : AmazonServiceException: Error when writing captured image to Remote Storage:"+ase.toString());
+                        isConnectedToServer = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (isConnectedToServer) {
+                                    connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
+                                } else {
+                                    connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+                                }
+                            }
+                        });
                     }
                     catch (Exception e)
                     {
@@ -1397,33 +1789,52 @@ public class ImageCapActivity extends Activity implements
                             } else {
                                 if (isHudOn==1){
 
-                                    float multiplyFactor = 1f;
-
-                                    float deltaX = (trackingValues.getXid() - vpXCameraDistance[vpTrackedInPose])*multiplyFactor;
-                                    float deltaY = (trackingValues.getYid() - vpYCameraDistance[vpTrackedInPose])*multiplyFactor;
-                                    float deltaZ = (trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose])*multiplyFactor;
+                                    float deltaX = (trackingValues.getXid() - vpXCameraDistance[vpTrackedInPose]);
+                                    float deltaY = (trackingValues.getYid() - vpYCameraDistance[vpTrackedInPose]);
+                                    float deltaZ = (trackingValues.getZ() - vpZCameraDistance[vpTrackedInPose]);
 
                                     float deltaRX = trackingValues.getEAX() - vpXCameraRotation[vpTrackedInPose];
                                     float deltaRY = trackingValues.getEAY() - vpYCameraRotation[vpTrackedInPose];
                                     float deltaRZ = trackingValues.getEAZ() - vpZCameraRotation[vpTrackedInPose];
 
-
-
-
+                                    double rotX = deltaRX;
+                                    double rotY = deltaRZ;
                                     double rotZ = deltaRY;
 
+                                    double dxp1_rotX = 0;
+                                    double dxp2_rotX = 0;
 
-                                    double xp1 = (double)Constants.xAxisTrackingCorrection+deltaX+deltaZ;
-                                    double yp1 = (double)Constants.yAxisTrackingCorrection+deltaY+deltaZ;
+                                    double dyp1_rotY = 0;
+                                    double dyp4_rotY = 0;
 
-                                    double xp2 = (double)Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth+deltaX-deltaZ;
-                                    double yp2 = (double)Constants.yAxisTrackingCorrection+deltaY+deltaZ;
+                                    if ((rotZ>=(-20))||(rotZ<=20)){
 
-                                    double xp3 = (double)(Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth+deltaX-deltaZ);
-                                    double yp3 = (double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth+deltaY-deltaZ);
+                                        if (rotX<(-70)) {
+                                            rotX = rotX + 360;
+                                        } else {
+                                            if (rotX>300) {
+                                                rotX = rotX - 360;
+                                            }
+                                        }
 
-                                    double xp4 = (double)(Constants.xAxisTrackingCorrection+deltaX+deltaZ);
-                                    double yp4 = (double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth+deltaY-deltaZ);
+                                        dxp1_rotX = rotX;
+                                        dxp2_rotX = -rotX;
+
+                                        dyp1_rotY = rotY;
+                                        dyp4_rotY = -dyp1_rotY;
+                                    }
+
+                                    double xp1 = (double)Constants.xAxisTrackingCorrection+deltaX+deltaZ+dxp1_rotX;
+                                    double yp1 = (double)Constants.yAxisTrackingCorrection+deltaY+deltaZ+dyp1_rotY;
+
+                                    double xp2 = (double)Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth+deltaX-deltaZ+dxp2_rotX;
+                                    double yp2 = (double)Constants.yAxisTrackingCorrection+deltaY+deltaZ-dyp1_rotY;
+
+                                    double xp3 = (double)(Constants.xAxisTrackingCorrection+Constants.standardMarkerlessMarkerWidth+deltaX-deltaZ-dxp2_rotX);
+                                    double yp3 = (double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth+deltaY-deltaZ-dyp4_rotY);
+
+                                    double xp4 = (double)(Constants.xAxisTrackingCorrection+deltaX+deltaZ-dxp1_rotX);
+                                    double yp4 = (double)(Constants.yAxisTrackingCorrection+Constants.standardMarkerlessMarkerHeigth+deltaY-deltaZ+dyp4_rotY);
 
                                     double xp5 = (xp1 + xp2) / 2;
                                     double yp5 = (yp1 + yp2) / 2;
@@ -1643,7 +2054,7 @@ public class ImageCapActivity extends Activity implements
             final int width = bitmapImage.getWidth();
             final int height = bitmapImage.getHeight();
             Log.d(TAG, "takePhoto: Camera frame width: " + width + " height: " + height);
-            //locPhotoToExif = getGPSToExif(mCurrentLocation); //TODO
+            locPhotoToExif = getLocationToExifStrings(mCurrentLocation);
         }
         if (bitmapImage != null)
         {
@@ -1706,21 +2117,27 @@ public class ImageCapActivity extends Activity implements
                     FileOutputStream fos = new FileOutputStream(pictureFile);
                     bitmapImage.compress(Bitmap.CompressFormat.JPEG, 95, fos);
                     fos.close();
+                    ExifInterface locPhotoTags = new ExifInterface(pictureFile.getAbsolutePath());
+                    locPhotoTags.setAttribute("GPSLatitude", locPhotoToExif[0]);
+                    locPhotoTags.setAttribute("GPSLatitudeRef", locPhotoToExif[1]);
+                    locPhotoTags.setAttribute("GPSLongitude", locPhotoToExif[2]);
+                    locPhotoTags.setAttribute("GPSLongitudeRef", locPhotoToExif[3]);
+                    locPhotoTags.setAttribute("GPSAltitude", locPhotoToExif[4]);
+                    locPhotoTags.setAttribute("Make", locPhotoToExif[5]);
+                    locPhotoTags.setAttribute("Model", locPhotoToExif[6]);
+                    locPhotoTags.saveAttributes();
                     String fileSha256Hash = MymUtils.getFileHash(pictureFile);
                     ObjectMetadata myObjectMetadata = new ObjectMetadata();
                     //create a map to store user metadata
                     Map<String, String> userMetadata = new HashMap<String,String>();
-                    /*
-                    userMetadata.put("GPSLatitude", locPhotoToExif[0]);
-                    userMetadata.put("GPSLongitude", locPhotoToExif[1]);
-                    */
+                    userMetadata.put("GPSLatitude", locPhotoToExif[8]);
+                    userMetadata.put("GPSLongitude", locPhotoToExif[9]);
                     userMetadata.put("VP", ""+(vpTrackedInPose));
                     userMetadata.put("seamensorAccount", mymensorAccount);
-                    /*
                     userMetadata.put("Precisioninm", locPhotoToExif[4]);
+                    userMetadata.put("Altitude", locPhotoToExif[7]);
                     userMetadata.put("LocationMillis", locPhotoToExif[5]);
                     userMetadata.put("LocationMethod", locPhotoToExif[6]);
-                    */
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
@@ -1750,14 +2167,26 @@ public class ImageCapActivity extends Activity implements
                         vpIsDisambiguated = false;
                     }
                 }
+                catch (AmazonServiceException ase) {
+                    Log.e(TAG, "takePhoto: AmazonServiceException: Error when writing captured image to Remote Storage:"+ase.toString());
+                    isConnectedToServer = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (isConnectedToServer) {
+                                connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
+                            } else {
+                                connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+                            }
+                        }
+                    });
+                }
                 catch (Exception e)
                 {
                     Log.e(TAG, "takePhoto: Error when writing captured image to Remote Storage:"+e.toString());
                     vpChecked[vpTrackedInPose] = false;
                     setVpsChecked();
                     saveVpsChecked();
-                    //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
-                    e.printStackTrace();
                 }
                 vpPhotoAccepted = false;
                 vpPhotoRequestInProgress = false;
@@ -2117,6 +2546,7 @@ public class ImageCapActivity extends Activity implements
                                 lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
                                 vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
                                 vpLocationDesTextView.setVisibility(View.VISIBLE);
+                                /*
                                 imageView.setOnTouchListener(new View.OnTouchListener() {
                                     @Override
                                     public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -2147,6 +2577,7 @@ public class ImageCapActivity extends Activity implements
                                         return false;
                                     }
                                 });
+                                */
                             }
                         }
                     });

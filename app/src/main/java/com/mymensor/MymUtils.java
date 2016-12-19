@@ -7,6 +7,7 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3;
@@ -240,9 +241,17 @@ public class MymUtils {
     }
 
 
-    public static class IsRemoteServerAvailable {
-
-
+    public static boolean isS3Available(AmazonS3 s3Amazon, String vpsRemotePath){
+        boolean result = false;
+        try{
+            result = s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName));
+        } catch (AmazonServiceException ase){
+            Log.d(TAG, "AmazonServiceException="+ase.toString());
+        } catch (AmazonClientException ace) {
+            Log.d(TAG, "AmazonClientException="+ace.toString());
+        } catch (Exception e) {
+            Log.d(TAG, "Exception="+e.toString());
+        }
+        return result;
     }
-
 }

@@ -34,15 +34,27 @@
         android:background="@android:color/transparent"
         android:layout_width="120dp" />
 
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:layout_gravity="top|center"
+        android:text="@string/vp_00"
+        android:textColor="@android:color/white"
+        android:background="@android:color/holo_blue_dark"
+        android:visibility="gone"
+        />
+
     <EditText
         android:id="@+id/descVPEditText"
-        android:layout_toEndOf="@id/vp_list"
+        android:layout_toEndOf="@+id/textView2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="4dp"
         android:lines="2"
         android:layout_alignParentTop="true"
-        android:gravity="left|top"
+        android:gravity="center"
         android:text="@string/desc_vp_empty"
         android:textColor="@android:color/holo_blue_light"
         android:background="@android:color/background_dark"
@@ -51,13 +63,14 @@
         android:imeOptions="actionDone"
         />
 
+
     <LinearLayout
         android:id="@+id/linearLayoutVpArStatus"
         android:layout_below="@id/descVPEditText"
         android:layout_toEndOf="@id/vp_list"
         android:orientation="horizontal"
         android:visibility="invisible"
-        android:background="@drawable/border_marker_id"
+        android:background="@drawable/border_marker_id_blue"
         android:layout_margin="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
@@ -192,7 +205,7 @@
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="invisible"
+        android:visibility="visible"
 
         android:layout_alignParentEnd="true"
         android:layout_marginTop="16dp"
@@ -241,42 +254,61 @@
             android:layout_margin="16dp"
             opencv:backgroundTint="@android:color/holo_blue_bright" />
 
-
         <LinearLayout
-            android:id="@+id/linearLayoutMarkerId"
-            android:orientation="horizontal"
-            android:visibility="visible"
-            android:background="@drawable/border_marker_id"
-            android:layout_marginBottom="8dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/linearLayoutMarkerId"
+                android:orientation="horizontal"
+                android:visibility="invisible"
+                android:background="@drawable/border_marker_id_blue"
+                android:layout_marginBottom="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical|center"
+                    android:padding="8dp"
+                    android:textColor="@android:color/white"
+                    android:text="@string/button_marker_id"
+                    android:textAlignment="gravity" />
+
+                <TextView
+                    android:id="@+id/idMarkerNumberTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical|center"
+                    android:padding="8dp"
+                    android:textColor="@android:color/white"
+                    android:text="--"
+                    android:layout_gravity="end" />
+
+            </LinearLayout>
 
             <TextView
+                android:id="@+id/vpIdMarkerUsedTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical|center"
                 android:padding="8dp"
-                android:textColor="@android:color/white"
-                android:text="@string/button_marker_id"
-                android:textAlignment="gravity" />
-
-            <TextView
-                android:id="@+id/idMarkerNumberTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical|center"
-                android:padding="8dp"
-                android:textColor="@android:color/white"
-                android:text="--"
+                android:textColor="@color/Red"
+                android:visibility="gone"
+                android:text=" @ VP#"
                 android:layout_gravity="end" />
 
         </LinearLayout>
+
 
 
         <LinearLayout
             android:id="@+id/linearLayoutAmbiguousVp"
             android:orientation="horizontal"
             android:layout_alignParentEnd="true"
+            android:visibility="invisible"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 
@@ -306,6 +338,7 @@
             android:id="@+id/linearLayoutSuperSingleVp"
             android:orientation="horizontal"
             android:layout_alignParentEnd="true"
+            android:visibility="invisible"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 

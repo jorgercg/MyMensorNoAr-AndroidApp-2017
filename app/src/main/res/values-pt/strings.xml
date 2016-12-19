@@ -103,4 +103,12 @@
     <string name="markerid_already_used">Este id marker já foi utilizado em outro VP, por favor utilize um diferente.</string>
     <string name="button_marker_id">ID</string>
     <string name="textview_vp_ar">AR</string>
+    <string name="position_is_certified">Localização atualizada.</string>
+    <string name="turn_off_location_updates">Desligar</string>
+    <string name="position_not_certified">Localização desatualizada.</string>
+    <string name="turn_on_location_updates">Ligar</string>
+    <string name="connectedtoserver">Conectado ao servidor.</string>
+    <string name="notconnectedtoserver">Sem conexão com servidor.</string>
+    <string name="tryingtoconnecttoserver">Chamando servidor, por favor conectar com a internet.</string>
+    <string name="trytoconnect">CONECTAR</string>
 </resources>
