@@ -13,7 +13,7 @@
     <string name="date_vp_touched_first_acquisition">agora</string>
     <string name="date_vp_touched_last_acquired">Última captura</string>
     <string name="date_vp_touched_free_to_be_acquired">Disponível em</string>
-    <string name="date_vp_capture_shown">Foto tirada em</string>
+    <string name="date_vp_capture_shown">Mídia gravada em</string>
     <string name="vp_touched_info">Informação sobre este VP</string>
     <string name="vp_out_of_bounds">VP fora do Limite!!!! Aumente a quantidade com QtdVp++.</string>
     <string name="camera_focusing">Aguarde!!! Câmera Focalizando!!!</string>
@@ -45,7 +45,7 @@
     <string name="vpAcquiredStatus">OK</string>
     <string name="not_all_vps_acquired">Erro: nem todos vps foram capturados - capture todos antes de salvar - vps NÃO FORAM salvos"</string>
     <string name="vp_location_des_text_missing">Erro: faltando texto de descrição de VP</string>
-    <string name="no_photo_captured_in_this_vp">Nenhuma foto capturada neste vp!!!</string>
+    <string name="no_photo_captured_in_this_vp">Nenhuma mídia capturada neste vp!!!</string>
     <string name="logging_in">Conectando ao servidor...</string>
     <string name="userstate_loggedout">Por favor faça o log in.</string>
     <string name="userstate_loggedin">Autorizado, usando credenciais de</string>

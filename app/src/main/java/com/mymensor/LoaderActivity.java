@@ -599,7 +599,7 @@ public class LoaderActivity extends Activity
                 // Loading Vp Location Description Images from Remote Storage and writing to local storage.
                 for (int j = 0; j < (qtyVps); j++)
                 {
-                    if (vpArIsConfigured[j]) {
+                    if (true) {
                         Log.d(TAG,"loadFinalDefinitions:####### LOADING: VPDESCFILES CONTENTS j="+j);
                         File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (j) + ".png");
                         Log.d(TAG,"loadFinalDefinitions: vpLocationDescImageFilePath Dropbox: " + descvpRemotePath+ "descvp" + (j) + ".png");
@@ -683,7 +683,7 @@ public class LoaderActivity extends Activity
 
                 for (int j = 0; j < (qtyVps); j++)
                 {
-                    if (vpArIsConfigured[j]){
+                    if (true){
                         Log.d(TAG,"loadFinalDefinitions:####### LOADING: MARKERVP CONTENTS j="+j);
                         File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (j) + ".png");
                         Log.d(TAG,"loadFinalDefinitions: markervpRemotePath: " + markervpRemotePath+ "markervp" + (j) + ".png");
@@ -738,7 +738,9 @@ public class LoaderActivity extends Activity
 
             // Checking if all images are already in the local storage, as network operations take place in background.
 
-            /*
+
+
+            Log.d(TAG,"Checking if all images are already in the local storage, as network operations take place in background.");
             int product = 0;
             loopstart = System.currentTimeMillis();
 
@@ -755,7 +757,7 @@ public class LoaderActivity extends Activity
                             }
                         } else {
                             if (k == 0) {
-                                product = Math.abs(0);
+                                product = Math.abs(1);
                             } else {
                                 product *= Math.abs(0);
                             }
@@ -775,7 +777,7 @@ public class LoaderActivity extends Activity
 
             Log.d(TAG,"Loading Image Config Files: imageFilesOK="+product);
 
-            */
+
 
             publishProgress(getString(R.string.load_assets_finished));
             return null;

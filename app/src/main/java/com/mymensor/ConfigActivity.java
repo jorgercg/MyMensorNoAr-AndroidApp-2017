@@ -1172,6 +1172,7 @@ public class ConfigActivity extends Activity implements
                 cameraPhotoRequested =false;
                 vpDescAndMarkerImageOK = true;
                 vpArIsConfigured[vpIndex]=true;
+                saveVpsData();
                 ObjectMetadata myObjectMetadata = new ObjectMetadata();
                 //create a map to store user metadata
                 Map<String, String> userMetadata = new HashMap<String,String>();

@@ -25,6 +25,14 @@
         android:visibility="gone"
         />
 
+    <VideoView
+        android:id="@+id/videoView1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:visibility="visible"/>
+
     <ListView
         android:id="@+id/vp_list"
         android:padding="1dp"
@@ -377,5 +385,87 @@
             android:layout_marginTop="5dp" />
 
     </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/linearLayoutButtonsOnShowVpCaptures"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="top|center"
+        android:layout_above="@id/buttonShowPreviousVpCapture"
+        android:layout_alignParentStart="true"
+        android:visibility="gone"
+        android:layout_margin="16dp">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/deleteLocalAndRemoteMediaButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            opencv:fabSize="mini"
+            opencv:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+            opencv:backgroundTint="@color/mymensorbluedark"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="5dp" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/deleteLocalMediaButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            opencv:fabSize="mini"
+            opencv:srcCompat="@android:drawable/ic_menu_delete"
+            opencv:backgroundTint="@color/mymensorbluedark"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/shareMediaButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            opencv:fabSize="mini"
+            opencv:srcCompat="?attr/actionModeShareDrawable"
+            opencv:backgroundTint="@color/mymensorbluedark"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayoutImageViewsOnShowVpCaptures"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="top|center"
+        android:visibility="invisible"
+        android:layout_alignParentEnd="true"
+        android:layout_above="@id/buttonShowNextVpCapture"
+        android:layout_margin="16dp">
+
+        <ImageView
+            android:id="@+id/positionCertifiedImageview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:onClick="onButtonClick"
+            android:foreground="@android:drawable/ic_dialog_map"
+            android:background="@drawable/circular_button_green"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="5dp" />
+
+        <ImageView
+            android:id="@+id/timeCertifiedImageview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:onClick="onButtonClick"
+            android:foreground="@android:drawable/ic_menu_recent_history"
+            android:background="@drawable/circular_button_green"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp" />
+
+    </LinearLayout>
+
 
 </RelativeLayout>

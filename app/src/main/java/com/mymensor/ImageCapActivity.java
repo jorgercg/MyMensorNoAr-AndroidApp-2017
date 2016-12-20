@@ -13,6 +13,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
@@ -34,7 +35,6 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -48,9 +48,11 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.MediaController;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
@@ -80,14 +82,9 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.calib3d.Calib3d;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
-import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 
@@ -115,6 +112,9 @@ import java.util.TimeZone;
 
 import static com.mymensor.Constants.cameraWidthInPixels;
 import static java.nio.charset.StandardCharsets.UTF_8;
+
+import static com.mymensor.R.drawable.circular_button_green;
+import static com.mymensor.R.drawable.circular_button_red;
 
 
 public class ImageCapActivity extends Activity implements
@@ -163,7 +163,7 @@ public class ImageCapActivity extends Activity implements
     public boolean vpPhotoRejected = false;
     public boolean lastVpPhotoRejected = false;
     public int lastVpSelectedByUser;
-    public int photoSelected = 0;
+    public int mediaSelected = 0;
 
     private short assetId;
 
@@ -201,6 +201,7 @@ public class ImageCapActivity extends Activity implements
     ImageView radarScanImageView;
     ImageView mProgress;
     TouchImageView imageView;
+    VideoView videoView;
     ImageView vpCheckedView;
     TextView isVpPhotoOkTextView;
 
@@ -223,6 +224,8 @@ public class ImageCapActivity extends Activity implements
 
     LinearLayout arSwitchLinearLayout;
     LinearLayout videoRecorderTimeLayout;
+    LinearLayout linearLayoutButtonsOnShowVpCaptures;
+    LinearLayout linearLayoutImageViewsOnShowVpCaptures;
 
     Chronometer videoRecorderChronometer;
 
@@ -255,6 +258,8 @@ public class ImageCapActivity extends Activity implements
     private boolean stopManualVideo = false;
 
     protected MediaRecorder mMediaRecorder;
+
+    protected MediaController mMediaController;
 
     private String videoFileName;
     private String videoFileNameLong;
@@ -346,6 +351,8 @@ public class ImageCapActivity extends Activity implements
 
     protected String[] locPhotoToExif;
 
+    BroadcastReceiver receiver;
+
 
 
     @TargetApi(21)
@@ -431,7 +438,6 @@ public class ImageCapActivity extends Activity implements
         pt6 = new Point((double)(Constants.xAxisTrackingCorrection+(Constants.standardMarkerlessMarkerWidth/2)+20),(double)(Constants.yAxisTrackingCorrection)-20);
         color = new Scalar((double)168,(double)207,(double)69);
 
-
         final Camera camera;
         CameraInfo cameraInfo = new CameraInfo();
         Camera.getCameraInfo(0, cameraInfo);
@@ -496,12 +502,18 @@ public class ImageCapActivity extends Activity implements
 
         imageView = (TouchImageView) this.findViewById(R.id.imageView1);
 
+        videoView = (VideoView) this.findViewById(R.id.videoView1);
+
         vpCheckedView = (ImageView) this.findViewById(R.id.imageViewVpChecked);
         vpCheckedView.setVisibility(View.GONE);
 
         arSwitchLinearLayout = (LinearLayout) this.findViewById(R.id.arSwitchLinearLayout);
 
         videoRecorderTimeLayout = (LinearLayout) this.findViewById(R.id.videoRecorderTimeLayout);
+
+        linearLayoutButtonsOnShowVpCaptures = (LinearLayout) this.findViewById(R.id.linearLayoutButtonsOnShowVpCaptures);
+
+        linearLayoutImageViewsOnShowVpCaptures = (LinearLayout) this.findViewById(R.id.linearLayoutImageViewsOnShowVpCaptures);
 
         videoRecorderChronometer = (Chronometer) this.findViewById(R.id.recordingChronometer);
 
@@ -800,7 +812,7 @@ public class ImageCapActivity extends Activity implements
                 {
                     imageView.setImageAlpha(255);
                 }
-                photoSelected = -1;
+                mediaSelected = -1;
                 showVpCaptures(lastVpSelectedByUser);
             }
         });
@@ -808,10 +820,10 @@ public class ImageCapActivity extends Activity implements
 
         IntentFilter intentFilter = new IntentFilter("android.intent.action.AIRPLANE_MODE");
 
-        BroadcastReceiver receiver = new BroadcastReceiver() {
+        receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d(TAG,"User has put mobile in airplane mode");
+                Log.d(TAG,"User has put device in airplane mode");
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -823,6 +835,8 @@ public class ImageCapActivity extends Activity implements
         };
 
         this.registerReceiver(receiver, intentFilter);
+
+        mMediaController = new MediaController(this);
 
     }
 
@@ -943,6 +957,7 @@ public class ImageCapActivity extends Activity implements
                 positionCertifiedButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
             }
         });
+        isPositionCertified = true;
     }
 
     /**
@@ -1012,12 +1027,13 @@ public class ImageCapActivity extends Activity implements
             }
         });
         mLocationUpdated = false;
+        isPositionCertified = false;
     }
 
 
-    public String[] getLocationToExifStrings(Location location)
+    public String[] getLocationToExifStrings(Location location, String photoTakenMillis)
     {
-        String[] locationString = new String[10];
+        String[] locationString = new String[14];
         try
         {
             double[] gps = new double[2];
@@ -1059,6 +1075,23 @@ public class ImageCapActivity extends Activity implements
                 locationString[5]= mLastUpdateTime.toString();
                 locationString[6]= location.getProvider();
                 locationString[7]= Double.toString(location.getAltitude());
+                if (isTimeCertified) {
+                    locationString[10]= Integer.toString(1);
+                    locationString[11]= photoTakenMillis;
+                } else {
+                    locationString[10]= Integer.toString(0);
+                    locationString[11]= photoTakenMillis;
+                }
+                if (isPositionCertified){
+                    locationString[12]= Integer.toString(1);
+                } else {
+                    locationString[12]= Integer.toString(0);
+                }
+                if (isArSwitchOn){
+                    locationString[13]= Integer.toString(1);
+                } else {
+                    locationString[13]= Integer.toString(0);
+                }
                 Log.d(TAG, "getLocationToExifStrings: LAT:"+gps[0]+" "+(gps[0] % 1)+" "+locationString[0]+locationString[1]+" LON:"+gps[1]+" "+locationString[2]+locationString[3]);
             }
             else
@@ -1113,10 +1146,15 @@ public class ImageCapActivity extends Activity implements
         if (isShowingVpPhoto){
             Log.d(TAG, "Closing VPx location photo");
             //Turning tracking On
+            mCameraView.setVisibility(View.VISIBLE);
+            linearLayoutButtonsOnShowVpCaptures.setVisibility(View.GONE);
+            linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.GONE);
             mImageDetectionFilterIndex=1;
             isShowingVpPhoto = false;
             vpLocationDesTextView.setVisibility(View.GONE);
             vpIdNumber.setVisibility(View.GONE);
+            if (videoView.isPlaying()) videoView.stopPlayback();
+            videoView.setVisibility(View.GONE);
             imageView.setVisibility(View.GONE);
             callConfigButton.setVisibility(View.GONE);
             alphaToggleButton.setVisibility(View.GONE);
@@ -1242,6 +1280,7 @@ public class ImageCapActivity extends Activity implements
         }
         // Dispose of native resources.
         disposeFilters(mImageDetectionFilters);
+        this.unregisterReceiver(receiver);
         super.onDestroy();
     }
 
@@ -1458,11 +1497,8 @@ public class ImageCapActivity extends Activity implements
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
-        profile.videoFrameWidth = Constants.cameraWidthInPixels;
-        profile.videoFrameHeight = Constants.cameraHeigthInPixels;
         mMediaRecorder.setProfile(profile);
         mMediaRecorder.setOutputFile(videoFileName);
-
         try {
             mMediaRecorder.prepare();
             mCameraView.setRecorder(mMediaRecorder);
@@ -1555,8 +1591,9 @@ public class ImageCapActivity extends Activity implements
                 askForManualVideo = false;
                 videoCaptureStartmillis = System.currentTimeMillis();
                 long momentoLong = MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference);
+                photoTakenTimeMillis[vpTrackedInPose] = momentoLong;
                 String momento = String.valueOf(momentoLong);
-                videoFileName = "cap_vid_" + mymensorAccount + "_" + vpNumber[vpTrackedInPose] + "_" + momento + ".mp4";
+                videoFileName = "cap_" + mymensorAccount + "_" + vpNumber[vpTrackedInPose] + "_v_" + momento + ".mp4";
                 videoFileNameLong = getApplicationContext().getFilesDir() + "/" + videoFileName;
                 if (!capturingManualVideo) prepareVideoRecorder(videoFileNameLong);
             }
@@ -1602,22 +1639,26 @@ public class ImageCapActivity extends Activity implements
                             Log.d(TAG,"videoFile.getPath()="+videoFile.getPath());
                             Log.d(TAG,"videoFileName="+videoFileName);
                             String fileSha256Hash = MymUtils.getFileHash(videoFile);
-                            locPhotoToExif = getLocationToExifStrings(mCurrentLocation);
+                            locPhotoToExif = getLocationToExifStrings(mCurrentLocation, Long.toString(photoTakenTimeMillis[vpTrackedInPose]));
                             ObjectMetadata myObjectMetadata = new ObjectMetadata();
                             //create a map to store user metadata
                             Map<String, String> userMetadata = new HashMap<String,String>();
-                            userMetadata.put("GPSLatitude", locPhotoToExif[8]);
-                            userMetadata.put("GPSLongitude", locPhotoToExif[9]);
+                            userMetadata.put("LocLatitude", locPhotoToExif[8]);
+                            userMetadata.put("LocLongitude", locPhotoToExif[9]);
                             userMetadata.put("VP", ""+(vpTrackedInPose));
-                            userMetadata.put("seamensorAccount", mymensorAccount);
-                            userMetadata.put("Precisioninm", locPhotoToExif[4]);
-                            userMetadata.put("Altitude", locPhotoToExif[7]);
-                            userMetadata.put("LocationMillis", locPhotoToExif[5]);
-                            userMetadata.put("LocationMethod", locPhotoToExif[6]);
+                            userMetadata.put("mymensorAccount", mymensorAccount);
+                            userMetadata.put("LocPrecisioninm", locPhotoToExif[4]);
+                            userMetadata.put("LocAltitude", locPhotoToExif[7]);
+                            userMetadata.put("LocMillis", locPhotoToExif[5]);
+                            userMetadata.put("LocMethod", locPhotoToExif[6]);
+                            userMetadata.put("LocCertified", locPhotoToExif[12]);
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                             userMetadata.put("DateTime", formattedDateTime);
+                            userMetadata.put("PhotoTakenMillis", locPhotoToExif[11]);
+                            userMetadata.put("TimeCertified", locPhotoToExif[10]);
+                            userMetadata.put("IsArSwitchOn", locPhotoToExif[13]);
                             userMetadata.put("SHA-256", fileSha256Hash);
                             //call setUserMetadata on our ObjectMetadata object, passing it our map
                             myObjectMetadata.setUserMetadata(userMetadata);
@@ -1628,6 +1669,32 @@ public class ImageCapActivity extends Activity implements
                                     Constants.BUCKET_NAME,
                                     videoFile,
                                     myObjectMetadata);
+
+                            observer.setTransferListener(new TransferListener() {
+                                @Override
+                                public void onStateChanged(int id, TransferState state) {
+                                    if (state.equals(TransferState.COMPLETED)) {
+                                        Log.d(TAG,"VideoRecorderLazy: TransferListener="+state.toString());
+                                    }
+                                }
+
+                                @Override
+                                public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                                    if (bytesTotal>0){
+                                        int percentage = (int) (bytesCurrent / bytesTotal * 100);
+                                    }
+                                    //Display percentage transfered to user
+                                }
+
+                                @Override
+                                public void onError(int id, Exception ex) {
+                                    Log.e(TAG, "VideoRecorderLazy: saving failed:"+ ex.toString());
+                                    Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                                    vpChecked[vpTrackedInPose] = false;
+                                    setVpsChecked();
+                                    saveVpsChecked();
+                                }
+                            });
                             if (observer!=null){
                                 Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getState().toString());
                                 Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getAbsoluteFilePath());
@@ -2034,9 +2101,9 @@ public class ImageCapActivity extends Activity implements
         long momentoLong = MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference);
         photoTakenTimeMillis[vpTrackedInPose] = momentoLong;
         if (askForManualPhoto) askForManualPhoto = false;
-        String momento = String.valueOf(momentoLong);
+        final String momento = String.valueOf(momentoLong);
         String pictureFileName;
-        pictureFileName = "cap_"+mymensorAccount+"_"+vpNumber[vpTrackedInPose]+"_"+momento+".jpg";
+        pictureFileName = "cap_"+mymensorAccount+"_"+vpNumber[vpTrackedInPose]+"_p_"+momento+".jpg";
         File pictureFile = new File(getApplicationContext().getFilesDir(), pictureFileName);
 
         Log.d(TAG, "takePhoto: a new camera frame image is delivered " + momento);
@@ -2054,7 +2121,6 @@ public class ImageCapActivity extends Activity implements
             final int width = bitmapImage.getWidth();
             final int height = bitmapImage.getHeight();
             Log.d(TAG, "takePhoto: Camera frame width: " + width + " height: " + height);
-            locPhotoToExif = getLocationToExifStrings(mCurrentLocation);
         }
         if (bitmapImage != null)
         {
@@ -2107,6 +2173,7 @@ public class ImageCapActivity extends Activity implements
                         rejectVpPhotoButton.setVisibility(View.GONE);
                         vpsListView.setVisibility(View.VISIBLE);
                         vpChecked[vpTrackedInPose] = true;
+                        locPhotoToExif = getLocationToExifStrings(mCurrentLocation, momento);
                     }
                 });
                 setVpsChecked();
@@ -2118,30 +2185,38 @@ public class ImageCapActivity extends Activity implements
                     bitmapImage.compress(Bitmap.CompressFormat.JPEG, 95, fos);
                     fos.close();
                     ExifInterface locPhotoTags = new ExifInterface(pictureFile.getAbsolutePath());
-                    locPhotoTags.setAttribute("GPSLatitude", locPhotoToExif[0]);
+                    locPhotoTags.setAttribute("GPSLatitude", locPhotoToExif[0]); //LocLatitude
                     locPhotoTags.setAttribute("GPSLatitudeRef", locPhotoToExif[1]);
-                    locPhotoTags.setAttribute("GPSLongitude", locPhotoToExif[2]);
+                    locPhotoTags.setAttribute("GPSLongitude", locPhotoToExif[2]); //LocLongitude
                     locPhotoTags.setAttribute("GPSLongitudeRef", locPhotoToExif[3]);
-                    locPhotoTags.setAttribute("GPSAltitude", locPhotoToExif[4]);
-                    locPhotoTags.setAttribute("Make", locPhotoToExif[5]);
-                    locPhotoTags.setAttribute("Model", locPhotoToExif[6]);
+                    locPhotoTags.setAttribute("GPSAltitude", locPhotoToExif[4]); //LocPrecisioninm
+                    locPhotoTags.setAttribute("DateTime", locPhotoToExif[5]); //LocMillis
+                    locPhotoTags.setAttribute("GPSProcessingMethod", locPhotoToExif[6]); //LocMethod
+                    locPhotoTags.setAttribute("GPSAltitudeRef", locPhotoToExif[10]); //IsTimeCertified
+                    locPhotoTags.setAttribute("GPSDateStamp", locPhotoToExif[11]); //photoTakenTimeMillis
+                    locPhotoTags.setAttribute("Make", locPhotoToExif[12]); //IsPositionCertified
+                    locPhotoTags.setAttribute("Model", locPhotoToExif[13]); //IsArSwitchOn
                     locPhotoTags.saveAttributes();
                     String fileSha256Hash = MymUtils.getFileHash(pictureFile);
                     ObjectMetadata myObjectMetadata = new ObjectMetadata();
                     //create a map to store user metadata
                     Map<String, String> userMetadata = new HashMap<String,String>();
-                    userMetadata.put("GPSLatitude", locPhotoToExif[8]);
-                    userMetadata.put("GPSLongitude", locPhotoToExif[9]);
+                    userMetadata.put("LocLatitude", locPhotoToExif[8]);
+                    userMetadata.put("LocLongitude", locPhotoToExif[9]);
                     userMetadata.put("VP", ""+(vpTrackedInPose));
-                    userMetadata.put("seamensorAccount", mymensorAccount);
-                    userMetadata.put("Precisioninm", locPhotoToExif[4]);
-                    userMetadata.put("Altitude", locPhotoToExif[7]);
-                    userMetadata.put("LocationMillis", locPhotoToExif[5]);
-                    userMetadata.put("LocationMethod", locPhotoToExif[6]);
+                    userMetadata.put("mymensorAccount", mymensorAccount);
+                    userMetadata.put("LocPrecisioninm", locPhotoToExif[4]);
+                    userMetadata.put("LocAltitude", locPhotoToExif[7]);
+                    userMetadata.put("LocMillis", locPhotoToExif[5]);
+                    userMetadata.put("LocMethod", locPhotoToExif[6]);
+                    userMetadata.put("LocCertified", locPhotoToExif[12]);
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                     userMetadata.put("DateTime", formattedDateTime);
+                    userMetadata.put("PhotoTakenMillis", locPhotoToExif[11]);
+                    userMetadata.put("TimeCertified", locPhotoToExif[10]);
+                    userMetadata.put("IsArSwitchOn", locPhotoToExif[13]);
                     userMetadata.put("SHA-256", fileSha256Hash);
                     //call setUserMetadata on our ObjectMetadata object, passing it our map
                     myObjectMetadata.setUserMetadata(userMetadata);
@@ -2152,10 +2227,32 @@ public class ImageCapActivity extends Activity implements
                             Constants.BUCKET_NAME,
                             pictureFile,
                             myObjectMetadata);
-                    Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getState().toString());
-                    Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getAbsoluteFilePath());
-                    Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getBucket());
-                    Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getKey());
+
+                    observer.setTransferListener(new TransferListener() {
+                        @Override
+                        public void onStateChanged(int id, TransferState state) {
+                            if (state.equals(TransferState.COMPLETED)) {
+                                Log.d(TAG,"takePhoto(): TransferListener="+state.toString());
+                            }
+                        }
+
+                        @Override
+                        public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                            if (bytesTotal>0){
+                                int percentage = (int) (bytesCurrent / bytesTotal * 100);
+                            }
+                            //Display percentage transfered to user
+                        }
+
+                        @Override
+                        public void onError(int id, Exception ex) {
+                            Log.e(TAG, "takePhoto(): saving failed:"+ ex.toString());
+                            Log.e(TAG, "takePhoto: Error when writing captured image to Remote Storage:"+ex.toString());
+                            vpChecked[vpTrackedInPose] = false;
+                            setVpsChecked();
+                            saveVpsChecked();
+                        }
+                    });
 
                     if ((singleImageTrackingIsSet)&&(isArSwitchOn))
                     {
@@ -2376,6 +2473,7 @@ public class ImageCapActivity extends Activity implements
                     positionCertifiedButton.setVisibility(View.INVISIBLE);
                     timeCertifiedButton.setVisibility(View.INVISIBLE);
                     connectedToServerButton.setVisibility(View.INVISIBLE);
+                    mCameraView.setVisibility(View.GONE);
                 }
             });
             try
@@ -2470,18 +2568,18 @@ public class ImageCapActivity extends Activity implements
         }
         if (v.getId()==R.id.buttonShowPreviousVpCapture)
         {
-            photoSelected++;
+            mediaSelected++;
             showVpCaptures(lastVpSelectedByUser);
         }
         if (v.getId()==R.id.buttonShowNextVpCapture)
         {
-            photoSelected--;
+            mediaSelected--;
             showVpCaptures(lastVpSelectedByUser);
         }
 
     }
 
-
+    @TargetApi(21)
     private void showVpCaptures(int vpSelected)
     {
         final Bitmap showVpPhotoImageFileContents;
@@ -2489,16 +2587,9 @@ public class ImageCapActivity extends Activity implements
         Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser);
         final int position = vpSelected;
         final int vpToList = vpSelected;
-        String vpPhotoFileName=" ";
-        String path = getApplicationContext().getFilesDir().getPath();
+        final String vpMediaFileName;
+        final String path = getApplicationContext().getFilesDir().getPath();
         File directory = new File(path);
-        /*
-        Log.d(TAG,"directory.list="+directory.list().length);
-        String[] filesInDirectory = directory.list();
-        for (int i=0; i<directory.list().length; i++){
-            Log.d(TAG, "filesInDirectory["+i+"] ="+filesInDirectory[i]);
-        }
-        */
         String[] capsInDirectory = directory.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String filename) {
@@ -2512,78 +2603,90 @@ public class ImageCapActivity extends Activity implements
                 if (!(capsInDirectory==null))
                 {
                     numOfEntries = capsInDirectory.length;
-                    /*
-                    for (int i=0; i<numOfEntries; i++){
-                        Log.d(TAG, "capsInDirectory["+i+"] ="+capsInDirectory[i]);
-                    }
-                    */
-                    if (photoSelected==-1) photoSelected = numOfEntries - 1;
-                    if (photoSelected<0) photoSelected = 0;
-                    if (photoSelected > (numOfEntries-1)) photoSelected = 0;
-                    Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser+" photoSelected="+photoSelected);
-                    vpPhotoFileName = capsInDirectory[photoSelected];
-                    Log.d(TAG,"showVpCaptures: vpPhotoFileName="+vpPhotoFileName);
-                    InputStream fiscaps = MymUtils.getLocalFile(vpPhotoFileName,getApplicationContext());
-                    showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
-                    fiscaps.close();
+                    if (mediaSelected == -1) mediaSelected = numOfEntries - 1;
+                    if (mediaSelected <0) mediaSelected = 0;
+                    if (mediaSelected > (numOfEntries-1)) mediaSelected = 0;
+                    Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser+" mediaSelected="+ mediaSelected);
+                    vpMediaFileName = capsInDirectory[mediaSelected];
+                    Log.d(TAG,"showVpCaptures: vpMediaFileName="+ vpMediaFileName);
+                    StringBuilder sb = new StringBuilder(vpMediaFileName);
+                    final String millisMoment = sb.substring(vpMediaFileName.length()-17, vpMediaFileName.length()-4);
+                    final String mediaType = sb.substring(vpMediaFileName.length()-19, vpMediaFileName.length()-18);
+                    if (mediaType.equalsIgnoreCase("p")){
+                        // When the item is a photo
+                        final InputStream fiscaps = MymUtils.getLocalFile(vpMediaFileName,getApplicationContext());
+                        showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
+                        fiscaps.close();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!(showVpPhotoImageFileContents==null))
+                                {
+                                    linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                                    linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                                    try {
+                                        ExifInterface tags = new ExifInterface(path+"/"+vpMediaFileName);
+                                        if (tags.getAttribute("Make").equalsIgnoreCase("1")){
+                                            //IsPositionCertified
+                                            positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
+                                        } else {
+                                            positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
+                                        }
+                                        if (tags.getAttribute("GPSAltitudeRef").equalsIgnoreCase("1")){
+                                            //IsTimeCertified
+                                            timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
+                                        } else {
+                                            timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
+                                        }
+                                    } catch (Exception e) {
+                                        Log.e(TAG,"Problem with Exif tags:"+e.toString());
+                                    }
 
-                    StringBuilder sb = new StringBuilder(vpPhotoFileName);
-                    final String filename =sb.substring(vpPhotoFileName.length()-17,vpPhotoFileName.length()-4);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!(showVpPhotoImageFileContents==null))
-                            {
-                                imageView.setImageBitmap(showVpPhotoImageFileContents);
-                                imageView.setVisibility(View.VISIBLE);
-                                imageView.resetZoom();
-                                if (imageView.getImageAlpha()==128) imageView.setImageAlpha(255);
+                                    videoView.setVisibility(View.GONE);
+                                    imageView.setVisibility(View.VISIBLE);
+                                    imageView.setImageBitmap(showVpPhotoImageFileContents);
+                                    imageView.resetZoom();
+                                    if (imageView.getImageAlpha()==128) imageView.setImageAlpha(255);
+                                    String lastTimeAcquired = "";
+                                    Date lastDate = new Date(Long.parseLong(millisMoment));
+                                    SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                                    String formattedLastDate = sdf.format(lastDate);
+                                    lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
+                                    vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
+                                    vpLocationDesTextView.setVisibility(View.VISIBLE);
+                                }
+                            }
+                        });
+                    } else {
+                        // when the item is a video.
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                imageView.setVisibility(View.GONE);
+                                linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                                linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
                                 String lastTimeAcquired = "";
-                                Date lastDate = new Date(Long.parseLong(filename));
+                                Date lastDate = new Date(Long.parseLong(millisMoment));
                                 SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
                                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                                 String formattedLastDate = sdf.format(lastDate);
                                 lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
                                 vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
                                 vpLocationDesTextView.setVisibility(View.VISIBLE);
-                                /*
-                                imageView.setOnTouchListener(new View.OnTouchListener() {
-                                    @Override
-                                    public boolean onTouch(View view, MotionEvent motionEvent) {
-                                        switch(motionEvent.getAction())
-                                        {
-                                            case MotionEvent.ACTION_DOWN:
-                                                x1 = motionEvent.getX();
-                                                break;
-                                            case MotionEvent.ACTION_UP:
-                                                x2 = motionEvent.getX();
-                                                float deltaX = x2 - x1;
-
-                                                if ((Math.abs(deltaX) > 50)&&(isShowingVpPhoto)){
-                                                    // Left to Right swipe action
-                                                    if (x2 > x1){
-                                                        photoSelected++;
-                                                        showVpCaptures(lastVpSelectedByUser);
-                                                    } else {
-                                                        // Right to left swipe action
-                                                        photoSelected++;
-                                                        showVpCaptures(lastVpSelectedByUser);
-                                                    }
-                                                } else {
-                                                    // consider as something else - a screen tap for example
-                                                }
-                                                break;
-                                        }
-                                        return false;
-                                    }
-                                });
-                                */
+                                videoView.setVisibility(View.VISIBLE);
+                                videoView.setVideoPath(path+"/"+vpMediaFileName);
+                                videoView.setMediaController(mMediaController);
+                                videoView.start();
                             }
-                        }
-                    });
+                        });
+
+                    }
+
                 }
                 else
                 {
+                    //when no item has been acquired to the vp.
                     runOnUiThread(new Runnable()
                     {
                         @Override

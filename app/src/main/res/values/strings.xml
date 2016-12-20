@@ -16,7 +16,7 @@
     <string name="date_vp_touched_first_acquisition">now</string>
     <string name="date_vp_touched_last_acquired">Last acquired</string>
     <string name="date_vp_touched_free_to_be_acquired">Available from</string>
-    <string name="date_vp_capture_shown">Photo taken on</string>
+    <string name="date_vp_capture_shown">Media created on</string>
     <string name="vp_touched_info">Info about this VP</string>
     <string name="vp_out_of_bounds">VP out of Bounds!!!! Increase qty with QtyVp++.</string>
     <string name="camera_focusing">Wait!!! Camera Focusing!!!</string>
@@ -48,7 +48,7 @@
     <string name="vpAcquiredStatus">OK</string>
     <string name="not_all_vps_acquired">Error: not all vps acquired</string>
     <string name="vp_location_des_text_missing">Error: vp location text missing</string>
-    <string name="no_photo_captured_in_this_vp">No photo captured in this vp!!!</string>
+    <string name="no_photo_captured_in_this_vp">No media captured in this vp!!!</string>
     <string name="logging_in">Logging in to server...</string>
     <string name="authlabel" translatable="false">MyMensor</string>
     <string name="userstate_loggedout">Please log in.</string>
