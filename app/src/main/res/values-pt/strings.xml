@@ -111,4 +111,8 @@
     <string name="notconnectedtoserver">Sem conexão com servidor.</string>
     <string name="tryingtoconnecttoserver">Chamando servidor, por favor conectar com a internet.</string>
     <string name="trytoconnect">CONECTAR</string>
+    <string name="deletinglocalandremote">Apagar as cópias locais e remota da mídia em tela.</string>
+    <string name="deletinglocal">Apagar a cópia local da mídia em tela.</string>
+    <string name="keepinglocalandremote">Operação cancelada.</string>
+    <string name="keepinglocal">Operação cancelada.</string>
 </resources>

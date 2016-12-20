@@ -114,4 +114,8 @@
     <string name="notconnectedtoserver">Not connected to server.</string>
     <string name="tryingtoconnecttoserver">Calling server, please assure internet connection.</string>
     <string name="trytoconnect">CONNECT</string>
+    <string name="deletinglocalandremote">Delete local and remote currently on screen media.</string>
+    <string name="deletinglocal">Delete locally media currently on screen.</string>
+    <string name="keepinglocalandremote">Operation cancelled.</string>
+    <string name="keepinglocal">Operation cancelled.</string>
 </resources>

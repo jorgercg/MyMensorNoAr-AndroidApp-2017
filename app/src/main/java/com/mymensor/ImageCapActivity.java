@@ -217,6 +217,11 @@ public class ImageCapActivity extends Activity implements
     FloatingActionButton callConfigButton;
     FloatingActionButton alphaToggleButton;
     FloatingActionButton showVpCapturesButton;
+
+    FloatingActionButton deleteLocalAndRemoteMediaButton;
+    FloatingActionButton deleteLocalMediaButton;
+    FloatingActionButton shareMediaButton;
+
     Button showPreviousVpCaptureButton;
     Button showNextVpCaptureButton;
     Button acceptVpPhotoButton;
@@ -814,6 +819,50 @@ public class ImageCapActivity extends Activity implements
                 }
                 mediaSelected = -1;
                 showVpCaptures(lastVpSelectedByUser);
+            }
+        });
+
+
+        final View.OnClickListener undoOnClickListenerDeleteLocalAndRemoteMediaButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.keepinglocalandremote), Snackbar.LENGTH_LONG).show();
+                Log.d(TAG, "UNDO deleteLocalAndRemoteMediaButton:");
+            }
+        };
+
+        deleteLocalAndRemoteMediaButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.deletinglocalandremote), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), undoOnClickListenerDeleteLocalAndRemoteMediaButton).show();
+                Log.d(TAG,"deleteLocalAndRemoteMediaButton:");
+            }
+        });
+
+
+        final View.OnClickListener undoOnClickListenerDeleteLocalMediaButton = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.keepinglocal), Snackbar.LENGTH_LONG).show();
+                Log.d(TAG, "UNDO deleteLocalAndRemoteMediaButton:");
+            }
+        };
+
+        deleteLocalMediaButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.deletinglocal), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), undoOnClickListenerDeleteLocalMediaButton).show();
+                Log.d(TAG,"deleteLocalMediaButton:");
+            }
+        });
+
+
+        shareMediaButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG,"shareMediaButton:");
             }
         });
 
@@ -2641,7 +2690,6 @@ public class ImageCapActivity extends Activity implements
                                     } catch (Exception e) {
                                         Log.e(TAG,"Problem with Exif tags:"+e.toString());
                                     }
-
                                     videoView.setVisibility(View.GONE);
                                     imageView.setVisibility(View.VISIBLE);
                                     imageView.setImageBitmap(showVpPhotoImageFileContents);
