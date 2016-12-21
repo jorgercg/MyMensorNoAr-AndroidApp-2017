@@ -1478,6 +1478,20 @@ public class ConfigActivity extends Activity implements
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
+                xmlSerializer.startTag("","VpDescFileSize");
+                File descvp = new File(getApplicationContext().getFilesDir(),"descvp"+i+".png");
+                xmlSerializer.text(Long.toString(descvp.length()));
+                xmlSerializer.endTag("","VpDescFileSize");
+                xmlSerializer.text("\n");
+                xmlSerializer.text("\t");
+                xmlSerializer.text("\t");
+                xmlSerializer.startTag("","VpMarkerFileSize");
+                File markervp = new File(getApplicationContext().getFilesDir(),"markervp"+i+".png");
+                xmlSerializer.text(Long.toString(markervp.length()));
+                xmlSerializer.endTag("","VpMarkerFileSize");
+                xmlSerializer.text("\n");
+                xmlSerializer.text("\t");
+                xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpArIsConfigured");
                 xmlSerializer.text(Boolean.toString(vpArIsConfigured[i]));
                 xmlSerializer.endTag("","VpArIsConfigured");
@@ -1610,7 +1624,7 @@ public class ConfigActivity extends Activity implements
                 @Override
                 public void onStateChanged(int id, TransferState state) {
                     if (state.equals(TransferState.COMPLETED)) {
-                        Log.d(TAG,"TransferListener="+state.toString());
+                        Log.d(TAG,"saveVpsData(): TransferListener="+state.toString());
                     }
                 }
 
@@ -1678,78 +1692,78 @@ public class ConfigActivity extends Activity implements
                 vpLocationDescImageFileContents = BitmapFactory.decodeStream(fis);
                 fis.close();
             }
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Log.d(TAG, "Showing vpLocationDescImageFile for VP="+vpIndex+"(vpLocationDescImageFileContents==null)"+(vpLocationDescImageFileContents==null));
+                    // VP Location Picture ImageView
+                    if (!(vpLocationDescImageFileContents==null))
+                    {
+                        imageView.setImageBitmap(vpLocationDescImageFileContents);
+                        imageView.setVisibility(View.VISIBLE);
+                    }
+                    isShowingVpPhoto = true;
+                    vpsListView.setItemChecked(position, vpChecked[position]);
+                    // VP Location # TextView
+                    String vpId = Integer.toString(vpNumber[position]);
+                    vpId = getString(R.string.vp_name)+vpId;
+                    vpIdNumber.setText(vpId);
+                    vpIdNumber.setVisibility(View.VISIBLE);
+                    // VP Location Description TextView
+                    vpLocationDesEditTextView.setText(vpLocationDesText[position]);
+                    vpLocationDesEditTextView.setVisibility(View.VISIBLE);
+                    vpLocationDesEditTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                        @Override
+                        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                            if (actionId == EditorInfo.IME_ACTION_DONE)
+                            {
+                                vpLocationDesText[position] = vpLocationDesEditTextView.getText().toString();
+                            }
+                            return false;
+                        }
+
+                    });
+                    vpsListView.setVisibility(View.GONE);
+                    // VP Acquired
+                    if (vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpAcquiredStatus);
+                    if (!vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpNotAcquiredStatus);
+                    linearLayoutVpArStatus.setVisibility(View.VISIBLE);
+                    vpAcquiredStatus.setVisibility(View.VISIBLE);
+                    cameraShutterButton.setEnabled(true);
+                    cameraShutterButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_bright)));
+                    cameraShutterButton.setVisibility(View.INVISIBLE);
+                    drawTargetFrame = false;
+                    // Draw Location Description Button and other buttons
+                    requestPhotoButton.setVisibility(View.VISIBLE);
+                    qtyVpsLinearLayout.setVisibility(View.INVISIBLE);
+                    buttonCallImagecap.setVisibility(View.INVISIBLE);
+                    linearLayoutConfigCaptureVps.setVisibility(View.VISIBLE);
+                    linearLayoutCaptureNewVp.setVisibility(View.VISIBLE);
+                    linearLayoutAmbiguousVp.setVisibility(View.VISIBLE);
+                    linearLayoutSuperSingleVp.setVisibility(View.VISIBLE);
+                    ambiguousVpToggle.setVisibility(View.VISIBLE);
+                    if (vpIsAmbiguous[vpIndex]) ambiguousVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+                    if (!vpIsAmbiguous[vpIndex]) ambiguousVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
+                    superSingleVpToggle.setVisibility(View.VISIBLE);
+                    if (vpIsSuperSingle[vpIndex]) superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+                    if (!vpIsSuperSingle[vpIndex]) superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
+                    Log.d(TAG,"onItemClick: markerIdInPose vpSuperMarkerId["+vpIndex+"]="+vpSuperMarkerId[vpIndex]);
+                    if (vpSuperMarkerId[vpIndex]!=0) {
+                        linearLayoutMarkerId.setVisibility(View.VISIBLE);
+                        idMarkerNumberTextView.setText(Integer.toString(vpSuperMarkerId[vpIndex]));
+                    } else {
+                        linearLayoutMarkerId.setVisibility(View.INVISIBLE);
+                        idMarkerNumberTextView.setText("--");
+                    }
+                }
+            });
         }
         catch (Exception e)
         {
             Log.e(TAG, "vpLocationDescImageFile failed, see stack trace"+e.toString());
         }
-        runOnUiThread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Log.d(TAG, "Showing vpLocationDescImageFile for VP="+vpIndex+"(vpLocationDescImageFileContents==null)"+(vpLocationDescImageFileContents==null));
-                // VP Location Picture ImageView
-                if (!(vpLocationDescImageFileContents==null))
-                {
-                    imageView.setImageBitmap(vpLocationDescImageFileContents);
-                    imageView.setVisibility(View.VISIBLE);
-                }
-                isShowingVpPhoto = true;
-                vpsListView.setItemChecked(position, vpChecked[position]);
-                // VP Location # TextView
-                String vpId = Integer.toString(vpNumber[position]);
-                vpId = getString(R.string.vp_name)+vpId;
-                vpIdNumber.setText(vpId);
-                vpIdNumber.setVisibility(View.VISIBLE);
-                // VP Location Description TextView
-                vpLocationDesEditTextView.setText(vpLocationDesText[position]);
-                vpLocationDesEditTextView.setVisibility(View.VISIBLE);
-                vpLocationDesEditTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                    @Override
-                    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                        if (actionId == EditorInfo.IME_ACTION_DONE)
-                        {
-                            vpLocationDesText[position] = vpLocationDesEditTextView.getText().toString();
-                        }
-                        return false;
-                    }
-
-                });
-                vpsListView.setVisibility(View.GONE);
-                // VP Acquired
-                if (vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpAcquiredStatus);
-                if (!vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpNotAcquiredStatus);
-                linearLayoutVpArStatus.setVisibility(View.VISIBLE);
-                vpAcquiredStatus.setVisibility(View.VISIBLE);
-                cameraShutterButton.setEnabled(true);
-                cameraShutterButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_bright)));
-                cameraShutterButton.setVisibility(View.INVISIBLE);
-                drawTargetFrame = false;
-                // Draw Location Description Button and other buttons
-                requestPhotoButton.setVisibility(View.VISIBLE);
-                qtyVpsLinearLayout.setVisibility(View.INVISIBLE);
-                buttonCallImagecap.setVisibility(View.INVISIBLE);
-                linearLayoutConfigCaptureVps.setVisibility(View.VISIBLE);
-                linearLayoutCaptureNewVp.setVisibility(View.VISIBLE);
-                linearLayoutAmbiguousVp.setVisibility(View.VISIBLE);
-                linearLayoutSuperSingleVp.setVisibility(View.VISIBLE);
-                ambiguousVpToggle.setVisibility(View.VISIBLE);
-                if (vpIsAmbiguous[vpIndex]) ambiguousVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
-                if (!vpIsAmbiguous[vpIndex]) ambiguousVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
-                superSingleVpToggle.setVisibility(View.VISIBLE);
-                if (vpIsSuperSingle[vpIndex]) superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
-                if (!vpIsSuperSingle[vpIndex]) superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
-                Log.d(TAG,"onItemClick: markerIdInPose vpSuperMarkerId["+vpIndex+"]="+vpSuperMarkerId[vpIndex]);
-                if (vpSuperMarkerId[vpIndex]!=0) {
-                    linearLayoutMarkerId.setVisibility(View.VISIBLE);
-                    idMarkerNumberTextView.setText(Integer.toString(vpSuperMarkerId[vpIndex]));
-                } else {
-                    linearLayoutMarkerId.setVisibility(View.INVISIBLE);
-                    idMarkerNumberTextView.setText("--");
-                }
-            }
-        });
 
     }
 

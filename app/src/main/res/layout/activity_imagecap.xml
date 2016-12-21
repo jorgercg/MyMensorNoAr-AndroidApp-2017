@@ -14,7 +14,8 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"/>
 
     <com.mymensor.TouchImageView
         android:id="@+id/imageView1"
@@ -31,7 +32,7 @@
         android:layout_height="match_parent"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
-        android:visibility="visible"/>
+        android:visibility="gone"/>
 
     <ListView
         android:id="@+id/vp_list"
@@ -167,7 +168,6 @@
         android:layout_marginBottom="32dp"
         android:layout_marginEnd="16dp"
         android:visibility="gone"/>
-
 
     <TextView
         android:id="@+id/textView1"
@@ -399,17 +399,6 @@
         android:layout_margin="16dp">
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/deleteLocalAndRemoteMediaButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
-            opencv:backgroundTint="@color/mymensorbluedark"
-            android:layout_marginTop="0dp"
-            android:layout_marginBottom="5dp" />
-
-        <android.support.design.widget.FloatingActionButton
             android:id="@+id/deleteLocalMediaButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -430,6 +419,7 @@
             opencv:backgroundTint="@color/mymensorbluedark"
             android:layout_marginBottom="5dp"
             android:layout_marginTop="5dp" />
+
     </LinearLayout>
 
     <LinearLayout

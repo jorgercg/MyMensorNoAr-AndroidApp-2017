@@ -41,7 +41,8 @@ public class MymUtils {
                                                 String bucketName,
                                                 Context context) {
         File localFile = new File(context.getFilesDir(), localFileName );
-        if (!localFile.exists()) { return true; }
+
+        if ((!localFile.exists())||(localFile.length()<4)) { return true; }
         try {
             ObjectMetadata metadata = s3.getObjectMetadata(bucketName,remoteFileName);
             long remoteLastModified = metadata.getLastModified().getTime();

@@ -48,7 +48,7 @@
     <string name="vpAcquiredStatus">OK</string>
     <string name="not_all_vps_acquired">Error: not all vps acquired</string>
     <string name="vp_location_des_text_missing">Error: vp location text missing</string>
-    <string name="no_photo_captured_in_this_vp">No media captured in this vp!!!</string>
+    <string name="no_photo_captured_in_this_vp">No local media captured in this vp, please check the web.</string>
     <string name="logging_in">Logging in to server...</string>
     <string name="authlabel" translatable="false">MyMensor</string>
     <string name="userstate_loggedout">Please log in.</string>
@@ -118,4 +118,5 @@
     <string name="deletinglocal">Delete locally media currently on screen.</string>
     <string name="keepinglocalandremote">Operation cancelled.</string>
     <string name="keepinglocal">Operation cancelled.</string>
+    <string name="local_file_deleted">Local file succesfully deleted.</string>
 </resources>

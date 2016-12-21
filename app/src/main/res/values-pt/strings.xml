@@ -45,7 +45,7 @@
     <string name="vpAcquiredStatus">OK</string>
     <string name="not_all_vps_acquired">Erro: nem todos vps foram capturados - capture todos antes de salvar - vps NÃO FORAM salvos"</string>
     <string name="vp_location_des_text_missing">Erro: faltando texto de descrição de VP</string>
-    <string name="no_photo_captured_in_this_vp">Nenhuma mídia capturada neste vp!!!</string>
+    <string name="no_photo_captured_in_this_vp">Nenhuma mídia local capturada neste vp, favor verificar na web.</string>
     <string name="logging_in">Conectando ao servidor...</string>
     <string name="userstate_loggedout">Por favor faça o log in.</string>
     <string name="userstate_loggedin">Autorizado, usando credenciais de</string>
@@ -115,4 +115,5 @@
     <string name="deletinglocal">Apagar a cópia local da mídia em tela.</string>
     <string name="keepinglocalandremote">Operação cancelada.</string>
     <string name="keepinglocal">Operação cancelada.</string>
+    <string name="local_file_deleted">Arquivo local apagado com sucesso.</string>
 </resources>

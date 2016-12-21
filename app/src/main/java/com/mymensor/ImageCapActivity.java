@@ -218,7 +218,6 @@ public class ImageCapActivity extends Activity implements
     FloatingActionButton alphaToggleButton;
     FloatingActionButton showVpCapturesButton;
 
-    FloatingActionButton deleteLocalAndRemoteMediaButton;
     FloatingActionButton deleteLocalMediaButton;
     FloatingActionButton shareMediaButton;
 
@@ -563,6 +562,10 @@ public class ImageCapActivity extends Activity implements
         alphaToggleButton = (FloatingActionButton) findViewById(R.id.buttonAlphaToggle);
         showVpCapturesButton = (FloatingActionButton) findViewById(R.id.buttonShowVpCaptures);
 
+        deleteLocalMediaButton = (FloatingActionButton) findViewById(R.id.deleteLocalMediaButton);
+        shareMediaButton = (FloatingActionButton) findViewById(R.id.shareMediaButton);
+
+
         // Camera Shutter Button
 
         cameraShutterButton.setOnClickListener(new View.OnClickListener() {
@@ -637,7 +640,6 @@ public class ImageCapActivity extends Activity implements
             public void onClick(View view) {
                 stopLocationUpdates();
                 Snackbar.make(view, getText(R.string.position_not_certified), Snackbar.LENGTH_LONG).show();
-
             }
         };
 
@@ -649,7 +651,6 @@ public class ImageCapActivity extends Activity implements
                 String lastUpdatedOn = sdf.format(mLastUpdateTime);
                 lastUpdatedOn = " ("+lastUpdatedOn+")";
                 Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG).show();
-
             }
         };
 
@@ -666,8 +667,6 @@ public class ImageCapActivity extends Activity implements
                     Snackbar.make(view, getText(R.string.position_not_certified), Snackbar.LENGTH_LONG)
                             .setAction(getText(R.string.turn_on_location_updates), turnOnClickListenerPositionButton).show();
                 }
-
-
             }
         });
 
@@ -679,7 +678,6 @@ public class ImageCapActivity extends Activity implements
         } else {
             timeCertifiedButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
         }
-
 
         final View.OnClickListener actionOnClickListenerTimeButton = new View.OnClickListener() {
             @Override
@@ -704,13 +702,10 @@ public class ImageCapActivity extends Activity implements
                     Snackbar.make(view, getText(R.string.usingcerttimeisfalse), Snackbar.LENGTH_LONG)
                             .setAction(getText(R.string.certify), actionOnClickListenerTimeButton).show();
                 }
-
-
             }
         });
 
         // Connected to Server Button
-
 
         checkConnectionToServer();
 
@@ -737,8 +732,6 @@ public class ImageCapActivity extends Activity implements
                     Snackbar.make(view, getText(R.string.notconnectedtoserver), Snackbar.LENGTH_LONG)
                             .setAction(getText(R.string.trytoconnect), undoOnClickListenerServerButton).show();
                 }
-
-
             }
         });
 
@@ -826,35 +819,38 @@ public class ImageCapActivity extends Activity implements
         final View.OnClickListener undoOnClickListenerDeleteLocalAndRemoteMediaButton = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.keepinglocalandremote), Snackbar.LENGTH_LONG).show();
-                Log.d(TAG, "UNDO deleteLocalAndRemoteMediaButton:");
+
             }
         };
 
-        deleteLocalAndRemoteMediaButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.deletinglocalandremote), Snackbar.LENGTH_LONG)
-                        .setAction(getText(R.string.undo), undoOnClickListenerDeleteLocalAndRemoteMediaButton).show();
-                Log.d(TAG,"deleteLocalAndRemoteMediaButton:");
-            }
-        });
-
-
-        final View.OnClickListener undoOnClickListenerDeleteLocalMediaButton = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.keepinglocal), Snackbar.LENGTH_LONG).show();
-                Log.d(TAG, "UNDO deleteLocalAndRemoteMediaButton:");
-            }
-        };
 
         deleteLocalMediaButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.deletinglocal), Snackbar.LENGTH_LONG)
-                        .setAction(getText(R.string.undo), undoOnClickListenerDeleteLocalMediaButton).show();
-                Log.d(TAG,"deleteLocalMediaButton:");
+            public void onClick(final View view) {
+                Snackbar snackbar = Snackbar.make(view, getText(R.string.deletinglocal), Snackbar.LENGTH_LONG)
+                        .setAction(getText(R.string.undo), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                Log.d(TAG, "UNDO deleteLocalMediaButton: File NOT DELETED");
+                            }
+                        }).setCallback(new Snackbar.Callback() {
+                    @Override
+                    public void onDismissed(Snackbar snackbar, int dismissType) {
+                        super.onDismissed(snackbar, dismissType);
+                        if (    dismissType == DISMISS_EVENT_TIMEOUT ||
+                                dismissType == DISMISS_EVENT_SWIPE   ||
+                                dismissType == DISMISS_EVENT_CONSECUTIVE ||
+                                dismissType == DISMISS_EVENT_MANUAL) {
+                            Log.d(TAG, "deleteLocalMediaButton: File DELETED: dismissType="+dismissType);
+                            deleteLocalShownCapture(lastVpSelectedByUser, view);
+                            showVpCaptures(lastVpSelectedByUser);
+                        } else {
+                            Log.d(TAG, "deleteLocalMediaButton: File NOT DELETED");
+                            Snackbar.make(view, getText(R.string.keepinglocal), Snackbar.LENGTH_LONG).show();
+                        }
+                    }
+                });
+                snackbar.show();
             }
         });
 
@@ -863,9 +859,9 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 Log.d(TAG,"shareMediaButton:");
+
             }
         });
-
 
         IntentFilter intentFilter = new IntentFilter("android.intent.action.AIRPLANE_MODE");
 
@@ -1189,38 +1185,50 @@ public class ImageCapActivity extends Activity implements
 
     }
 
+
+    protected void returnToInitialScreen(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Closing VPx location photo");
+                //Turning tracking On
+                mCameraView.setVisibility(View.VISIBLE);
+                linearLayoutButtonsOnShowVpCaptures.setVisibility(View.GONE);
+                linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.GONE);
+                mImageDetectionFilterIndex=1;
+                isShowingVpPhoto = false;
+                vpLocationDesTextView.setVisibility(View.GONE);
+                vpIdNumber.setVisibility(View.GONE);
+                if (videoView.isPlaying()) videoView.stopPlayback();
+                videoView.setVisibility(View.GONE);
+                imageView.setVisibility(View.GONE);
+                callConfigButton.setVisibility(View.GONE);
+                alphaToggleButton.setVisibility(View.GONE);
+                showPreviousVpCaptureButton.setVisibility(View.GONE);
+                showNextVpCaptureButton.setVisibility(View.GONE);
+                showVpCapturesButton.setVisibility(View.GONE);
+                vpsListView.setVisibility(View.VISIBLE);
+                // TURNING ON RADAR SCAN
+                radarScanImageView.setVisibility(View.VISIBLE);
+                radarScanImageView.startAnimation(rotationRadarScan);
+                // Turning on control buttons
+                arSwitchLinearLayout.setVisibility(View.VISIBLE);
+                arSwitch.setVisibility(View.VISIBLE);
+                positionCertifiedButton.setVisibility(View.VISIBLE);
+                timeCertifiedButton.setVisibility(View.VISIBLE);
+                connectedToServerButton.setVisibility(View.VISIBLE);
+            }
+        });
+    };
+
+
+
+
     @Override
     public void onBackPressed()
     {
         if (isShowingVpPhoto){
-            Log.d(TAG, "Closing VPx location photo");
-            //Turning tracking On
-            mCameraView.setVisibility(View.VISIBLE);
-            linearLayoutButtonsOnShowVpCaptures.setVisibility(View.GONE);
-            linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.GONE);
-            mImageDetectionFilterIndex=1;
-            isShowingVpPhoto = false;
-            vpLocationDesTextView.setVisibility(View.GONE);
-            vpIdNumber.setVisibility(View.GONE);
-            if (videoView.isPlaying()) videoView.stopPlayback();
-            videoView.setVisibility(View.GONE);
-            imageView.setVisibility(View.GONE);
-            callConfigButton.setVisibility(View.GONE);
-            alphaToggleButton.setVisibility(View.GONE);
-            showPreviousVpCaptureButton.setVisibility(View.GONE);
-            showNextVpCaptureButton.setVisibility(View.GONE);
-            showVpCapturesButton.setVisibility(View.GONE);
-            vpsListView.setVisibility(View.VISIBLE);
-            // TURNING ON RADAR SCAN
-            radarScanImageView.setVisibility(View.VISIBLE);
-            radarScanImageView.startAnimation(rotationRadarScan);
-            // Turning on control buttons
-            arSwitchLinearLayout.setVisibility(View.VISIBLE);
-            arSwitch.setVisibility(View.VISIBLE);
-            positionCertifiedButton.setVisibility(View.VISIBLE);
-            timeCertifiedButton.setVisibility(View.VISIBLE);
-            connectedToServerButton.setVisibility(View.VISIBLE);
-            imageView.setOnTouchListener(null);
+            returnToInitialScreen();
         } else {
             if (back_pressed + 2000 > System.currentTimeMillis())
             {
@@ -2507,98 +2515,94 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void onItemClick(AdapterView<?> adapter, View view, final int position, long id)
     {
+        vpLocationDescImageFileContents = null;
         lastVpSelectedByUser = position;
         if (!isArSwitchOn) {
             vpTrackedInPose = position;
             vpIsManuallySelected = true;
         } else {
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    arSwitchLinearLayout.setVisibility(View.INVISIBLE);
-                    arSwitch.setVisibility(View.INVISIBLE);
-                    positionCertifiedButton.setVisibility(View.INVISIBLE);
-                    timeCertifiedButton.setVisibility(View.INVISIBLE);
-                    connectedToServerButton.setVisibility(View.INVISIBLE);
-                    mCameraView.setVisibility(View.GONE);
-                }
-            });
             try
             {
-                File descvpFile = new File(getApplicationContext().getFilesDir(), "descvp" + (position) + ".png");
-                FileInputStream fis = new FileInputStream(descvpFile);
-                vpLocationDescImageFileContents = BitmapFactory.decodeStream(fis);
-                fis.close();
+                InputStream fis = MymUtils.getLocalFile("descvp"+(position)+".png",getApplicationContext());
+                if (!(fis==null)){
+                    vpLocationDescImageFileContents = BitmapFactory.decodeStream(fis);
+                    fis.close();
+                }
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Log.d(TAG, "Showing vpLocationDescImageFile for VP="+position+"(vpLocationDescImageFileContents==null)"+(vpLocationDescImageFileContents==null));
+                        // VP Location Picture ImageView
+                        if (!(vpLocationDescImageFileContents==null))
+                        {
+                            imageView.setImageBitmap(vpLocationDescImageFileContents);
+                            imageView.setVisibility(View.VISIBLE);
+                        }
+                        isShowingVpPhoto = true;
+                        Log.d(TAG, "imageView.isShown()=" + imageView.isShown());
+                        arSwitchLinearLayout.setVisibility(View.INVISIBLE);
+                        arSwitch.setVisibility(View.INVISIBLE);
+                        positionCertifiedButton.setVisibility(View.INVISIBLE);
+                        timeCertifiedButton.setVisibility(View.INVISIBLE);
+                        connectedToServerButton.setVisibility(View.INVISIBLE);
+                        mCameraView.setVisibility(View.GONE);
+                        // Setting the correct listview set position
+                        vpsListView.setItemChecked(position, vpChecked[position]);
+                        vpsListView.setVisibility(View.GONE);
+                        // Turning off tracking
+                        mImageDetectionFilterIndex = 0;
+                        // TURNING OFF RADAR SCAN
+                        if (radarScanImageView.isShown()) {
+                            radarScanImageView.clearAnimation();
+                            radarScanImageView.setVisibility(View.GONE);
+                        }
+                        // Show last captured date and what is the frequency
+                        String lastTimeAcquiredAndNextOne = "";
+                        String formattedNextDate="";
+                        if (photoTakenTimeMillis[position]>0)
+                        {
+                            Date lastDate = new Date(photoTakenTimeMillis[position]);
+                            Date nextDate = new Date(vpNextCaptureMillis[position]);
+                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            String formattedLastDate = sdf.format(lastDate);
+                            formattedNextDate = sdf.format(nextDate);
+                            lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
+                                    formattedLastDate+"  "+
+                                    getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
+                                    formattedNextDate;
+                        }
+                        else
+                        {
+                            lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
+                                    getString(R.string.date_vp_touched_not_acquired)+"  "+
+                                    getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
+                                    getString(R.string.date_vp_touched_first_acquisition);
+                        }
+                        // VP Location Description TextView
+                        vpLocationDesTextView.setText(vpLocationDesText[position] + "\n" + lastTimeAcquiredAndNextOne);
+                        vpLocationDesTextView.setVisibility(View.VISIBLE);
+                        // VP Location # TextView
+                        String vpId = Integer.toString(vpNumber[position]);
+                        vpId = getString(R.string.vp_name)+vpId;
+                        vpIdNumber.setText(vpId);
+                        vpIdNumber.setVisibility(View.VISIBLE);
+                        // Activate Location Description Buttons
+                        callConfigButton.setVisibility(View.VISIBLE);
+                        alphaToggleButton.setVisibility(View.VISIBLE);
+                        if (imageView.getImageAlpha()==128) alphaToggleButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+                        if (imageView.getImageAlpha()==255) alphaToggleButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
+                        showVpCapturesButton.setVisibility(View.VISIBLE);
+                    }
+                });
             }
             catch (Exception e)
             {
                 Log.e(TAG, "vpLocationDescImageFile failed:"+e.toString());
             }
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    // Turning off tracking
-                    mImageDetectionFilterIndex = 0;
-                    // TURNING OFF RADAR SCAN
-                    if (radarScanImageView.isShown()) {
-                        radarScanImageView.clearAnimation();
-                        radarScanImageView.setVisibility(View.GONE);
-                    }
-                    isShowingVpPhoto = true;
-                    // Setting the correct listview set position
-                    vpsListView.setItemChecked(position, vpChecked[position]);
-                    // Show last captured date and what is the frequency
-                    String lastTimeAcquiredAndNextOne = "";
-                    String formattedNextDate="";
-                    if (photoTakenTimeMillis[position]>0)
-                    {
-                        Date lastDate = new Date(photoTakenTimeMillis[position]);
-                        Date nextDate = new Date(vpNextCaptureMillis[position]);
-                        SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
-                        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                        String formattedLastDate = sdf.format(lastDate);
-                        formattedNextDate = sdf.format(nextDate);
-                        lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
-                                formattedLastDate+"  "+
-                                getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
-                                formattedNextDate;
-                    }
-                    else
-                    {
-                        lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
-                                getString(R.string.date_vp_touched_not_acquired)+"  "+
-                                getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
-                                getString(R.string.date_vp_touched_first_acquisition);
-                    }
-                    // VP Location Description TextView
-                    vpLocationDesTextView.setText(vpLocationDesText[position] + "\n" + lastTimeAcquiredAndNextOne);
-                    vpLocationDesTextView.setVisibility(View.VISIBLE);
-                    // VP Location # TextView
-                    String vpId = Integer.toString(vpNumber[position]);
-                    vpId = getString(R.string.vp_name)+vpId;
-                    vpIdNumber.setText(vpId);
-                    vpIdNumber.setVisibility(View.VISIBLE);
-                    // VP Location Picture ImageView
-                    if (!(vpLocationDescImageFileContents==null))
-                    {
-                        imageView.setImageBitmap(vpLocationDescImageFileContents);
-                        imageView.setVisibility(View.VISIBLE);
-                        imageView.resetZoom();
-                        imageView.setImageAlpha(255);
-                    }
-                    // Activate Location Description Buttons
-                    callConfigButton.setVisibility(View.VISIBLE);
-                    alphaToggleButton.setVisibility(View.VISIBLE);
-                    if (imageView.getImageAlpha()==128) alphaToggleButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
-                    if (imageView.getImageAlpha()==255) alphaToggleButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
-                    showVpCapturesButton.setVisibility(View.VISIBLE);
-                    vpsListView.setVisibility(View.GONE);
-                }
-            });
+
         }
 
     }
@@ -2628,6 +2632,44 @@ public class ImageCapActivity extends Activity implements
 
     }
 
+
+    private void deleteLocalShownCapture(int vpSelected, final View view){
+        Log.d(TAG,"deleteLocalShownCapture: vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser);
+        final int vpToList = vpSelected;
+        final String vpMediaFileName;
+        final String path = getApplicationContext().getFilesDir().getPath();
+        File directory = new File(path);
+        String[] capsInDirectory = directory.list(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String filename) {
+                return filename.startsWith("cap_"+mymensorAccount+"_"+vpToList+"_");
+            }
+        });
+        int numOfEntries = 0;
+        try{
+            if (!(capsInDirectory==null)){
+                vpMediaFileName = capsInDirectory[mediaSelected];
+                Log.d(TAG,"deleteLocalShownCapture: vpMediaFileName="+ path+"/"+vpMediaFileName);
+                File fileToBeDeleted = new File(path+"/"+vpMediaFileName);
+                if (fileToBeDeleted.delete()) {
+                    Log.d(TAG,"deleteLocalShownCapture: vpMediaFileName="+ path+"/"+vpMediaFileName+" succesfully deleted from local storage.");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            String message = getString(R.string.local_file_deleted);
+                            Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
+                        }
+                    });
+                };
+            }
+        } catch (Exception e)
+        {
+            Log.e(TAG,"Error while deleting captures:"+e.toString());
+        }
+
+    }
+
+
     @TargetApi(21)
     private void showVpCaptures(int vpSelected)
     {
@@ -2648,72 +2690,52 @@ public class ImageCapActivity extends Activity implements
         int numOfEntries = 0;
         try
         {
+            if (capsInDirectory.length>0)
             {
-                if (!(capsInDirectory==null))
-                {
-                    numOfEntries = capsInDirectory.length;
-                    if (mediaSelected == -1) mediaSelected = numOfEntries - 1;
-                    if (mediaSelected <0) mediaSelected = 0;
-                    if (mediaSelected > (numOfEntries-1)) mediaSelected = 0;
-                    Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser+" mediaSelected="+ mediaSelected);
-                    vpMediaFileName = capsInDirectory[mediaSelected];
-                    Log.d(TAG,"showVpCaptures: vpMediaFileName="+ vpMediaFileName);
-                    StringBuilder sb = new StringBuilder(vpMediaFileName);
-                    final String millisMoment = sb.substring(vpMediaFileName.length()-17, vpMediaFileName.length()-4);
-                    final String mediaType = sb.substring(vpMediaFileName.length()-19, vpMediaFileName.length()-18);
-                    if (mediaType.equalsIgnoreCase("p")){
-                        // When the item is a photo
-                        final InputStream fiscaps = MymUtils.getLocalFile(vpMediaFileName,getApplicationContext());
-                        showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
-                        fiscaps.close();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (!(showVpPhotoImageFileContents==null))
-                                {
-                                    linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
-                                    linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
-                                    try {
-                                        ExifInterface tags = new ExifInterface(path+"/"+vpMediaFileName);
-                                        if (tags.getAttribute("Make").equalsIgnoreCase("1")){
-                                            //IsPositionCertified
-                                            positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
-                                        } else {
-                                            positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
-                                        }
-                                        if (tags.getAttribute("GPSAltitudeRef").equalsIgnoreCase("1")){
-                                            //IsTimeCertified
-                                            timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
-                                        } else {
-                                            timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
-                                        }
-                                    } catch (Exception e) {
-                                        Log.e(TAG,"Problem with Exif tags:"+e.toString());
-                                    }
-                                    videoView.setVisibility(View.GONE);
-                                    imageView.setVisibility(View.VISIBLE);
-                                    imageView.setImageBitmap(showVpPhotoImageFileContents);
-                                    imageView.resetZoom();
-                                    if (imageView.getImageAlpha()==128) imageView.setImageAlpha(255);
-                                    String lastTimeAcquired = "";
-                                    Date lastDate = new Date(Long.parseLong(millisMoment));
-                                    SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
-                                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                                    String formattedLastDate = sdf.format(lastDate);
-                                    lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
-                                    vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
-                                    vpLocationDesTextView.setVisibility(View.VISIBLE);
-                                }
-                            }
-                        });
-                    } else {
-                        // when the item is a video.
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                imageView.setVisibility(View.GONE);
+                numOfEntries = capsInDirectory.length;
+                if (mediaSelected == -1) mediaSelected = numOfEntries - 1;
+                if (mediaSelected <0) mediaSelected = 0;
+                if (mediaSelected > (numOfEntries-1)) mediaSelected = 0;
+                Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser+" mediaSelected="+ mediaSelected);
+                vpMediaFileName = capsInDirectory[mediaSelected];
+                Log.d(TAG,"showVpCaptures: vpMediaFileName="+ vpMediaFileName);
+                StringBuilder sb = new StringBuilder(vpMediaFileName);
+                final String millisMoment = sb.substring(vpMediaFileName.length()-17, vpMediaFileName.length()-4);
+                final String mediaType = sb.substring(vpMediaFileName.length()-19, vpMediaFileName.length()-18);
+                if (mediaType.equalsIgnoreCase("p")){
+                    // When the item is a photo
+                    final InputStream fiscaps = MymUtils.getLocalFile(vpMediaFileName,getApplicationContext());
+                    showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
+                    fiscaps.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!(showVpPhotoImageFileContents==null))
+                            {
                                 linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
                                 linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                                try {
+                                    ExifInterface tags = new ExifInterface(path+"/"+vpMediaFileName);
+                                    if (tags.getAttribute("Make").equalsIgnoreCase("1")){
+                                        //IsPositionCertified
+                                        positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
+                                    } else {
+                                        positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
+                                    }
+                                    if (tags.getAttribute("GPSAltitudeRef").equalsIgnoreCase("1")){
+                                        //IsTimeCertified
+                                        timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
+                                    } else {
+                                        timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG,"Problem with Exif tags:"+e.toString());
+                                }
+                                videoView.setVisibility(View.GONE);
+                                imageView.setVisibility(View.VISIBLE);
+                                imageView.setImageBitmap(showVpPhotoImageFileContents);
+                                imageView.resetZoom();
+                                if (imageView.getImageAlpha()==128) imageView.setImageAlpha(255);
                                 String lastTimeAcquired = "";
                                 Date lastDate = new Date(Long.parseLong(millisMoment));
                                 SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
@@ -2722,59 +2744,79 @@ public class ImageCapActivity extends Activity implements
                                 lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
                                 vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
                                 vpLocationDesTextView.setVisibility(View.VISIBLE);
-                                videoView.setVisibility(View.VISIBLE);
-                                videoView.setVideoPath(path+"/"+vpMediaFileName);
-                                videoView.setMediaController(mMediaController);
-                                videoView.start();
                             }
-                        });
-
-                    }
-
-                }
-                else
-                {
-                    //when no item has been acquired to the vp.
-                    runOnUiThread(new Runnable()
-                    {
+                        }
+                    });
+                } else {
+                    // when the item is a video.
+                    runOnUiThread(new Runnable() {
                         @Override
-                        public void run()
-                        {
-                            String message = getString(R.string.no_photo_captured_in_this_vp);
-                            Snackbar.make(imageView, message, Snackbar.LENGTH_LONG).show();
-                            String lastTimeAcquiredAndNextOne = "";
-                            String formattedNextDate="";
-                            if (photoTakenTimeMillis[position]>0)
-                            {
-                                Date lastDate = new Date(photoTakenTimeMillis[position]);
-                                Date nextDate = new Date(vpNextCaptureMillis[position]);
-                                SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
-                                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                                String formattedLastDate = sdf.format(lastDate);
-                                formattedNextDate = sdf.format(nextDate);
-                                lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
-                                        formattedLastDate+"  "+
-                                        getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
-                                        formattedNextDate;
-                            }
-                            else
-                            {
-                                lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
-                                        getString(R.string.date_vp_touched_not_acquired)+"  "+
-                                        getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
-                                        getString(R.string.date_vp_touched_first_acquisition);
-                            }
-                            vpLocationDesTextView.setText(vpLocationDesText[position] + "\n" + lastTimeAcquiredAndNextOne);
+                        public void run() {
+                            imageView.setVisibility(View.GONE);
+                            linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                            linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                            String lastTimeAcquired = "";
+                            Date lastDate = new Date(Long.parseLong(millisMoment));
+                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            String formattedLastDate = sdf.format(lastDate);
+                            lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
+                            vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
+                            vpLocationDesTextView.setVisibility(View.VISIBLE);
+                            videoView.setVisibility(View.VISIBLE);
+                            videoView.setVideoPath(path+"/"+vpMediaFileName);
+                            videoView.setMediaController(mMediaController);
+                            videoView.start();
                         }
                     });
                 }
             }
+            else
+            {
+                //when no item has been acquired to the vp.
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        String message = getString(R.string.no_photo_captured_in_this_vp);
+                        Snackbar.make(imageView, message, Snackbar.LENGTH_LONG).show();
+                        returnToInitialScreen();
+                        /*
+
+
+                        String lastTimeAcquiredAndNextOne = "";
+                        String formattedNextDate="";
+                        if (photoTakenTimeMillis[position]>0)
+                        {
+                            Date lastDate = new Date(photoTakenTimeMillis[position]);
+                            Date nextDate = new Date(vpNextCaptureMillis[position]);
+                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            String formattedLastDate = sdf.format(lastDate);
+                            formattedNextDate = sdf.format(nextDate);
+                            lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
+                                    formattedLastDate+"  "+
+                                    getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
+                                    formattedNextDate;
+                        }
+                        else
+                        {
+                            lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
+                                    getString(R.string.date_vp_touched_not_acquired)+"  "+
+                                    getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
+                                    getString(R.string.date_vp_touched_first_acquisition);
+                        }
+                        vpLocationDesTextView.setText(vpLocationDesText[position] + "\n" + lastTimeAcquiredAndNextOne);
+                        */
+                    }
+                });
+            }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            Log.e(TAG,"Error while retrieving captures:"+e.toString());
         }
-
     }
 
 
@@ -2817,7 +2859,6 @@ public class ImageCapActivity extends Activity implements
         try
         {
             // Getting a file path for vps configuration XML file
-
             Log.d(TAG,"Vps Config Local name = "+Constants.vpsConfigFileName);
             File vpsFile = new File(getApplicationContext().getFilesDir(),Constants.vpsConfigFileName);
             InputStream fis = MymUtils.getLocalFile(Constants.vpsConfigFileName, getApplicationContext());
