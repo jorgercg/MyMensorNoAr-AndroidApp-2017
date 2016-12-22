@@ -24,6 +24,7 @@ import android.media.CamcorderProfile;
 import android.media.ExifInterface;
 import android.media.MediaRecorder;
 import android.media.SoundPool;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,6 +32,9 @@ import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -40,11 +44,13 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.Transformation;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -99,6 +105,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -111,6 +118,7 @@ import java.util.TimeZone;
 
 
 import static com.mymensor.Constants.cameraWidthInPixels;
+import static com.mymensor.R.drawable.circular_button_gray;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static com.mymensor.R.drawable.circular_button_green;
@@ -221,8 +229,8 @@ public class ImageCapActivity extends Activity implements
     FloatingActionButton deleteLocalMediaButton;
     FloatingActionButton shareMediaButton;
 
-    Button showPreviousVpCaptureButton;
-    Button showNextVpCaptureButton;
+    ImageButton showPreviousVpCaptureButton;
+    ImageButton showNextVpCaptureButton;
     Button acceptVpPhotoButton;
     Button rejectVpPhotoButton;
 
@@ -230,6 +238,9 @@ public class ImageCapActivity extends Activity implements
     LinearLayout videoRecorderTimeLayout;
     LinearLayout linearLayoutButtonsOnShowVpCaptures;
     LinearLayout linearLayoutImageViewsOnShowVpCaptures;
+
+    ImageView positionCertifiedImageview;
+    ImageView timeCertifiedImageview;
 
     Chronometer videoRecorderChronometer;
 
@@ -356,6 +367,9 @@ public class ImageCapActivity extends Activity implements
     protected String[] locPhotoToExif;
 
     BroadcastReceiver receiver;
+
+    protected String showingMediaFileName;
+    protected String showingMediaType;
 
 
 
@@ -484,9 +498,6 @@ public class ImageCapActivity extends Activity implements
 
         recText = (TextView) this.findViewById(R.id.cronoText);
 
-
-        showPreviousVpCaptureButton = (Button) this.findViewById(R.id.buttonShowPreviousVpCapture);
-        showNextVpCaptureButton = (Button) this.findViewById(R.id.buttonShowNextVpCapture);
         acceptVpPhotoButton = (Button) this.findViewById(R.id.buttonAcceptVpPhoto);
         rejectVpPhotoButton = (Button) this.findViewById(R.id.buttonRejectVpPhoto);
 
@@ -518,6 +529,14 @@ public class ImageCapActivity extends Activity implements
         linearLayoutButtonsOnShowVpCaptures = (LinearLayout) this.findViewById(R.id.linearLayoutButtonsOnShowVpCaptures);
 
         linearLayoutImageViewsOnShowVpCaptures = (LinearLayout) this.findViewById(R.id.linearLayoutImageViewsOnShowVpCaptures);
+
+        positionCertifiedImageview = (ImageView) this.findViewById(R.id.positionCertifiedImageview);
+
+        timeCertifiedImageview = (ImageView) this.findViewById(R.id.timeCertifiedImageview);
+
+        showPreviousVpCaptureButton = (ImageButton) this.findViewById(R.id.buttonShowPreviousVpCapture);
+
+        showNextVpCaptureButton = (ImageButton) this.findViewById(R.id.buttonShowNextVpCapture);
 
         videoRecorderChronometer = (Chronometer) this.findViewById(R.id.recordingChronometer);
 
@@ -859,6 +878,43 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 Log.d(TAG,"shareMediaButton:");
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                if (showingMediaType.equalsIgnoreCase("p")){
+                    shareIntent.setType("image/jpg");
+                    //File shareFile = new File(getApplicationContext().getFilesDir(), showingMediaFileName);
+                    try {
+                        InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
+                        File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
+                        OutputStream out = new FileOutputStream(outFile);
+                        MymUtils.copyFile(in, out);
+                    } catch(IOException e) {
+                        Log.e(TAG, "shareMediaButton: Failed to copy Photo file to share");
+                    }
+                    File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
+                    Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(),"com.mymensor.fileprovider", shareFile);
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT,"http://app.mymensor.com");
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
+                }
+                if (showingMediaType.equalsIgnoreCase("v")){
+                    shareIntent.setType("video/*");
+                    try {
+                        InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
+                        File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
+                        OutputStream out = new FileOutputStream(outFile);
+                        MymUtils.copyFile(in, out);
+                    } catch(IOException e) {
+                        Log.e(TAG, "shareMediaButton: Failed to copy Video file to share");
+                    }
+                    File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
+                    Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(),"com.mymensor.fileprovider", shareFile);
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
+                    //shareIntent.putExtra(Intent.EXTRA_TEXT,"http://app.mymensor.com");
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
+                }
+
 
             }
         });
@@ -916,10 +972,7 @@ public class ImageCapActivity extends Activity implements
                     }
                 });
             }
-
         }.execute();
-
-
     }
 
 
@@ -1182,6 +1235,7 @@ public class ImageCapActivity extends Activity implements
     {
         mGoogleApiClient.connect();
         super.onStart();
+        Log.d(TAG,"onStart() ********************");
 
     }
 
@@ -1227,22 +1281,44 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void onBackPressed()
     {
+        boolean specialBackClick = false;
         if (isShowingVpPhoto){
+            specialBackClick = true;
             returnToInitialScreen();
-        } else {
+        }
+
+        if (!isArSwitchOn) {
+            specialBackClick = true;
+            arSwitch.setChecked(true);
+            isArSwitchOn = true;
+            cameraShutterButton.setVisibility(View.INVISIBLE);
+            videoCameraShutterButton.setVisibility(View.INVISIBLE);
+            videoCameraShutterStopButton.setVisibility(View.GONE);
+            videoRecorderTimeLayout.setVisibility(View.GONE);
+            mImageDetectionFilterIndex=1;
+            Snackbar.make(arSwitch.getRootView(),getText(R.string.arswitchison), Snackbar.LENGTH_LONG).show();
+        }
+
+
+
+        if ((!isShowingVpPhoto)&&(isArSwitchOn)){
             if (back_pressed + 2000 > System.currentTimeMillis())
             {
                 super.onBackPressed();
             }
-            else
-                runOnUiThread(new Runnable()
-                {
-                    @Override
-                    public void run()
+            else {
+                if (!specialBackClick){
+                    runOnUiThread(new Runnable()
                     {
-                        Snackbar.make(mCameraView,getString(R.string.double_bck_exit), Snackbar.LENGTH_LONG).show();
-                    }
-                });
+                        @Override
+                        public void run()
+                        {
+                            Snackbar.make(mCameraView,getString(R.string.double_bck_exit), Snackbar.LENGTH_LONG).show();
+                        }
+                    });
+                }
+            }
+
             back_pressed = System.currentTimeMillis();
         }
 
@@ -1251,6 +1327,7 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void recreate() {
             super.recreate();
+            Log.d(TAG,"recreate() ********************");
     }
 
     @Override
@@ -1280,6 +1357,7 @@ public class ImageCapActivity extends Activity implements
 
             }
         });
+        returnToInitialScreen();
     }
 
     @Override
@@ -1298,6 +1376,7 @@ public class ImageCapActivity extends Activity implements
 
             }
         });
+        returnToInitialScreen();
     }
 
     @Override
@@ -1700,23 +1779,23 @@ public class ImageCapActivity extends Activity implements
                             ObjectMetadata myObjectMetadata = new ObjectMetadata();
                             //create a map to store user metadata
                             Map<String, String> userMetadata = new HashMap<String,String>();
-                            userMetadata.put("LocLatitude", locPhotoToExif[8]);
-                            userMetadata.put("LocLongitude", locPhotoToExif[9]);
-                            userMetadata.put("VP", ""+(vpTrackedInPose));
-                            userMetadata.put("mymensorAccount", mymensorAccount);
-                            userMetadata.put("LocPrecisioninm", locPhotoToExif[4]);
-                            userMetadata.put("LocAltitude", locPhotoToExif[7]);
-                            userMetadata.put("LocMillis", locPhotoToExif[5]);
-                            userMetadata.put("LocMethod", locPhotoToExif[6]);
-                            userMetadata.put("LocCertified", locPhotoToExif[12]);
+                            userMetadata.put("loclatitude", locPhotoToExif[8]);
+                            userMetadata.put("loclongitude", locPhotoToExif[9]);
+                            userMetadata.put("vp", ""+(vpTrackedInPose));
+                            userMetadata.put("mymensoraccount", mymensorAccount);
+                            userMetadata.put("locprecisioninm", locPhotoToExif[4]);
+                            userMetadata.put("localtitude", locPhotoToExif[7]);
+                            userMetadata.put("locmillis", locPhotoToExif[5]);
+                            userMetadata.put("locmethod", locPhotoToExif[6]);
+                            userMetadata.put("loccertified", locPhotoToExif[12]);
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
-                            userMetadata.put("DateTime", formattedDateTime);
-                            userMetadata.put("PhotoTakenMillis", locPhotoToExif[11]);
-                            userMetadata.put("TimeCertified", locPhotoToExif[10]);
-                            userMetadata.put("IsArSwitchOn", locPhotoToExif[13]);
-                            userMetadata.put("SHA-256", fileSha256Hash);
+                            userMetadata.put("datetime", formattedDateTime);
+                            userMetadata.put("phototakenmillis", locPhotoToExif[11]);
+                            userMetadata.put("timecertified", locPhotoToExif[10]);
+                            userMetadata.put("isarswitchOn", locPhotoToExif[13]);
+                            userMetadata.put("sha-256", fileSha256Hash);
                             //call setUserMetadata on our ObjectMetadata object, passing it our map
                             myObjectMetadata.setUserMetadata(userMetadata);
                             //uploading the objects
@@ -2258,23 +2337,23 @@ public class ImageCapActivity extends Activity implements
                     ObjectMetadata myObjectMetadata = new ObjectMetadata();
                     //create a map to store user metadata
                     Map<String, String> userMetadata = new HashMap<String,String>();
-                    userMetadata.put("LocLatitude", locPhotoToExif[8]);
-                    userMetadata.put("LocLongitude", locPhotoToExif[9]);
-                    userMetadata.put("VP", ""+(vpTrackedInPose));
-                    userMetadata.put("mymensorAccount", mymensorAccount);
-                    userMetadata.put("LocPrecisioninm", locPhotoToExif[4]);
-                    userMetadata.put("LocAltitude", locPhotoToExif[7]);
-                    userMetadata.put("LocMillis", locPhotoToExif[5]);
-                    userMetadata.put("LocMethod", locPhotoToExif[6]);
-                    userMetadata.put("LocCertified", locPhotoToExif[12]);
+                    userMetadata.put("loclatitude", locPhotoToExif[8]);
+                    userMetadata.put("loclongitude", locPhotoToExif[9]);
+                    userMetadata.put("vp", ""+(vpTrackedInPose));
+                    userMetadata.put("mymensoraccount", mymensorAccount);
+                    userMetadata.put("locprecisioninm", locPhotoToExif[4]);
+                    userMetadata.put("localtitude", locPhotoToExif[7]);
+                    userMetadata.put("locmillis", locPhotoToExif[5]);
+                    userMetadata.put("locmethod", locPhotoToExif[6]);
+                    userMetadata.put("loccertified", locPhotoToExif[12]);
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
-                    userMetadata.put("DateTime", formattedDateTime);
-                    userMetadata.put("PhotoTakenMillis", locPhotoToExif[11]);
-                    userMetadata.put("TimeCertified", locPhotoToExif[10]);
-                    userMetadata.put("IsArSwitchOn", locPhotoToExif[13]);
-                    userMetadata.put("SHA-256", fileSha256Hash);
+                    userMetadata.put("datetime", formattedDateTime);
+                    userMetadata.put("phototakenmillis", locPhotoToExif[11]);
+                    userMetadata.put("timecertified", locPhotoToExif[10]);
+                    userMetadata.put("isarswitchOn", locPhotoToExif[13]);
+                    userMetadata.put("sha-256", fileSha256Hash);
                     //call setUserMetadata on our ObjectMetadata object, passing it our map
                     myObjectMetadata.setUserMetadata(userMetadata);
                     //uploading the objects
@@ -2404,7 +2483,6 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-
     private void saveVpsChecked()
     {
         // Saving vpChecked state.
@@ -2450,7 +2528,7 @@ public class ImageCapActivity extends Activity implements
             ObjectMetadata myObjectMetadata = new ObjectMetadata();
             //create a map to store user metadata
             Map<String, String> userMetadata = new HashMap<String,String>();
-            userMetadata.put("TimeStamp", MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference).toString());
+            userMetadata.put("timestamp", MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference).toString());
             myObjectMetadata.setUserMetadata(userMetadata);
             TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile, myObjectMetadata);
             observer.setTransferListener(new TransferListener() {
@@ -2515,6 +2593,16 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void onItemClick(AdapterView<?> adapter, View view, final int position, long id)
     {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mProgress.isShown()) {
+                    mProgress.clearAnimation();
+                    mProgress.setVisibility(View.GONE);
+                }
+
+            }
+        });
         vpLocationDescImageFileContents = null;
         lastVpSelectedByUser = position;
         if (!isArSwitchOn) {
@@ -2547,7 +2635,6 @@ public class ImageCapActivity extends Activity implements
                         positionCertifiedButton.setVisibility(View.INVISIBLE);
                         timeCertifiedButton.setVisibility(View.INVISIBLE);
                         connectedToServerButton.setVisibility(View.INVISIBLE);
-                        mCameraView.setVisibility(View.GONE);
                         // Setting the correct listview set position
                         vpsListView.setItemChecked(position, vpChecked[position]);
                         vpsListView.setVisibility(View.GONE);
@@ -2669,12 +2756,74 @@ public class ImageCapActivity extends Activity implements
 
     }
 
+    @TargetApi(21)
+    private void getRemoteFileMetadata (final String filename){
+
+        new AsyncTask<Void, Void, ObjectMetadata>() {
+            @Override
+            protected void onPreExecute() { Log.d(TAG,"getRemoteFileMetadata: onPreExecute"); }
+
+            @Override
+            protected ObjectMetadata doInBackground(Void... params) {
+                try{
+                    final ObjectMetadata objMetadata = s3Amazon.getObjectMetadata(Constants.BUCKET_NAME, filename);
+                    return objMetadata;
+                } catch (Exception e){
+                    Log.e(TAG,"getRemoteFileMetadata: exception: "+e.toString());
+                    return null;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(final ObjectMetadata objectMetadata) {
+                Log.d(TAG,"getRemoteFileMetadata: onPostExecute");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (objectMetadata!=null){
+                            Map<String, String> userMetadata = new HashMap<String,String>();
+                            userMetadata = objectMetadata.getUserMetadata();
+                            Log.d(TAG,"userMetadata="+userMetadata.toString());
+                            Log.d(TAG,"Location=LocCertified="+userMetadata.get("loccertified")+" Time=TimeCertified="+userMetadata.get("timecertified"));
+                            if (userMetadata.get("loccertified").equalsIgnoreCase("1")){
+                                //IsPositionCertified
+                                positionCertifiedImageview.setVisibility(View.VISIBLE);
+                                positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
+                            } else {
+                                positionCertifiedImageview.setVisibility(View.VISIBLE);
+                                positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
+                            }
+                            if (userMetadata.get("timecertified").equalsIgnoreCase("1")){
+                                //IsTimeCertified
+                                timeCertifiedImageview.setVisibility(View.VISIBLE);
+                                timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
+                            } else {
+                                timeCertifiedImageview.setVisibility(View.VISIBLE);
+                                timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
+                            }
+                        } else {
+                            positionCertifiedImageview.setVisibility(View.VISIBLE);
+                            positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_gray, getApplicationContext().getTheme()));
+                            timeCertifiedImageview.setVisibility(View.VISIBLE);
+                            timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_gray, getApplicationContext().getTheme()));
+                        }
+                    }
+                });
+            }
+        }.execute();
+    }
+
 
     @TargetApi(21)
     private void showVpCaptures(int vpSelected)
     {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mCameraView.setVisibility(View.GONE);
+            }
+        });
         final Bitmap showVpPhotoImageFileContents;
-
         Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser);
         final int position = vpSelected;
         final int vpToList = vpSelected;
@@ -2698,10 +2847,12 @@ public class ImageCapActivity extends Activity implements
                 if (mediaSelected > (numOfEntries-1)) mediaSelected = 0;
                 Log.d(TAG,"vpSelected="+vpSelected+" lastVpSelectedByUser="+lastVpSelectedByUser+" mediaSelected="+ mediaSelected);
                 vpMediaFileName = capsInDirectory[mediaSelected];
+                showingMediaFileName = vpMediaFileName;
                 Log.d(TAG,"showVpCaptures: vpMediaFileName="+ vpMediaFileName);
                 StringBuilder sb = new StringBuilder(vpMediaFileName);
                 final String millisMoment = sb.substring(vpMediaFileName.length()-17, vpMediaFileName.length()-4);
                 final String mediaType = sb.substring(vpMediaFileName.length()-19, vpMediaFileName.length()-18);
+                showingMediaType = mediaType;
                 if (mediaType.equalsIgnoreCase("p")){
                     // When the item is a photo
                     final InputStream fiscaps = MymUtils.getLocalFile(vpMediaFileName,getApplicationContext());
@@ -2716,17 +2867,22 @@ public class ImageCapActivity extends Activity implements
                                 linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
                                 try {
                                     ExifInterface tags = new ExifInterface(path+"/"+vpMediaFileName);
+                                    Log.d(TAG,"Location=Make="+tags.getAttribute("Make")+" Time=GPSAltitudeRef="+tags.getAttribute("GPSAltitudeRef"));
                                     if (tags.getAttribute("Make").equalsIgnoreCase("1")){
                                         //IsPositionCertified
-                                        positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
+                                        positionCertifiedImageview.setVisibility(View.VISIBLE);
+                                        positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
                                     } else {
-                                        positionCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
+                                        positionCertifiedImageview.setVisibility(View.VISIBLE);
+                                        positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
                                     }
                                     if (tags.getAttribute("GPSAltitudeRef").equalsIgnoreCase("1")){
                                         //IsTimeCertified
-                                        timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_green));
+                                        timeCertifiedImageview.setVisibility(View.VISIBLE);
+                                        timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
                                     } else {
-                                        timeCertifiedButton.setBackgroundDrawable(getDrawable(circular_button_red));
+                                        timeCertifiedImageview.setVisibility(View.VISIBLE);
+                                        timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
                                     }
                                 } catch (Exception e) {
                                     Log.e(TAG,"Problem with Exif tags:"+e.toString());
@@ -2755,6 +2911,13 @@ public class ImageCapActivity extends Activity implements
                             imageView.setVisibility(View.GONE);
                             linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
                             linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                            positionCertifiedImageview.setVisibility(View.GONE);
+                            timeCertifiedImageview.setVisibility(View.GONE);
+                            try {
+                                getRemoteFileMetadata("cap/"+vpMediaFileName);
+                            } catch (Exception e) {
+                                Log.e(TAG,"Problem Remote files Metadata:"+e.toString());
+                            }
                             String lastTimeAcquired = "";
                             Date lastDate = new Date(Long.parseLong(millisMoment));
                             SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));

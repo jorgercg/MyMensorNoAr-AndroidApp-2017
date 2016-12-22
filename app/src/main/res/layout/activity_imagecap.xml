@@ -141,7 +141,7 @@
 
     </LinearLayout>
 
-    <Button
+    <ImageButton
         android:id="@+id/buttonShowPreviousVpCapture"
         android:layout_width="48dp"
         android:layout_height="48dp"
@@ -149,13 +149,15 @@
         android:layout_alignParentStart="true"
         android:clickable="true"
         android:onClick="onButtonClick"
-        android:foreground="@android:drawable/ic_media_previous"
         android:background="@drawable/circular_button"
         android:layout_marginBottom="32dp"
         android:layout_marginStart="16dp"
+        android:src="@drawable/ic_skip_previous_white_18dp"
+        android:scaleType="fitCenter"
+        android:padding="10dp"
         android:visibility="gone"/>
 
-    <Button
+    <ImageButton
         android:id="@+id/buttonShowNextVpCapture"
         android:layout_width="48dp"
         android:layout_height="48dp"
@@ -163,10 +165,12 @@
         android:layout_alignParentEnd="true"
         android:clickable="true"
         android:onClick="onButtonClick"
-        android:foreground="@android:drawable/ic_media_next"
         android:background="@drawable/circular_button"
         android:layout_marginBottom="32dp"
         android:layout_marginEnd="16dp"
+        android:src="@drawable/ic_skip_next_white_18dp"
+        android:scaleType="fitCenter"
+        android:padding="10dp"
         android:visibility="gone"/>
 
     <TextView
@@ -357,7 +361,7 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/ic_dialog_map"
+            opencv:srcCompat="@drawable/ic_location_on_white_18dp"
             opencv:backgroundTint="@android:color/holo_green_dark"
             android:layout_marginTop="0dp"
             android:layout_marginBottom="5dp" />
@@ -368,7 +372,7 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/ic_menu_recent_history"
+            opencv:srcCompat="@drawable/ic_access_time_white_18dp"
             opencv:backgroundTint="@android:color/holo_green_dark"
             android:layout_marginTop="5dp"
             android:layout_marginBottom="5dp" />
@@ -379,7 +383,7 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/stat_notify_sync"
+            opencv:srcCompat="@drawable/ic_cloud_upload_white_18dp"
             opencv:backgroundTint="@android:color/holo_green_dark"
             android:layout_marginBottom="0dp"
             android:layout_marginTop="5dp" />
@@ -415,7 +419,7 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             opencv:fabSize="mini"
-            opencv:srcCompat="?attr/actionModeShareDrawable"
+            opencv:srcCompat="@android:drawable/ic_menu_share"
             opencv:backgroundTint="@color/mymensorbluedark"
             android:layout_marginBottom="5dp"
             android:layout_marginTop="5dp" />
@@ -428,32 +432,37 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="top|center"
-        android:visibility="invisible"
+        android:visibility="gone"
         android:layout_alignParentEnd="true"
         android:layout_above="@id/buttonShowNextVpCapture"
         android:layout_margin="16dp">
 
         <ImageView
             android:id="@+id/positionCertifiedImageview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:onClick="onButtonClick"
-            android:foreground="@android:drawable/ic_dialog_map"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@drawable/circular_button_green"
             android:layout_marginTop="0dp"
-            android:layout_marginBottom="5dp" />
+            android:layout_marginBottom="5dp"
+            android:adjustViewBounds="true"
+            android:cropToPadding="true"
+            android:src="@drawable/ic_location_on_white_18dp"
+            android:scaleType="fitCenter"
+            android:padding="10dp"
+         />
 
         <ImageView
             android:id="@+id/timeCertifiedImageview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:onClick="onButtonClick"
-            android:foreground="@android:drawable/ic_menu_recent_history"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@drawable/circular_button_green"
             android:layout_marginTop="5dp"
-            android:layout_marginBottom="5dp" />
+            android:layout_marginBottom="5dp"
+            android:adjustViewBounds="true"
+            android:cropToPadding="true"
+            android:src="@drawable/ic_access_time_white_18dp"
+            android:scaleType="fitCenter"
+            android:padding="10dp"/>
 
     </LinearLayout>
 

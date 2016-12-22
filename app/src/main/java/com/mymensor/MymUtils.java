@@ -3,6 +3,8 @@ package com.mymensor;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.content.res.ColorStateList;
+import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -53,7 +55,7 @@ public class MymUtils {
                 return false;
             }
         } catch (AmazonClientException ace){
-            Log.e("MymUtils","isNewFileAvailable: exception: "+ace.toString());
+            Log.e(TAG,"isNewFileAvailable: exception: "+ace.toString());
             return false;
         }
     }
@@ -108,6 +110,7 @@ public class MymUtils {
         TransferObserver observer = transferUtility.download(bucketName, fileName, file);
         return observer;
     }
+
 
     public static InputStream getLocalFile( String fileName, Context context ) {
         try {
@@ -176,7 +179,7 @@ public class MymUtils {
 
     }
 
-    private static void copyFile(InputStream in, OutputStream out) throws IOException {
+    public static void copyFile(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];
         int read;
         while ((read = in.read(buffer)) != -1) {

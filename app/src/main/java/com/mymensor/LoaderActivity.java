@@ -783,7 +783,6 @@ public class LoaderActivity extends Activity
             }
 
             int product = 0;
-            loopstart = System.currentTimeMillis();
 
             do {
                 for (int k = 0; k < (qtyVps); k++){
@@ -810,7 +809,7 @@ public class LoaderActivity extends Activity
                         Log.e (TAG, "Image Files Checking Failed:"+e.toString());
                     }
                 }
-            } while ((product==0)&&((System.currentTimeMillis()-loopstart)<60000));
+            } while (product==0);
 
             if (product==0) {
                 Log.e(TAG, "Image files downloading verification Error."+(System.currentTimeMillis()-loopstart));

@@ -119,4 +119,6 @@
     <string name="keepinglocalandremote">Operation cancelled.</string>
     <string name="keepinglocal">Operation cancelled.</string>
     <string name="local_file_deleted">Local file succesfully deleted.</string>
+    <string name="sharingphotousing">Share this photo capture using:</string>
+    <string name="sharingvideousing">Share this video capture using:</string>
 </resources>
