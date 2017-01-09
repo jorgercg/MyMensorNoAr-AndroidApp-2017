@@ -517,6 +517,12 @@ public class ConfigActivity extends Activity implements
                 if (vpIsAmbiguous[vpIndex])
                 {
                     vpIsAmbiguous[vpIndex] = false;
+                    vpSuperMarkerId[vpIndex] = 0;
+                    linearLayoutMarkerId.setVisibility(View.INVISIBLE);
+                    if (vpIsSuperSingle[vpIndex]) {
+                        vpIsSuperSingle[vpIndex] = false;
+                        superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
+                    }
                 }
                 else
                 {
@@ -1727,7 +1733,11 @@ public class ConfigActivity extends Activity implements
                     });
                     vpsListView.setVisibility(View.GONE);
                     // VP Acquired
-                    if (vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpAcquiredStatus);
+                    if ((vpAcquired[vpIndex])&&(vpArIsConfigured[vpIndex])) {
+                        vpAcquiredStatus.setText(R.string.vpAcquiredStatus);
+                    } else {
+                        vpAcquiredStatus.setText(R.string.off);
+                    }
                     if (!vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpNotAcquiredStatus);
                     linearLayoutVpArStatus.setVisibility(View.VISIBLE);
                     vpAcquiredStatus.setVisibility(View.VISIBLE);

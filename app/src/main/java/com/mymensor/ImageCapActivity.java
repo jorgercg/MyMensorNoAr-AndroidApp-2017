@@ -13,7 +13,6 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
@@ -33,8 +32,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
-import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
-import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -44,7 +41,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.Transformation;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -100,7 +96,6 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -134,7 +129,7 @@ public class ImageCapActivity extends Activity implements
 
     private static final String TAG = "ImageCapActvty";
 
-    private static long back_pressed;
+    private static long backPressed;
 
     private String mymensorAccount;
     private int dciNumber;
@@ -201,6 +196,8 @@ public class ImageCapActivity extends Activity implements
     private boolean waitingUntilMultipleImageTrackingIsSet = false;
     private boolean idTrackingIsSet = false;
     private boolean validMarkerFound = false;
+
+    private long millisWhenSingleImageTrackingWasSet = 0;
 
     private String frequencyUnit;
     private int frequencyValue;
@@ -288,6 +285,7 @@ public class ImageCapActivity extends Activity implements
     // A matrix that is used when saving photos.
     private Mat mBgr;
     public List<Mat> markerBuffer;
+    public List<Mat> markerBufferSingle;
 
     // Whether the next camera frame should be saved as a photo.
     private boolean vpPhotoRequestInProgress;
@@ -666,7 +664,7 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 startLocationUpdates();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MMM.dd HH:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
                 String lastUpdatedOn = sdf.format(mLastUpdateTime);
                 lastUpdatedOn = " ("+lastUpdatedOn+")";
                 Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG).show();
@@ -677,7 +675,7 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 if (mLocationUpdated) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MMM.dd HH:mm:ss");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
                     String lastUpdatedOn = sdf.format(mLastUpdateTime);
                     lastUpdatedOn = " ("+lastUpdatedOn+")";
                     Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG)
@@ -1276,8 +1274,6 @@ public class ImageCapActivity extends Activity implements
     };
 
 
-
-
     @Override
     public void onBackPressed()
     {
@@ -1299,10 +1295,8 @@ public class ImageCapActivity extends Activity implements
             Snackbar.make(arSwitch.getRootView(),getText(R.string.arswitchison), Snackbar.LENGTH_LONG).show();
         }
 
-
-
         if ((!isShowingVpPhoto)&&(isArSwitchOn)){
-            if (back_pressed + 2000 > System.currentTimeMillis())
+            if ((backPressed + 2000 > System.currentTimeMillis())&&(!specialBackClick))
             {
                 super.onBackPressed();
             }
@@ -1319,16 +1313,18 @@ public class ImageCapActivity extends Activity implements
                 }
             }
 
-            back_pressed = System.currentTimeMillis();
+            backPressed = System.currentTimeMillis();
         }
 
     }
+
 
     @Override
     public void recreate() {
             super.recreate();
             Log.d(TAG,"recreate() ********************");
     }
+
 
     @Override
     protected void onResume()
@@ -1458,22 +1454,23 @@ public class ImageCapActivity extends Activity implements
     {
         waitingUntilSingleImageTrackingIsSet = true;
         idTrackingIsSet = false;
-        markerBuffer = new ArrayList<Mat>();
+        markerBufferSingle = new ArrayList<Mat>();
         try
         {
             File markervpFile = new File(getApplicationContext().getFilesDir(), "markervp" + (vpIndex) + ".png");
             Mat tmpMarker = Imgcodecs.imread(markervpFile.getAbsolutePath(), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
-            markerBuffer.add(tmpMarker);
+            markerBufferSingle.add(tmpMarker);
         }
         catch (Exception e)
         {
             Log.e(TAG, "setSingleImageTrackingConfiguration(int vpIndex): markerImageFileContents failed:"+e.toString());
         }
         ARFilter trackFilter = null;
+        Log.d(TAG,"setSingleImageTrackingConfiguration: markerBufferSingle.toArray().length="+markerBufferSingle.toArray().length);
         try {
             trackFilter = new ImageDetectionFilter(
                 ImageCapActivity.this,
-                markerBuffer.toArray(),
+                markerBufferSingle.toArray(),
                 1,
                 mCameraMatrix,
                 Constants.standardMarkerlessMarkerWidth);
@@ -1488,6 +1485,7 @@ public class ImageCapActivity extends Activity implements
             singleImageTrackingIsSet = true;
             waitingUntilSingleImageTrackingIsSet = false;
             multipleImageTrackingIsSet = false;
+            millisWhenSingleImageTrackingWasSet = System.currentTimeMillis();
         }
     }
 
@@ -1532,7 +1530,7 @@ public class ImageCapActivity extends Activity implements
                     }
                 }
                 ARFilter trackFilter = null;
-                Log.d(TAG,"markerBuffer.toArray().length="+markerBuffer.toArray().length);
+                Log.d(TAG,"setMultipleImageTrackingConfiguration: markerBuffer.toArray().length="+markerBuffer.toArray().length);
                 try {
                     trackFilter = new ImageDetectionFilter(
                             ImageCapActivity.this,
@@ -1788,7 +1786,7 @@ public class ImageCapActivity extends Activity implements
                             userMetadata.put("locmillis", locPhotoToExif[5]);
                             userMetadata.put("locmethod", locPhotoToExif[6]);
                             userMetadata.put("loccertified", locPhotoToExif[12]);
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                             userMetadata.put("datetime", formattedDateTime);
@@ -2153,7 +2151,7 @@ public class ImageCapActivity extends Activity implements
                         }
                     });
                     if (isHudOn==0) isHudOn=1;
-                    Log.d(TAG,"Else 1: INVALID VP TRACKED IN POSE");
+                    Log.d(TAG,"INVALID VP TRACKED IN POSE");
                 }
 
             } else {
@@ -2176,19 +2174,25 @@ public class ImageCapActivity extends Activity implements
                         }
                     }
                 });
-                //Log.d(TAG,"Else 2="+singleImageTrackingIsSet);
-                if (singleImageTrackingIsSet){
-                    singleImageTrackingIsSet = false;
-                    setMultipleImageTrackingConfiguration();
+                Log.d(TAG,
+                        "Tracking LOST!!!! (singleImageTrackingIsSet="+singleImageTrackingIsSet+
+                        ") (waitingToCaptureVpAfterDisambiguationProcedureSuccessful="+waitingToCaptureVpAfterDisambiguationProcedureSuccessful+")");
+                if ((singleImageTrackingIsSet)
+                        &&((!waitingToCaptureVpAfterDisambiguationProcedureSuccessful)||
+                        (System.currentTimeMillis()-millisWhenSingleImageTrackingWasSet>500))){
+                    if (!isShowingVpPhoto){
+                        singleImageTrackingIsSet = false;
+                        setMultipleImageTrackingConfiguration();
+                    }
                 }
-                if (isHudOn==0) isHudOn=1;
+                if ((isHudOn==0)&&(!isShowingVpPhoto)) isHudOn=1;
             }
         }
         return rgba;
     }
 
-    private void checkPositionToTarget(TrackingValues trackingValues, final Mat rgba) {
 
+    private void checkPositionToTarget(TrackingValues trackingValues, final Mat rgba) {
 
         if (!vpIsSuperSingle[vpTrackedInPose]) {
             inPosition = ((Math.abs(trackingValues.getX() - 0) <= tolerancePosition) &&
@@ -2346,7 +2350,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("locmillis", locPhotoToExif[5]);
                     userMetadata.put("locmethod", locPhotoToExif[6]);
                     userMetadata.put("loccertified", locPhotoToExif[12]);
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                     userMetadata.put("datetime", formattedDateTime);

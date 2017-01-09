@@ -118,4 +118,5 @@
     <string name="local_file_deleted">Arquivo local apagado com sucesso.</string>
     <string name="sharingphotousing">Compartilhe esta foto capturada usando:</string>
     <string name="sharingvideousing">Compartilhe este vídeo capturado usando:</string>
+    <string name="off">OFF</string>
 </resources>
