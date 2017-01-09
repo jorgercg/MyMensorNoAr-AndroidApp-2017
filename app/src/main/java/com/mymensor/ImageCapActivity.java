@@ -664,7 +664,7 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 startLocationUpdates();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss zz");
                 String lastUpdatedOn = sdf.format(mLastUpdateTime);
                 lastUpdatedOn = " ("+lastUpdatedOn+")";
                 Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG).show();
@@ -675,7 +675,7 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 if (mLocationUpdated) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss zz");
                     String lastUpdatedOn = sdf.format(mLastUpdateTime);
                     lastUpdatedOn = " ("+lastUpdatedOn+")";
                     Snackbar.make(view, getText(R.string.position_is_certified)+lastUpdatedOn, Snackbar.LENGTH_LONG)
@@ -1786,7 +1786,7 @@ public class ImageCapActivity extends Activity implements
                             userMetadata.put("locmillis", locPhotoToExif[5]);
                             userMetadata.put("locmethod", locPhotoToExif[6]);
                             userMetadata.put("loccertified", locPhotoToExif[12]);
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                             userMetadata.put("datetime", formattedDateTime);
@@ -2350,7 +2350,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("locmillis", locPhotoToExif[5]);
                     userMetadata.put("locmethod", locPhotoToExif[6]);
                     userMetadata.put("loccertified", locPhotoToExif[12]);
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                     userMetadata.put("datetime", formattedDateTime);
@@ -2656,7 +2656,7 @@ public class ImageCapActivity extends Activity implements
                         {
                             Date lastDate = new Date(photoTakenTimeMillis[position]);
                             Date nextDate = new Date(vpNextCaptureMillis[position]);
-                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedLastDate = sdf.format(lastDate);
                             formattedNextDate = sdf.format(nextDate);
@@ -2898,7 +2898,7 @@ public class ImageCapActivity extends Activity implements
                                 if (imageView.getImageAlpha()==128) imageView.setImageAlpha(255);
                                 String lastTimeAcquired = "";
                                 Date lastDate = new Date(Long.parseLong(millisMoment));
-                                SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                                SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
                                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                                 String formattedLastDate = sdf.format(lastDate);
                                 lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
@@ -2924,7 +2924,7 @@ public class ImageCapActivity extends Activity implements
                             }
                             String lastTimeAcquired = "";
                             Date lastDate = new Date(Long.parseLong(millisMoment));
-                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedLastDate = sdf.format(lastDate);
                             lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
@@ -2958,7 +2958,7 @@ public class ImageCapActivity extends Activity implements
                         {
                             Date lastDate = new Date(photoTakenTimeMillis[position]);
                             Date nextDate = new Date(vpNextCaptureMillis[position]);
-                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ssZ"));
+                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedLastDate = sdf.format(lastDate);
                             formattedNextDate = sdf.format(nextDate);
