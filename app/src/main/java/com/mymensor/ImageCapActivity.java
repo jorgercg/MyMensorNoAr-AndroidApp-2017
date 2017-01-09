@@ -1786,7 +1786,7 @@ public class ImageCapActivity extends Activity implements
                             userMetadata.put("locmillis", locPhotoToExif[5]);
                             userMetadata.put("locmethod", locPhotoToExif[6]);
                             userMetadata.put("loccertified", locPhotoToExif[12]);
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
                             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                             userMetadata.put("datetime", formattedDateTime);
@@ -2350,7 +2350,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("locmillis", locPhotoToExif[5]);
                     userMetadata.put("locmethod", locPhotoToExif[6]);
                     userMetadata.put("loccertified", locPhotoToExif[12]);
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
                     sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                     userMetadata.put("datetime", formattedDateTime);

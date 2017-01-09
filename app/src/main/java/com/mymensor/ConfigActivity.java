@@ -1135,7 +1135,7 @@ public class ConfigActivity extends Activity implements
                 Map<String, String> userMetadata = new HashMap<String, String>();
                 userMetadata.put("VP", "" + (vpIndex));
                 userMetadata.put("mymensorAccount", mymensorAccount);
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss Z");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ssZ");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                 String formattedDateTime = sdf.format(MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference));
                 userMetadata.put("DateTime", formattedDateTime);
@@ -1184,7 +1184,7 @@ public class ConfigActivity extends Activity implements
                 Map<String, String> userMetadata = new HashMap<String,String>();
                 userMetadata.put("VP", ""+(vpIndex));
                 userMetadata.put("mymensorAccount", mymensorAccount);
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss Z");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ssZ");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                 String formattedDateTime = sdf.format(MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference));
                 userMetadata.put("DateTime", formattedDateTime);
