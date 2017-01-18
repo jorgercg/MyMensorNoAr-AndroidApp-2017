@@ -262,6 +262,7 @@
         android:visibility="gone"
         />
 
+
     <LinearLayout
         android:id="@+id/arSwitchLinearLayout"
         android:orientation="horizontal"
@@ -294,6 +295,46 @@
             android:textColor="@android:color/white"
             android:background="@android:color/transparent"
             android:visibility="visible"
+            android:layout_marginEnd="16dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/uploadPendingLinearLayout"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical|center"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/arSwitchLinearLayout"
+        android:background="@drawable/border_ar_switch"
+        android:visibility="invisible"
+        android:layout_margin="8dp">
+
+        <ImageView
+            android:id="@+id/uploadPendingmageview"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:layout_margin="4dp"
+            android:paddingStart="6dp"
+            android:adjustViewBounds="true"
+            android:cropToPadding="true"
+            android:src="@drawable/ic_cloud_upload_white_18dp"
+            android:scaleType="fitCenter"
+            />
+
+        <TextView
+            android:id="@+id/uploadPendingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="0dp"
+            android:gravity="center_vertical|center"
+            android:text="@string/zero"
+            android:textColor="@android:color/white"
+            android:background="@android:color/transparent"
+            android:visibility="visible"
+            android:layout_marginStart="8dp"
             android:layout_marginEnd="16dp" />
 
     </LinearLayout>

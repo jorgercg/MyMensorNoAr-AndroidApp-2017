@@ -122,4 +122,5 @@
     <string name="sharingphotousing">Share this photo capture using:</string>
     <string name="sharingvideousing">Share this video capture using:</string>
     <string name="off">OFF</string>
+    <string name="zero">0</string>
 </resources>

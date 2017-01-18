@@ -60,6 +60,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferType;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -232,9 +233,13 @@ public class ImageCapActivity extends Activity implements
     Button rejectVpPhotoButton;
 
     LinearLayout arSwitchLinearLayout;
+    LinearLayout uploadPendingLinearLayout;
     LinearLayout videoRecorderTimeLayout;
     LinearLayout linearLayoutButtonsOnShowVpCaptures;
     LinearLayout linearLayoutImageViewsOnShowVpCaptures;
+
+    ImageView uploadPendingmageview;
+    TextView uploadPendingText;
 
     ImageView positionCertifiedImageview;
     ImageView timeCertifiedImageview;
@@ -255,6 +260,11 @@ public class ImageCapActivity extends Activity implements
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
     private AmazonS3 s3Amazon;
+
+    // A List of all transfers
+    private List<TransferObserver> observers;
+
+    private int pendingUploadTransfers = 0;
 
     SharedPreferences sharedPref;
 
@@ -520,6 +530,8 @@ public class ImageCapActivity extends Activity implements
         vpCheckedView = (ImageView) this.findViewById(R.id.imageViewVpChecked);
         vpCheckedView.setVisibility(View.GONE);
 
+        uploadPendingLinearLayout = (LinearLayout) this.findViewById(R.id.uploadPendingLinearLayout);
+
         arSwitchLinearLayout = (LinearLayout) this.findViewById(R.id.arSwitchLinearLayout);
 
         videoRecorderTimeLayout = (LinearLayout) this.findViewById(R.id.videoRecorderTimeLayout);
@@ -527,6 +539,10 @@ public class ImageCapActivity extends Activity implements
         linearLayoutButtonsOnShowVpCaptures = (LinearLayout) this.findViewById(R.id.linearLayoutButtonsOnShowVpCaptures);
 
         linearLayoutImageViewsOnShowVpCaptures = (LinearLayout) this.findViewById(R.id.linearLayoutImageViewsOnShowVpCaptures);
+
+        uploadPendingmageview = (ImageView) this.findViewById(R.id.uploadPendingmageview);
+
+        uploadPendingText = (TextView) this.findViewById(R.id.uploadPendingText);
 
         positionCertifiedImageview = (ImageView) this.findViewById(R.id.positionCertifiedImageview);
 
@@ -1264,6 +1280,7 @@ public class ImageCapActivity extends Activity implements
                 radarScanImageView.setVisibility(View.VISIBLE);
                 radarScanImageView.startAnimation(rotationRadarScan);
                 // Turning on control buttons
+                if (pendingUploadTransfers>0) uploadPendingLinearLayout.setVisibility(View.VISIBLE);
                 arSwitchLinearLayout.setVisibility(View.VISIBLE);
                 arSwitch.setVisibility(View.VISIBLE);
                 positionCertifiedButton.setVisibility(View.VISIBLE);
@@ -1331,12 +1348,36 @@ public class ImageCapActivity extends Activity implements
     {
         super.onResume();
         Log.d(TAG,"onResume CALLED");
+
         //OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, this, mLoaderCallback);
         if (!OpenCVLoader.initDebug()) {
             Log.d("ERROR", "Unable to load OpenCV");
         } else {
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+
+        // Use TransferUtility to get all upload transfers.
+        pendingUploadTransfers = 0;
+        observers = transferUtility.getTransfersWithType(TransferType.UPLOAD);
+        TransferListener listener = new UploadListener();
+        for (TransferObserver observer : observers) {
+
+            // For each transfer we will will create an entry in
+            // transferRecordMaps which will display
+            // as a single row in the UI
+            //HashMap<String, Object> map = new HashMap<String, Object>();
+            //Util.fillMap(map, observer, false);
+            //transferRecordMaps.add(map);
+
+            // Sets listeners to in progress transfers
+            if (!TransferState.COMPLETED.equals(observer.getState())) {
+                observer.setTransferListener(listener);
+                pendingUploadTransfers++;
+                Log.d(TAG,"Observer ID:"+observer.getId()+" key:"+observer.getKey()+" state:"+observer.getState()+" %:"+(observer.getBytesTransferred()/observer.getBytesTotal())*100);
+                transferUtility.resume(observer.getId());
+            }
+        }
+        updatePendingUpload();
 
         if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
             startLocationUpdates();
@@ -1386,7 +1427,11 @@ public class ImageCapActivity extends Activity implements
         if (mGoogleApiClient.isConnected()) {
             stopLocationUpdates();
         }
-
+        if (observers != null && !observers.isEmpty()) {
+            for (TransferObserver observer : observers) {
+                observer.cleanTransferListener();
+            }
+        }
     }
 
     @Override
@@ -1804,31 +1849,9 @@ public class ImageCapActivity extends Activity implements
                                     videoFile,
                                     myObjectMetadata);
 
-                            observer.setTransferListener(new TransferListener() {
-                                @Override
-                                public void onStateChanged(int id, TransferState state) {
-                                    if (state.equals(TransferState.COMPLETED)) {
-                                        Log.d(TAG,"VideoRecorderLazy: TransferListener="+state.toString());
-                                    }
-                                }
-
-                                @Override
-                                public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                                    if (bytesTotal>0){
-                                        int percentage = (int) (bytesCurrent / bytesTotal * 100);
-                                    }
-                                    //Display percentage transfered to user
-                                }
-
-                                @Override
-                                public void onError(int id, Exception ex) {
-                                    Log.e(TAG, "VideoRecorderLazy: saving failed:"+ ex.toString());
-                                    Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
-                                    vpChecked[vpTrackedInPose] = false;
-                                    setVpsChecked();
-                                    saveVpsChecked();
-                                }
-                            });
+                            observer.setTransferListener(new UploadListener());
+                            pendingUploadTransfers++;
+                            updatePendingUpload();
                             if (observer!=null){
                                 Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getState().toString());
                                 Log.d(TAG, "takePhoto: AWS s3 Observer: "+observer.getAbsoluteFilePath());
@@ -2291,6 +2314,16 @@ public class ImageCapActivity extends Activity implements
                         acceptVpPhotoButton.setVisibility(View.VISIBLE);
                         rejectVpPhotoButton.setVisibility(View.VISIBLE);
                         vpsListView.setVisibility(View.GONE);
+                        uploadPendingLinearLayout.setVisibility(View.INVISIBLE);
+                        arSwitchLinearLayout.setVisibility(View.INVISIBLE);
+                        arSwitch.setVisibility(View.INVISIBLE);
+                        positionCertifiedButton.setVisibility(View.INVISIBLE);
+                        timeCertifiedButton.setVisibility(View.INVISIBLE);
+                        connectedToServerButton.setVisibility(View.INVISIBLE);
+                        if (radarScanImageView.isShown()) {
+                            radarScanImageView.clearAnimation();
+                            radarScanImageView.setVisibility(View.GONE);
+                        }
                     }
                 });
             }
@@ -2314,6 +2347,12 @@ public class ImageCapActivity extends Activity implements
                         vpsListView.setVisibility(View.VISIBLE);
                         vpChecked[vpTrackedInPose] = true;
                         locPhotoToExif = getLocationToExifStrings(mCurrentLocation, momento);
+                        if (pendingUploadTransfers>0) uploadPendingLinearLayout.setVisibility(View.VISIBLE);
+                        arSwitchLinearLayout.setVisibility(View.VISIBLE);
+                        arSwitch.setVisibility(View.VISIBLE);
+                        positionCertifiedButton.setVisibility(View.VISIBLE);
+                        timeCertifiedButton.setVisibility(View.VISIBLE);
+                        connectedToServerButton.setVisibility(View.VISIBLE);
                     }
                 });
                 setVpsChecked();
@@ -2368,31 +2407,9 @@ public class ImageCapActivity extends Activity implements
                             pictureFile,
                             myObjectMetadata);
 
-                    observer.setTransferListener(new TransferListener() {
-                        @Override
-                        public void onStateChanged(int id, TransferState state) {
-                            if (state.equals(TransferState.COMPLETED)) {
-                                Log.d(TAG,"takePhoto(): TransferListener="+state.toString());
-                            }
-                        }
-
-                        @Override
-                        public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                            if (bytesTotal>0){
-                                int percentage = (int) (bytesCurrent / bytesTotal * 100);
-                            }
-                            //Display percentage transfered to user
-                        }
-
-                        @Override
-                        public void onError(int id, Exception ex) {
-                            Log.e(TAG, "takePhoto(): saving failed:"+ ex.toString());
-                            Log.e(TAG, "takePhoto: Error when writing captured image to Remote Storage:"+ex.toString());
-                            vpChecked[vpTrackedInPose] = false;
-                            setVpsChecked();
-                            saveVpsChecked();
-                        }
-                    });
+                    observer.setTransferListener(new UploadListener());
+                    pendingUploadTransfers++;
+                    updatePendingUpload();
 
                     if ((singleImageTrackingIsSet)&&(isArSwitchOn))
                     {
@@ -2460,7 +2477,12 @@ public class ImageCapActivity extends Activity implements
                             radarScanImageView.startAnimation(rotationRadarScan);
 
                         }
-
+                        if (pendingUploadTransfers>0) uploadPendingLinearLayout.setVisibility(View.VISIBLE);
+                        arSwitchLinearLayout.setVisibility(View.VISIBLE);
+                        arSwitch.setVisibility(View.VISIBLE);
+                        positionCertifiedButton.setVisibility(View.VISIBLE);
+                        timeCertifiedButton.setVisibility(View.VISIBLE);
+                        connectedToServerButton.setVisibility(View.VISIBLE);
                     }
                 });
                 if (isArSwitchOn) {
@@ -2535,29 +2557,9 @@ public class ImageCapActivity extends Activity implements
             userMetadata.put("timestamp", MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference).toString());
             myObjectMetadata.setUserMetadata(userMetadata);
             TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile, myObjectMetadata);
-            observer.setTransferListener(new TransferListener() {
-                @Override
-                public void onStateChanged(int id, TransferState state) {
-                    if (state.equals(TransferState.COMPLETED)) {
-                        Log.d(TAG,"SaveVpsChecked(): TransferListener="+state.toString());
-                    }
-                }
-
-                @Override
-                public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                    if (bytesTotal>0){
-                        int percentage = (int) (bytesCurrent / bytesTotal * 100);
-                    }
-
-                    //Display percentage transfered to user
-                }
-
-                @Override
-                public void onError(int id, Exception ex) {
-                    Log.e(TAG, "SaveVpsChecked(): vpsCheckedFile saving failed:"+ ex.toString());
-                }
-
-            });
+            observer.setTransferListener(new UploadListener());
+            pendingUploadTransfers++;
+            updatePendingUpload();
 
         } catch (Exception e) {
             Log.e(TAG, "SaveVpsChecked(): ERROR data saving to Remote Storage:"+e.toString());
@@ -2634,6 +2636,7 @@ public class ImageCapActivity extends Activity implements
                         }
                         isShowingVpPhoto = true;
                         Log.d(TAG, "imageView.isShown()=" + imageView.isShown());
+                        uploadPendingLinearLayout.setVisibility(View.INVISIBLE);
                         arSwitchLinearLayout.setVisibility(View.INVISIBLE);
                         arSwitch.setVisibility(View.INVISIBLE);
                         positionCertifiedButton.setVisibility(View.INVISIBLE);
@@ -3412,6 +3415,75 @@ public class ImageCapActivity extends Activity implements
                 }
             }
         }.execute();
+    }
+
+
+    /*
+     * A TransferListener class that can listen to a upload task and be notified
+     * when the status changes.
+     */
+    private class UploadListener implements TransferListener {
+
+        // Simply updates the UI list when notified.
+        @Override
+        public void onError(int id, Exception e) {
+            Log.e(TAG, "Observer: Error during upload: " + id, e);
+            updatePendingUpload();
+        }
+
+        @Override
+        public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+            Log.d(TAG, String.format("Observer: onProgressChanged: %d, total: %d, current: %d",
+                    id, bytesTotal, bytesCurrent));
+            updatePendingUpload();
+        }
+
+        @Override
+        public void onStateChanged(int id, TransferState newState) {
+            Log.d(TAG, "Observer: onStateChanged: " + id + ", " + newState);
+            if (newState.equals(TransferState.COMPLETED)){
+                pendingUploadTransfers--;
+                if (pendingUploadTransfers<0) pendingUploadTransfers=0;
+            }
+            updatePendingUpload();
+        }
+    }
+
+    /*
+     * Updates the ListView according to the observers.
+     */
+    private void updatePendingUpload() {
+
+        if (pendingUploadTransfers==0) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (uploadPendingText.isShown()) {
+                        uploadPendingText.setText(Integer.toString(pendingUploadTransfers));
+                        uploadPendingLinearLayout.setVisibility(View.INVISIBLE);
+                    }
+                }
+            });
+        } else {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    uploadPendingLinearLayout.setVisibility(View.VISIBLE);
+                    uploadPendingText.setText(Integer.toString(pendingUploadTransfers));
+                }
+            });
+        }
+
+        /*
+        TransferObserver observer = null;
+        HashMap<String, Object> map = null;
+        for (int i = 0; i < observers.size(); i++) {
+            observer = observers.get(i);
+            //map = transferRecordMaps.get(i);
+            //MymUtils.fillMap(map, observer, i == checkedIndex);
+        }
+        //simpleAdapter.notifyDataSetChanged();
+        */
     }
 
 

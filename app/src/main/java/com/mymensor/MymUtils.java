@@ -32,6 +32,7 @@ import java.net.InetAddress;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
 public class MymUtils {
 
@@ -257,5 +258,47 @@ public class MymUtils {
             Log.d(TAG, "Exception="+e.toString());
         }
         return result;
+    }
+
+
+    /**
+     * Converts number of bytes into proper scale.
+     *
+     * @param bytes number of bytes to be converted.
+     * @return A string that represents the bytes in a proper scale.
+     */
+    public static String getBytesString(long bytes) {
+        String[] quantifiers = new String[] {
+                "KB", "MB", "GB", "TB"
+        };
+        double speedNum = bytes;
+        for (int i = 0;; i++) {
+            if (i >= quantifiers.length) {
+                return "";
+            }
+            speedNum /= 1024;
+            if (speedNum < 512) {
+                return String.format("%.2f", speedNum) + " " + quantifiers[i];
+            }
+        }
+    }
+
+
+    /*
+     * Fills in the map with information in the observer so that it can be used
+     * with a SimpleAdapter to populate the UI
+     */
+    public static void fillMap(Map<String, Object> map, TransferObserver observer, boolean isChecked) {
+        int progress = (int) ((double) observer.getBytesTransferred() * 100 / observer
+                .getBytesTotal());
+        map.put("id", observer.getId());
+        map.put("checked", isChecked);
+        map.put("fileName", observer.getAbsoluteFilePath());
+        map.put("progress", progress);
+        map.put("bytes",
+                getBytesString(observer.getBytesTransferred()) + "/"
+                        + getBytesString(observer.getBytesTotal()));
+        map.put("state", observer.getState());
+        map.put("percentage", progress + "%");
     }
 }
