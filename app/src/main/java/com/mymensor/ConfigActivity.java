@@ -1486,14 +1486,22 @@ public class ConfigActivity extends Activity implements
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpDescFileSize");
                 File descvp = new File(getApplicationContext().getFilesDir(),"descvp"+i+".png");
-                xmlSerializer.text(Long.toString(descvp.length()));
+                if (vpArIsConfigured[i]) {
+                    xmlSerializer.text(Long.toString(descvp.length()));
+                } else {
+                    xmlSerializer.text(Long.toString(Constants.VpDescFileSize));
+                }
                 xmlSerializer.endTag("","VpDescFileSize");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
                 xmlSerializer.text("\t");
                 xmlSerializer.startTag("","VpMarkerFileSize");
                 File markervp = new File(getApplicationContext().getFilesDir(),"markervp"+i+".png");
-                xmlSerializer.text(Long.toString(markervp.length()));
+                if (vpArIsConfigured[i]) {
+                    xmlSerializer.text(Long.toString(markervp.length()));
+                } else {
+                    xmlSerializer.text(Long.toString(Constants.VpMarkerFileSize));
+                }
                 xmlSerializer.endTag("","VpMarkerFileSize");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");

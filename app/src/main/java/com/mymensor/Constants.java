@@ -4,13 +4,15 @@ import com.amazonaws.regions.Regions;
 
 public class Constants {
 
-    public static final short maxQtyVps = 30;
+    public static final short maxQtyVps = 31;
     public static final String frequencyUnit = "millis";
     public static final int frequencyValue = 20000;
     public static final float tolerancePosition = 50;
     public static final float toleranceRotation = 10;
     public static final String vpsConfigFileName = "vps.xml";
     public static final String vpsCheckedConfigFileName = "vpschecked.xml";
+    public static final long VpDescFileSize = 36156;
+    public static final long VpMarkerFileSize = 32209;
     public static final short captureMarkerWidth = 400;
     public static final short captureMarkerHeight = 400;
     public static final short standardMarkerlessMarkerWidth = 400;

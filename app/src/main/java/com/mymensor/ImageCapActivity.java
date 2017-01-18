@@ -3372,7 +3372,7 @@ public class ImageCapActivity extends Activity implements
                         Log.i("AsyncTask", "callTimeServerInBackground: cancelled");
                         break;
                     }
-                    if (sntpClient.requestTime("pool.ntp.org", 5000)) {
+                    if (sntpClient.requestTime("pool.ntp.org", 10000)) {
                         sntpTime = sntpClient.getNtpTime();
                         sntpTimeReference = sntpClient.getNtpTimeReference();
                         now = sntpTime + SystemClock.elapsedRealtime() - sntpTimeReference;

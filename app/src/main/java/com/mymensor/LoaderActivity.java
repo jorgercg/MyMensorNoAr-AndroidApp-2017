@@ -762,6 +762,7 @@ public class LoaderActivity extends Activity
             if (loadingConfigFromRemoteStorage){
                 Log.d(TAG,"loadingConfigFromRemoteStorage: Starting the wait....");
                 int prod = 0;
+                long startChk2 = System.currentTimeMillis();
                 do {
                     for (int k = 0; k < (qtyVps); k++){
                         if (descvpFileCHK[k] && markervpFileCHK[k]) {
@@ -778,12 +779,12 @@ public class LoaderActivity extends Activity
                             }
                         }
                     }
-                } while (prod==0);
+                } while ((prod==0)&&((System.currentTimeMillis()-startChk2)<240000));
                 Log.d(TAG,"loadingConfigFromRemoteStorage: Wait is Finished!!!!!!");
             }
 
             int product = 0;
-
+            long startChk = System.currentTimeMillis();
             do {
                 for (int k = 0; k < (qtyVps); k++){
                     try{
@@ -809,7 +810,7 @@ public class LoaderActivity extends Activity
                         Log.e (TAG, "Image Files Checking Failed:"+e.toString());
                     }
                 }
-            } while (product==0);
+            } while ((product==0)&&((System.currentTimeMillis()-startChk)<240000));
 
             if (product==0) {
                 Log.e(TAG, "Image files downloading verification Error."+(System.currentTimeMillis()-loopstart));
