@@ -128,6 +128,11 @@ public class ImageCapActivity extends Activity implements
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
 
+    static {
+        System.loadLibrary("MyMensor");
+    }
+    public native String getSecretKeyFromJNI();
+
     private static final String TAG = "ImageCapActvty";
 
     private static long backPressed;
@@ -1181,8 +1186,8 @@ public class ImageCapActivity extends Activity implements
                 long lonMinInteger = (long) ((60*(gps[1]-lonDegInteger))-((60*(gps[1]-lonDegInteger)) % 1));
                 long lonSecInteger = (long) (((60*(gps[1]-lonDegInteger)) % 1)*60*1000);
                 locationString[2]=""+lonDegInteger+"/1,"+lonMinInteger+"/1,"+lonSecInteger+"/1000";
-                locationString[8]= Double.toString(gps[0]);
-                locationString[9]= Double.toString(gps[1]);
+                locationString[8]= Double.toString(location.getLatitude());
+                locationString[9]= Double.toString(location.getLongitude());
                 locationString[4]= Float.toString(location.getAccuracy());
                 locationString[5]= mLastUpdateTime.toString();
                 locationString[6]= location.getProvider();
@@ -1294,6 +1299,7 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void onBackPressed()
     {
+        Log.d(TAG,"Testando JNI:"+getSecretKeyFromJNI());
         boolean specialBackClick = false;
         if (isShowingVpPhoto){
             specialBackClick = true;
@@ -3203,10 +3209,13 @@ public class ImageCapActivity extends Activity implements
         {
             Log.d(TAG,"vpNumber["+i+"]="+vpNumber[i]);
             vpChecked[i] = false;
-            if (vpFrequencyUnit[i].equalsIgnoreCase(""))
+            if (!(vpFrequencyUnit[i]==null))
             {
+                if (vpFrequencyUnit[i].equalsIgnoreCase("")) vpFrequencyUnit[i]=frequencyUnit;
+            } else {
                 vpFrequencyUnit[i]=frequencyUnit;
             }
+
             if (vpFrequencyValue[i]==0)
             {
                 vpFrequencyValue[i]=frequencyValue;

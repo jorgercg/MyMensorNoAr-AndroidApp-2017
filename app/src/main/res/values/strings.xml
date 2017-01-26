@@ -29,7 +29,7 @@
     <string name="button_show_vp_captures">See Captures</string>
     <string name="button_show_previous_vp_capture">\u003c</string>
     <string name="button_show_next_vp_capture">\u003e</string>
-    <string name="button_text_request_photo">Capture VP</string>
+    <string name="button_text_request_photo">Configure VP</string>
     <string name="button_sav_desc_vp_text">DscVpTxt</string>
     <string name="button_text_increase_qtyvps">Inc VP Qty</string>
     <string name="button_text_decrease_qtyvps">Dec VP Qty</string>

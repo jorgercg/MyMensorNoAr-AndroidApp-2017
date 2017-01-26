@@ -26,7 +26,7 @@
     <string name="button_show_vp_captures">Veja Capturas</string>
     <string name="button_show_previous_vp_capture">\u003c</string>
     <string name="button_show_next_vp_capture">\u003e</string>
-    <string name="button_text_request_photo">Capturar VP</string>
+    <string name="button_text_request_photo">Configurar VP</string>
     <string name="button_sav_desc_vp_text">DscVpTxt</string>
     <string name="button_text_increase_qtyvps">Aum Qtd VP</string>
     <string name="button_text_decrease_qtyvps">Red Qtd VP</string>

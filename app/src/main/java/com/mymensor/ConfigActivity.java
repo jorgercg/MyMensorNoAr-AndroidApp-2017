@@ -1608,6 +1608,13 @@ public class ConfigActivity extends Activity implements
                     xmlSerializer.startTag("","VpFrequencyUnit");
                     xmlSerializer.text(vpFrequencyUnit[i]);
                     xmlSerializer.endTag("","VpFrequencyUnit");
+                } else {
+                    xmlSerializer.text("\n");
+                    xmlSerializer.text("\t");
+                    xmlSerializer.text("\t");
+                    xmlSerializer.startTag("","VpFrequencyUnit");
+                    xmlSerializer.text("");
+                    xmlSerializer.endTag("","VpFrequencyUnit");
                 }
                 if (vpFrequencyValue[i]!=frequencyValue)
                 {
@@ -1616,6 +1623,13 @@ public class ConfigActivity extends Activity implements
                     xmlSerializer.text("\t");
                     xmlSerializer.startTag("","VpFrequencyValue");
                     xmlSerializer.text(Long.toString(vpFrequencyValue[i]));
+                    xmlSerializer.endTag("","VpFrequencyValue");
+                } else {
+                    xmlSerializer.text("\n");
+                    xmlSerializer.text("\t");
+                    xmlSerializer.text("\t");
+                    xmlSerializer.startTag("","VpFrequencyValue");
+                    xmlSerializer.text(Long.toString(0));
                     xmlSerializer.endTag("","VpFrequencyValue");
                 }
                 xmlSerializer.text("\n");
@@ -2010,10 +2024,13 @@ public class ConfigActivity extends Activity implements
 
         for (int i=0; i<(qtyVps); i++)
         {
+            Log.d(TAG,"vpNumber["+i+"]="+vpNumber[i]);
             vpChecked[i] = false;
             vpAcquired[i] = true;
-            if (vpFrequencyUnit[i].equalsIgnoreCase(""))
+            if (!(vpFrequencyUnit[i]==null))
             {
+                if (vpFrequencyUnit[i].equalsIgnoreCase("")) vpFrequencyUnit[i]=frequencyUnit;
+            } else {
                 vpFrequencyUnit[i]=frequencyUnit;
             }
 
@@ -2021,7 +2038,6 @@ public class ConfigActivity extends Activity implements
             {
                 vpFrequencyValue[i]=frequencyValue;
             }
-
         }
 
     }

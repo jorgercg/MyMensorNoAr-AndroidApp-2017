@@ -54,3 +54,10 @@ public class MymCrypt {
 
 
 }
+
+/*
+// encrypt
+        byte[] encryptedData = encrypt(key,b);
+// decrypt
+        byte[] decryptedData = decrypt(key,encryptedData);
+*/
