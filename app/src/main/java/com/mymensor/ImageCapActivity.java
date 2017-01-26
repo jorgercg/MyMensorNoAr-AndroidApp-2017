@@ -383,6 +383,7 @@ public class ImageCapActivity extends Activity implements
 
     protected String showingMediaFileName;
     protected String showingMediaType;
+    protected String showingMediaSha256;
 
 
 
@@ -900,7 +901,6 @@ public class ImageCapActivity extends Activity implements
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 if (showingMediaType.equalsIgnoreCase("p")){
                     shareIntent.setType("image/jpg");
-                    //File shareFile = new File(getApplicationContext().getFilesDir(), showingMediaFileName);
                     try {
                         InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
                         File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
@@ -912,7 +912,7 @@ public class ImageCapActivity extends Activity implements
                     File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
                     Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(),"com.mymensor.fileprovider", shareFile);
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT,"http://app.mymensor.com");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT,"https://app.mymensor.com/landing/?type=1&key=cap/"+showingMediaFileName+"&signature="+showingMediaSha256);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
                 }
@@ -929,12 +929,10 @@ public class ImageCapActivity extends Activity implements
                     File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
                     Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(),"com.mymensor.fileprovider", shareFile);
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    //shareIntent.putExtra(Intent.EXTRA_TEXT,"http://app.mymensor.com");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT,"https://app.mymensor.com/landing/?type=1&key=cap/"+showingMediaFileName+"&signature="+showingMediaSha256);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                 }
-
-
             }
         });
 
@@ -2769,6 +2767,43 @@ public class ImageCapActivity extends Activity implements
 
     }
 
+
+    @TargetApi(21)
+    private void getRemotePictureFileMetadata (final String filename){
+
+        new AsyncTask<Void, Void, ObjectMetadata>() {
+            @Override
+            protected void onPreExecute() { Log.d(TAG,"getRemotePictureFileMetadata: onPreExecute"); }
+
+            @Override
+            protected ObjectMetadata doInBackground(Void... params) {
+                try{
+                    final ObjectMetadata objMetadata = s3Amazon.getObjectMetadata(Constants.BUCKET_NAME, filename);
+                    return objMetadata;
+                } catch (Exception e){
+                    Log.e(TAG,"getRemotePictureFileMetadata: exception: "+e.toString());
+                    return null;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(final ObjectMetadata objectMetadata) {
+                Log.d(TAG,"getRemotePictureFileMetadata: onPostExecute");
+                if (objectMetadata!=null){
+                    Map<String, String> userMetadata = new HashMap<String,String>();
+                    userMetadata = objectMetadata.getUserMetadata();
+                    Log.d(TAG,"userMetadata="+userMetadata.toString());
+                    Log.d(TAG,"Location=sha-256="+userMetadata.get("sha-256"));
+                    showingMediaSha256 = userMetadata.get("sha-256");
+                } else {
+                    showingMediaSha256 = "";
+                }
+            }
+        }.execute();
+    }
+
+
+
     @TargetApi(21)
     private void getRemoteFileMetadata (final String filename){
 
@@ -2798,6 +2833,8 @@ public class ImageCapActivity extends Activity implements
                             userMetadata = objectMetadata.getUserMetadata();
                             Log.d(TAG,"userMetadata="+userMetadata.toString());
                             Log.d(TAG,"Location=LocCertified="+userMetadata.get("loccertified")+" Time=TimeCertified="+userMetadata.get("timecertified"));
+                            Log.d(TAG,"Location=sha-256="+userMetadata.get("sha-256"));
+                            showingMediaSha256 = userMetadata.get("sha-256");
                             if (userMetadata.get("loccertified").equalsIgnoreCase("1")){
                                 //IsPositionCertified
                                 positionCertifiedImageview.setVisibility(View.VISIBLE);
@@ -2871,6 +2908,11 @@ public class ImageCapActivity extends Activity implements
                     final InputStream fiscaps = MymUtils.getLocalFile(vpMediaFileName,getApplicationContext());
                     showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
                     fiscaps.close();
+                    try {
+                        getRemotePictureFileMetadata("cap/"+vpMediaFileName);
+                    } catch (Exception e) {
+                        Log.e(TAG,"Problem Remote files Metadata:"+e.toString());
+                    }
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
