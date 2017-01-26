@@ -1223,7 +1223,7 @@ public class ImageCapActivity extends Activity implements
                 locationString[7] = " ";
 
             }
-            for (int index = 0; index<7; index++)
+            for (int index = 0; index<locationString.length; index++)
             {
                 if (locationString[index]==null) locationString[index]=" ";
                 Log.d(TAG, "getLocationToExifStrings: locationString[index]="+locationString[index]);
@@ -1838,7 +1838,7 @@ public class ImageCapActivity extends Activity implements
                             userMetadata.put("locmethod", locPhotoToExif[6]);
                             userMetadata.put("loccertified", locPhotoToExif[12]);
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
-                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            sdf.setTimeZone(TimeZone.getDefault());
                             String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                             userMetadata.put("datetime", formattedDateTime);
                             userMetadata.put("phototakenmillis", locPhotoToExif[11]);
@@ -2396,7 +2396,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("locmethod", locPhotoToExif[6]);
                     userMetadata.put("loccertified", locPhotoToExif[12]);
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
-                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    sdf.setTimeZone(TimeZone.getDefault());
                     String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose ]);
                     userMetadata.put("datetime", formattedDateTime);
                     userMetadata.put("phototakenmillis", locPhotoToExif[11]);
@@ -2666,7 +2666,7 @@ public class ImageCapActivity extends Activity implements
                             Date lastDate = new Date(photoTakenTimeMillis[position]);
                             Date nextDate = new Date(vpNextCaptureMillis[position]);
                             SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
-                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            sdf.setTimeZone(TimeZone.getDefault());
                             String formattedLastDate = sdf.format(lastDate);
                             formattedNextDate = sdf.format(nextDate);
                             lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
@@ -2908,7 +2908,7 @@ public class ImageCapActivity extends Activity implements
                                 String lastTimeAcquired = "";
                                 Date lastDate = new Date(Long.parseLong(millisMoment));
                                 SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
-                                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                                sdf.setTimeZone(TimeZone.getDefault());
                                 String formattedLastDate = sdf.format(lastDate);
                                 lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
                                 vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
@@ -2934,7 +2934,7 @@ public class ImageCapActivity extends Activity implements
                             String lastTimeAcquired = "";
                             Date lastDate = new Date(Long.parseLong(millisMoment));
                             SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
-                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                            sdf.setTimeZone(TimeZone.getDefault());
                             String formattedLastDate = sdf.format(lastDate);
                             lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " +formattedLastDate;
                             vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
