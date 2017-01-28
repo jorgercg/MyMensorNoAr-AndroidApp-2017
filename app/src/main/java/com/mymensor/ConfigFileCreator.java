@@ -264,6 +264,18 @@ public class ConfigFileCreator {
                 xmlSerializer.endTag("","VpSuperMarkerId");
                 xmlSerializer.text("\n");
                 xmlSerializer.text("\t");
+                xmlSerializer.text("\t");
+                xmlSerializer.startTag("","VpFrequencyUnit");
+                xmlSerializer.text("");
+                xmlSerializer.endTag("","VpFrequencyUnit");
+                xmlSerializer.text("\n");
+                xmlSerializer.text("\t");
+                xmlSerializer.text("\t");
+                xmlSerializer.startTag("","VpFrequencyValue");
+                xmlSerializer.text(Long.toString(0));
+                xmlSerializer.endTag("","VpFrequencyValue");
+                xmlSerializer.text("\n");
+                xmlSerializer.text("\t");
                 xmlSerializer.endTag("","Vp");
             }
             xmlSerializer.text("\n");

@@ -41,6 +41,7 @@
         </activity>
         <activity
             android:name=".LoaderActivity"
+            android:theme="@style/SnackbarTheme"
             >
             <intent-filter>
                 <action android:name=".LoaderActivity" />
@@ -49,10 +50,12 @@
         </activity>
         <activity
             android:name=".ImageCapActivity"
+            android:theme="@style/SnackbarTheme"
             android:screenOrientation="landscape">
         </activity>
         <activity
             android:name=".ConfigActivity"
+            android:theme="@style/SnackbarTheme"
             android:screenOrientation="landscape">
         </activity>
         <service

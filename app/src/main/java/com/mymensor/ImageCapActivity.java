@@ -32,6 +32,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.support.v7.content.res.AppCompatResources;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Xml;
@@ -387,7 +388,6 @@ public class ImageCapActivity extends Activity implements
 
 
 
-    @TargetApi(21)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -1242,7 +1242,9 @@ public class ImageCapActivity extends Activity implements
         savedInstanceState.putInt(STATE_IMAGE_DETECTION_FILTER_INDEX, mImageDetectionFilterIndex);
         savedInstanceState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, mRequestingLocationUpdates);
         savedInstanceState.putParcelable(LOCATION_KEY, mCurrentLocation);
-        savedInstanceState.putLong(LAST_UPDATED_TIME_STRING_KEY, mLastUpdateTime);
+        if (mLastUpdateTime != null) {
+            savedInstanceState.putLong(LAST_UPDATED_TIME_STRING_KEY, mLastUpdateTime);
+        }
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -1674,7 +1676,6 @@ public class ImageCapActivity extends Activity implements
         }
     }
 
-    @TargetApi(21)
     private boolean prepareVideoRecorder(String videoFileName){
         mMediaRecorder = new MediaRecorder();
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -1713,7 +1714,6 @@ public class ImageCapActivity extends Activity implements
     public void onCameraViewStopped() {
     }
 
-    @TargetApi(21)
     @Override
     public Mat onCameraFrame(final CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
@@ -2201,9 +2201,11 @@ public class ImageCapActivity extends Activity implements
                         }
                     }
                 });
+                /*
                 Log.d(TAG,
                         "Tracking LOST!!!! (singleImageTrackingIsSet="+singleImageTrackingIsSet+
                         ") (waitingToCaptureVpAfterDisambiguationProcedureSuccessful="+waitingToCaptureVpAfterDisambiguationProcedureSuccessful+")");
+                        */
                 if ((singleImageTrackingIsSet)
                         &&((!waitingToCaptureVpAfterDisambiguationProcedureSuccessful)||
                         (System.currentTimeMillis()-millisWhenSingleImageTrackingWasSet>500))){
@@ -2768,7 +2770,6 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    @TargetApi(21)
     private void getRemotePictureFileMetadata (final String filename){
 
         new AsyncTask<Void, Void, ObjectMetadata>() {
@@ -2804,7 +2805,6 @@ public class ImageCapActivity extends Activity implements
 
 
 
-    @TargetApi(21)
     private void getRemoteFileMetadata (final String filename){
 
         new AsyncTask<Void, Void, ObjectMetadata>() {
@@ -2838,24 +2838,24 @@ public class ImageCapActivity extends Activity implements
                             if (userMetadata.get("loccertified").equalsIgnoreCase("1")){
                                 //IsPositionCertified
                                 positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
+                                positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
                             } else {
                                 positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
+                                positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
                             }
                             if (userMetadata.get("timecertified").equalsIgnoreCase("1")){
                                 //IsTimeCertified
                                 timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
+                                timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
                             } else {
                                 timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
+                                timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
                             }
                         } else {
                             positionCertifiedImageview.setVisibility(View.VISIBLE);
-                            positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_gray, getApplicationContext().getTheme()));
+                            positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_gray));
                             timeCertifiedImageview.setVisibility(View.VISIBLE);
-                            timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_gray, getApplicationContext().getTheme()));
+                            timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_gray));
                         }
                     }
                 });
@@ -2864,7 +2864,6 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    @TargetApi(21)
     private void showVpCaptures(int vpSelected)
     {
         runOnUiThread(new Runnable() {
@@ -2926,21 +2925,21 @@ public class ImageCapActivity extends Activity implements
                                     if (tags.getAttribute("Make").equalsIgnoreCase("1")){
                                         //IsPositionCertified
                                         positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                        positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
+                                        positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
                                     } else {
                                         positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                        positionCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
+                                        positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
                                     }
                                     if (tags.getAttribute("GPSAltitudeRef").equalsIgnoreCase("1")){
                                         //IsTimeCertified
                                         timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                        timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_green, getApplicationContext().getTheme()));
+                                        timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
                                     } else {
                                         timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                        timeCertifiedImageview.setBackground(getResources().getDrawable(circular_button_red, getApplicationContext().getTheme()));
+                                        timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
                                     }
                                 } catch (Exception e) {
-                                    Log.e(TAG,"Problem with Exif tags:"+e.toString());
+                                    Log.e(TAG,"Problem with Exif tags or drawable setting:"+e.toString());
                                 }
                                 videoView.setVisibility(View.GONE);
                                 imageView.setVisibility(View.VISIBLE);

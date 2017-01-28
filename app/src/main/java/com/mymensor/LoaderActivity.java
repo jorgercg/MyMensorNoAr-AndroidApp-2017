@@ -75,6 +75,8 @@ public class LoaderActivity extends Activity
 
     private Boolean descvpFileCHK[];
     private Boolean markervpFileCHK[];
+    private Boolean loadingDescvpFile = false;
+    private Boolean loadingMarkervpFile = false;
     private Boolean loadingConfigFromRemoteStorage = false;
 
 
@@ -332,19 +334,24 @@ public class LoaderActivity extends Activity
             *********************************************************************************************************************
              */
 
-            if (appStartState.equalsIgnoreCase("firstever")){
 
-                Log.d(TAG, "loadConfiguration(): checking if files exist in Remote Storage, if not, create them.");
 
-                Log.d(TAG, "loadConfiguration(): s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName)="
-                        +s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName)));
-
+            Log.d(TAG, "loadConfiguration(): checking if files exist in Remote Storage, if not, create them.");
+            try {
                 if (!s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName))) {
                     firstTimeLoader();
                 } else {
                     loadingConfigFromRemoteStorage = true;
+                    Log.d(TAG, "loadConfiguration(): s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName)="
+                            +s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName))+" loadingConfigFromRemoteStorage ="+loadingConfigFromRemoteStorage);
                 }
+            } catch (Exception e){
+                Log.e(TAG, "loadConfiguration(): checking if files exist in Remote Storage error:"+e.toString());
+                loadingConfigFromRemoteStorage = false;
+                firstTimeLoader();
             }
+
+
 
 
             /*
@@ -623,6 +630,7 @@ public class LoaderActivity extends Activity
                                 Constants.BUCKET_NAME,
                                 getApplicationContext())) {
                             Log.d(TAG,"descvpFile loadFinalDefinitions: isNewFileAvailable= TRUE");
+                            loadingDescvpFile = true;
                             final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (descvpRemotePath+ "descvp" + (j) + ".png"), Constants.BUCKET_NAME, descvpFile);
                             observer.setTransferListener(new TransferListener() {
 
@@ -711,6 +719,7 @@ public class LoaderActivity extends Activity
                                 Constants.BUCKET_NAME,
                                 getApplicationContext())) {
                             Log.d(TAG,"markervpFile loadFinalDefinitions: isNewFileAvailable= TRUE");
+                            loadingMarkervpFile = true;
                             final TransferObserver observer = MymUtils.getRemoteFile(transferUtility, (markervpRemotePath+ "markervp" + (j) + ".png"), Constants.BUCKET_NAME, markervpFile);
                             observer.setTransferListener(new TransferListener() {
 
@@ -763,23 +772,25 @@ public class LoaderActivity extends Activity
                 Log.d(TAG,"loadingConfigFromRemoteStorage: Starting the wait....");
                 int prod = 0;
                 long startChk2 = System.currentTimeMillis();
-                do {
-                    for (int k = 0; k < (qtyVps); k++){
-                        if (descvpFileCHK[k] && markervpFileCHK[k]) {
-                            if (k == 0) {
-                                prod = Math.abs(1);
+                if ((loadingDescvpFile)||(loadingMarkervpFile)){
+                    do {
+                        for (int k = 0; k < (qtyVps); k++){
+                            if (descvpFileCHK[k] && markervpFileCHK[k]) {
+                                if (k == 0) {
+                                    prod = Math.abs(1);
+                                } else {
+                                    prod *= Math.abs(1);
+                                }
                             } else {
-                                prod *= Math.abs(1);
-                            }
-                        } else {
-                            if (k == 0) {
-                                prod = Math.abs(0);
-                            } else {
-                                prod *= Math.abs(0);
+                                if (k == 0) {
+                                    prod = Math.abs(0);
+                                } else {
+                                    prod *= Math.abs(0);
+                                }
                             }
                         }
-                    }
-                } while ((prod==0)&&((System.currentTimeMillis()-startChk2)<240000));
+                    } while ((prod==0)&&((System.currentTimeMillis()-startChk2)<240000));
+                }
                 Log.d(TAG,"loadingConfigFromRemoteStorage: Wait is Finished!!!!!!");
             }
 

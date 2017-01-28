@@ -127,10 +127,9 @@
             opencv:fabSize="mini"
             opencv:srcCompat="@drawable/logo_mymensor"
             android:visibility="visible"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="8dp"
-            opencv:elevation="0dp"
+            android:layout_marginBottom="20dp"
 
             />
 
@@ -148,7 +147,7 @@
                 android:layout_marginStart="8dp"
                 android:textColor="@android:color/white"
                 android:text="@string/button_text_decrease_qtyvps"
-                android:layout_marginBottom="2dp"
+                android:layout_marginBottom="8dp"
                 android:layout_marginEnd="8dp"/>
 
             <android.support.design.widget.FloatingActionButton
@@ -160,8 +159,7 @@
                 opencv:fabSize="mini"
                 opencv:srcCompat="@drawable/ic_remove_black_18dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="2dp"
-                opencv:elevation="0dp"
+                android:layout_marginBottom="8dp"
                  />
 
         </LinearLayout>
@@ -180,7 +178,7 @@
                 android:textColor="@android:color/white"
                 android:text="@string/button_text_increase_qtyvps"
                 android:layout_marginBottom="8dp"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="8dp"
                 />
 
             <android.support.design.widget.FloatingActionButton
@@ -191,9 +189,8 @@
                 android:clickable="true"
                 opencv:fabSize="mini"
                 opencv:srcCompat="@drawable/ic_add_black_18dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="8dp"
                 android:layout_marginEnd="16dp"
-                opencv:elevation="0dp"
                  />
 
 
@@ -231,7 +228,7 @@
                 android:layout_marginEnd="8dp"
                 android:textColor="@android:color/white"
                 android:text="@string/button_text_request_photo"
-                android:layout_marginBottom="1dp" />
+                android:layout_marginBottom="8dp" />
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/buttonRequestPhoto"
@@ -241,8 +238,7 @@
                 android:clickable="true"
                 opencv:fabSize="mini"
                 opencv:srcCompat="@drawable/ic_add_a_photo_white_18dp"
-                android:layout_marginBottom="1dp"
-                opencv:elevation="0dp"/>
+                android:layout_marginBottom="8dp" />
 
         </LinearLayout>
 
@@ -255,9 +251,8 @@
             opencv:fabSize="normal"
             opencv:srcCompat="@android:drawable/ic_menu_camera"
             android:visibility="invisible"
-            android:layout_margin="0dp"
-            opencv:backgroundTint="@android:color/holo_blue_bright"
-            opencv:elevation="0dp"/>
+            android:layout_margin="16dp"
+            opencv:backgroundTint="@android:color/holo_blue_bright" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -269,7 +264,7 @@
                 android:orientation="horizontal"
                 android:visibility="invisible"
                 android:background="@drawable/border_marker_id_blue"
-                android:layout_marginBottom="1dp"
+                android:layout_marginBottom="8dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
@@ -324,7 +319,7 @@
                 android:layout_marginEnd="8dp"
                 android:textColor="@android:color/white"
                 android:text="@string/button_ambiguous_vp_toggle"
-                android:layout_marginBottom="1dp"
+                android:layout_marginBottom="8dp"
                 android:textAlignment="gravity" />
 
             <android.support.design.widget.FloatingActionButton
@@ -334,9 +329,8 @@
                 android:clickable="true"
                 opencv:fabSize="mini"
                 opencv:srcCompat="@android:drawable/ic_dialog_alert"
-                android:layout_marginBottom="1dp"
-                android:layout_gravity="end"
-                opencv:elevation="0dp"/>
+                android:layout_marginBottom="8dp"
+                android:layout_gravity="end" />
 
         </LinearLayout>
 
@@ -355,7 +349,7 @@
                 android:layout_marginEnd="8dp"
                 android:textColor="@android:color/white"
                 android:text="@string/button_super_single_vp_toggle"
-                android:layout_marginBottom="2dp"
+                android:layout_marginBottom="8dp"
                 android:textAlignment="gravity" />
 
             <android.support.design.widget.FloatingActionButton
@@ -365,9 +359,8 @@
                 android:clickable="true"
                 opencv:fabSize="mini"
                 opencv:srcCompat="@drawable/circulo_seamensor"
-                android:layout_marginBottom="2dp"
-                android:layout_gravity="end"
-                opencv:elevation="0dp"/>
+                android:layout_marginBottom="8dp"
+                android:layout_gravity="end" />
 
         </LinearLayout>
 

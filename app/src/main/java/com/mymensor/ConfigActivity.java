@@ -9,6 +9,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -17,6 +18,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.content.res.AppCompatResources;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
@@ -177,6 +180,8 @@ public class ConfigActivity extends Activity implements
 
     FloatingActionButton buttonCallImagecap;
 
+    Drawable borderMarkerIdBlue;
+    Drawable borderMarkerIdRed;
 
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
@@ -357,6 +362,10 @@ public class ConfigActivity extends Activity implements
         tmpCamProjSize.height = Constants.cameraHeigthInPixels;
 
         final Camera.Size camProjSize = tmpCamProjSize;
+
+        borderMarkerIdBlue = ContextCompat.getDrawable(getApplicationContext(),border_marker_id_blue);
+
+        borderMarkerIdRed = ContextCompat.getDrawable(getApplicationContext(),border_marker_id_red);
 
         loadConfigurationFile();
 
@@ -704,7 +713,7 @@ public class ConfigActivity extends Activity implements
 
     }
 
-    @TargetApi(21)
+
     @Override
     public Mat onCameraFrame(final CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
@@ -844,7 +853,7 @@ public class ConfigActivity extends Activity implements
                             @Override
                             public void run() {
                                 linearLayoutMarkerId.setVisibility(View.VISIBLE);
-                                linearLayoutMarkerId.setBackgroundDrawable(getDrawable(border_marker_id_red));
+                                linearLayoutMarkerId.setBackground(borderMarkerIdRed);
                                 idMarkerNumberTextView.setText(Integer.toString(markerIdInPose));
                                 vpIdMarkerUsedTextView.setVisibility(View.VISIBLE);
                                 vpIdMarkerUsedTextView.setText("@ VP#"+k_inner_final);
@@ -857,7 +866,7 @@ public class ConfigActivity extends Activity implements
                                 @Override
                                 public void run() {
                                     linearLayoutMarkerId.setVisibility(View.VISIBLE);
-                                    linearLayoutMarkerId.setBackgroundDrawable(getDrawable(border_marker_id_blue));
+                                    linearLayoutMarkerId.setBackground(borderMarkerIdBlue);
                                     idMarkerNumberTextView.setText(Integer.toString(markerIdInPose));
                                     vpIdMarkerUsedTextView.setVisibility(View.GONE);
                                     cameraShutterButton.setEnabled(true);
@@ -934,7 +943,7 @@ public class ConfigActivity extends Activity implements
                             @Override
                             public void run() {
                                 linearLayoutMarkerId.setVisibility(View.VISIBLE);
-                                linearLayoutMarkerId.setBackgroundDrawable(getDrawable(border_marker_id_red));
+                                linearLayoutMarkerId.setBackground(borderMarkerIdRed);
                                 idMarkerNumberTextView.setText(Integer.toString(markerIdInPose));
                                 vpIdMarkerUsedTextView.setVisibility(View.VISIBLE);
                                 vpIdMarkerUsedTextView.setText("@ VP#"+k_inner_final);
@@ -948,7 +957,7 @@ public class ConfigActivity extends Activity implements
                             @Override
                             public void run() {
                                 linearLayoutMarkerId.setVisibility(View.VISIBLE);
-                                linearLayoutMarkerId.setBackgroundDrawable(getDrawable(border_marker_id_blue));
+                                linearLayoutMarkerId.setBackground(borderMarkerIdBlue);
                                 idMarkerNumberTextView.setText(Integer.toString(markerIdInPose));
                                 vpIdMarkerUsedTextView.setVisibility(View.GONE);
                                 cameraShutterButton.setEnabled(true);
