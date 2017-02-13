@@ -44,6 +44,7 @@ public class Constants {
      * AWS S3
      */
     public static final String BUCKET_NAME = "mymstoragebr";
+    public static final String CONN_TST_FILE = "admin/a2f3@qw248fgsfreqlgkgjrufjsdad.pdf";
     /**
      * MyMensor User Authorization
      */

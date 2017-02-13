@@ -19,8 +19,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
@@ -48,10 +46,14 @@ public class LoaderActivity extends Activity
     private String markervpRemotePath;
 
     private boolean finishApp = false;
+    private boolean localFilesExist = false;
+    private boolean responseFromRemoteStorage = false;
+    public boolean isConnectedToServer = false;
+    private boolean areRemoteFilesNewerThanLocal = false;
 
     private boolean clockSetSuccess = false;
     private static long back_pressed;
-    private int  dciNumber = 1;;
+    private int dciNumber = 1;
 
     private BackgroundLoader backgroundLoader;
 
@@ -77,7 +79,7 @@ public class LoaderActivity extends Activity
     private Boolean markervpFileCHK[];
     private Boolean loadingDescvpFile = false;
     private Boolean loadingMarkervpFile = false;
-    private Boolean loadingConfigFromRemoteStorage = false;
+    private Boolean configFromRemoteStorageExistsAndAccessible = false;
 
 
     @Override
@@ -133,11 +135,16 @@ public class LoaderActivity extends Activity
         }
 
 
+        File vpsFileCHK = new File(getApplicationContext().getFilesDir(),Constants.vpsConfigFileName);
+
+        if (vpsFileCHK.exists()) {
+            localFilesExist = true;
+        }
+
+
         if (appStartState.equalsIgnoreCase("firstever")){
             // TODO
         }
-
-        backgroundLoader.execute();
 
         final View.OnClickListener undoOnClickListener = new View.OnClickListener() {
             @Override
@@ -158,6 +165,8 @@ public class LoaderActivity extends Activity
             }
         });
 
+        backgroundLoader.execute();
+
     }
 
     @Override
@@ -165,6 +174,13 @@ public class LoaderActivity extends Activity
     {
         super.onStart();
         Log.d(TAG,"onStart(): CALLED");
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume CALLED");
     }
 
     @Override
@@ -186,6 +202,33 @@ public class LoaderActivity extends Activity
         back_pressed = System.currentTimeMillis();
     }
 
+
+    private void checkConnectionToServer(){
+
+        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            protected void onPreExecute() {
+                Log.d(TAG,"checkConnectionToServer: onPreExecute");
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                boolean result = MymUtils.isS3Available(s3Amazon);
+                return result;
+            }
+
+            @Override
+            protected void onPostExecute(final Boolean result) {
+                Log.d(TAG,"checkConnectionToServer: onPostExecute: result="+result);
+                if (result) {
+                    isConnectedToServer = true;
+                } else {
+                    isConnectedToServer = false;
+                }
+                Log.d(TAG, "checkConnectionToServer(): CONNECTION TO SERVER EXISTS:"+isConnectedToServer);
+            }
+        }.execute();
+    }
 
     private void firstTimeLoader(){
         try {
@@ -334,24 +377,59 @@ public class LoaderActivity extends Activity
             *********************************************************************************************************************
              */
 
+            Log.d(TAG, "loadConfiguration(): checking CONNECTION TO SERVER.");
+
+            checkConnectionToServer();
 
 
-            Log.d(TAG, "loadConfiguration(): checking if files exist in Remote Storage, if not, create them.");
+            /*
+            *********************************************************************************************************************
+             */
+
+            Log.d(TAG, "loadConfiguration(): checking if files exist in Remote Storage, if not, create them locally.");
+
+            int retries = 4;
             try {
-                if (!s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName))) {
-                    firstTimeLoader();
-                } else {
-                    loadingConfigFromRemoteStorage = true;
-                    Log.d(TAG, "loadConfiguration(): s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName)="
-                            +s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName))+" loadingConfigFromRemoteStorage ="+loadingConfigFromRemoteStorage);
-                }
-            } catch (Exception e){
-                Log.e(TAG, "loadConfiguration(): checking if files exist in Remote Storage error:"+e.toString());
-                loadingConfigFromRemoteStorage = false;
-                firstTimeLoader();
+                do {
+                    responseFromRemoteStorage = s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName));
+                    if (responseFromRemoteStorage) {
+                        configFromRemoteStorageExistsAndAccessible = true;
+                    } else {
+                        Log.d(TAG,"Request to s3Amazon.doesObjectExist failed or object does not exist");
+                    }
+                } while (retries-- > 0);
+            } catch (Exception es3) {
+                Log.e(TAG, "loadConfiguration(): checking if files exist in Remote Storage error:" + es3.toString());
             }
 
+            Log.d(TAG, "loadConfiguration(): config files exist and are accessible in remote storage:" + configFromRemoteStorageExistsAndAccessible);
 
+            /*
+            *********************************************************************************************************************
+             */
+
+            Log.d(TAG, "loadConfiguration(): Starting LOGIC to determine startup");
+            Log.d(TAG, "loadConfiguration(): Connected to server? : "+isConnectedToServer);
+            Log.d(TAG, "loadConfiguration(): Local files exist? : "+localFilesExist);
+            Log.d(TAG, "loadConfiguration(): Remote files exist and are accessible? : "+configFromRemoteStorageExistsAndAccessible);
+            if (configFromRemoteStorageExistsAndAccessible) {
+                try{
+                    areRemoteFilesNewerThanLocal = (MymUtils.isNewFileAvailable(s3Client,
+                            Constants.vpsConfigFileName,
+                            (vpsRemotePath + Constants.vpsConfigFileName),
+                            Constants.BUCKET_NAME,
+                            getApplicationContext()));
+                } catch (Exception e) {
+                    Log.e(TAG, "loadConfiguration(): unable to check remote file age: vpsFile loading failed:"+e.toString());
+                    areRemoteFilesNewerThanLocal = false;
+                }
+            }
+            Log.d(TAG, "loadConfiguration(): Remote files exist and are NEWER than local? : "+areRemoteFilesNewerThanLocal);
+
+            if ((!configFromRemoteStorageExistsAndAccessible) && (!localFilesExist)) {
+                configFromRemoteStorageExistsAndAccessible = false;
+                firstTimeLoader();
+            }
 
 
             /*
@@ -768,8 +846,8 @@ public class LoaderActivity extends Activity
 
             Log.d(TAG,"Checking if all images are already in the local storage, as network operations take place in background.");
 
-            if (loadingConfigFromRemoteStorage){
-                Log.d(TAG,"loadingConfigFromRemoteStorage: Starting the wait....");
+            if (configFromRemoteStorageExistsAndAccessible){
+                Log.d(TAG,"configFromRemoteStorageExistsAndAccessible: Starting the wait....");
                 int prod = 0;
                 long startChk2 = System.currentTimeMillis();
                 if ((loadingDescvpFile)||(loadingMarkervpFile)){
@@ -791,7 +869,7 @@ public class LoaderActivity extends Activity
                         }
                     } while ((prod==0)&&((System.currentTimeMillis()-startChk2)<240000));
                 }
-                Log.d(TAG,"loadingConfigFromRemoteStorage: Wait is Finished!!!!!!");
+                Log.d(TAG,"configFromRemoteStorageExistsAndAccessible: Wait is Finished!!!!!!");
             }
 
             int product = 0;

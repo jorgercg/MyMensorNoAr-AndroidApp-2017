@@ -13,6 +13,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
@@ -32,10 +33,11 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
-import android.support.v7.content.res.AppCompatResources;
 import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Xml;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -263,6 +265,11 @@ public class ImageCapActivity extends Activity implements
     FloatingActionButton videoCameraShutterButton;
     FloatingActionButton videoCameraShutterStopButton;
 
+    Drawable circularButtonGreen;
+    Drawable circularButtonRed;
+    Drawable circularButtonGray;
+
+
     private AmazonS3Client s3Client;
     private TransferUtility transferUtility;
     private AmazonS3 s3Amazon;
@@ -392,8 +399,23 @@ public class ImageCapActivity extends Activity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+        Log.d(TAG, "SCRRES Display Width (Pixels):"+metrics.widthPixels);
+        Log.d(TAG, "SCRRES Display Heigth (Pixels):"+metrics.heightPixels);
+
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (((metrics.widthPixels)*(metrics.heightPixels))<921600) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+
 
         setContentView(R.layout.activity_imagecap);
 
@@ -482,6 +504,12 @@ public class ImageCapActivity extends Activity implements
         mCameraView.setCameraIndex(0);
         mCameraView.setMaxFrameSize(cameraWidthInPixels, Constants.cameraHeigthInPixels);
         mCameraView.setCvCameraViewListener(this);
+
+        circularButtonGreen = ContextCompat.getDrawable(getApplicationContext(), circular_button_green);
+
+        circularButtonRed = ContextCompat.getDrawable(getApplicationContext(), circular_button_red);
+
+        circularButtonGray = ContextCompat.getDrawable(getApplicationContext(), circular_button_gray);
 
         loadConfigurationFile();
         loadVpsChecked();
@@ -969,7 +997,7 @@ public class ImageCapActivity extends Activity implements
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                boolean result = MymUtils.isS3Available(s3Amazon, vpsRemotePath);
+                boolean result = MymUtils.isS3Available(s3Amazon);
                 return result;
             }
 
@@ -2838,24 +2866,24 @@ public class ImageCapActivity extends Activity implements
                             if (userMetadata.get("loccertified").equalsIgnoreCase("1")){
                                 //IsPositionCertified
                                 positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
+                                positionCertifiedImageview.setBackground(circularButtonGreen);
                             } else {
                                 positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
+                                positionCertifiedImageview.setBackground(circularButtonRed);
                             }
                             if (userMetadata.get("timecertified").equalsIgnoreCase("1")){
                                 //IsTimeCertified
                                 timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
+                                timeCertifiedImageview.setBackground(circularButtonGreen);
                             } else {
                                 timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
+                                timeCertifiedImageview.setBackground(circularButtonRed);
                             }
                         } else {
                             positionCertifiedImageview.setVisibility(View.VISIBLE);
-                            positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_gray));
+                            positionCertifiedImageview.setBackground(circularButtonGray);
                             timeCertifiedImageview.setVisibility(View.VISIBLE);
-                            timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_gray));
+                            timeCertifiedImageview.setBackground(circularButtonGray);
                         }
                     }
                 });
@@ -2925,18 +2953,18 @@ public class ImageCapActivity extends Activity implements
                                     if (tags.getAttribute("Make").equalsIgnoreCase("1")){
                                         //IsPositionCertified
                                         positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                        positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
+                                        positionCertifiedImageview.setBackground(circularButtonGreen);
                                     } else {
                                         positionCertifiedImageview.setVisibility(View.VISIBLE);
-                                        positionCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
+                                        positionCertifiedImageview.setBackground(circularButtonRed);
                                     }
                                     if (tags.getAttribute("GPSAltitudeRef").equalsIgnoreCase("1")){
                                         //IsTimeCertified
                                         timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                        timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_green));
+                                        timeCertifiedImageview.setBackground(circularButtonGreen);
                                     } else {
                                         timeCertifiedImageview.setVisibility(View.VISIBLE);
-                                        timeCertifiedImageview.setBackground(AppCompatResources.getDrawable(getParent(), circular_button_red));
+                                        timeCertifiedImageview.setBackground(circularButtonRed);
                                     }
                                 } catch (Exception e) {
                                     Log.e(TAG,"Problem with Exif tags or drawable setting:"+e.toString());

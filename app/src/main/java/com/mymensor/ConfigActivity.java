@@ -19,7 +19,7 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.content.res.AppCompatResources;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
@@ -276,8 +276,22 @@ public class ConfigActivity extends Activity implements
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+        Log.d(TAG, "SCRRES Display Width (Pixels):"+metrics.widthPixels);
+        Log.d(TAG, "SCRRES Display Heigth (Pixels):"+metrics.heightPixels);
+
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (((metrics.widthPixels)*(metrics.heightPixels))<921600) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
 
         setContentView(R.layout.activity_config);
 

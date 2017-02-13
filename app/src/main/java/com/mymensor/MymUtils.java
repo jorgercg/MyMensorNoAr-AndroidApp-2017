@@ -3,8 +3,6 @@ package com.mymensor;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.content.res.ColorStateList;
-import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -26,9 +24,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -246,10 +241,20 @@ public class MymUtils {
     }
 
 
-    public static boolean isS3Available(AmazonS3 s3Amazon, String vpsRemotePath){
+    public static boolean isS3Available(AmazonS3 s3Amazon){
         boolean result = false;
+        int retries = 4;
+        boolean nthtry = false;
         try{
-            result = s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(vpsRemotePath + Constants.vpsConfigFileName));
+            do {
+                nthtry = s3Amazon.doesObjectExist(Constants.BUCKET_NAME,(Constants.CONN_TST_FILE));
+                if (nthtry) {
+                    result = true;
+                    Log.d(TAG,"Request to s3Amazon.doesObjectExist succeeded");
+                } else {
+                    Log.d(TAG,"Request to s3Amazon.doesObjectExist failed or object does not exist");
+                }
+            } while (retries-- > 0);
         } catch (AmazonServiceException ase){
             Log.d(TAG, "AmazonServiceException="+ase.toString());
         } catch (AmazonClientException ace) {
@@ -301,4 +306,6 @@ public class MymUtils {
         map.put("state", observer.getState());
         map.put("percentage", progress + "%");
     }
+
+
 }

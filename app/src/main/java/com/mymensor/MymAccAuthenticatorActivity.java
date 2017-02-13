@@ -4,12 +4,15 @@ import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.volley.RequestQueue;
@@ -23,6 +26,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+
+import static android.R.style.Theme_Material_Dialog_Alert;
+import static android.R.style.Theme_Material_Light_Dialog_Alert;
 
 /**
  * The MymAccAuthenticatorActivity activity.
@@ -132,6 +138,7 @@ public class MymAccAuthenticatorActivity extends AccountAuthenticatorActivity {
             public void onErrorResponse(VolleyError error) {
                 VolleyLog.e("Error MYM AUTH TOKEN: ", error.getMessage());
                 data.putString(KEY_ERROR_MESSAGE, error.getMessage());
+                showAlert();
             }
         });
 
@@ -170,6 +177,30 @@ public class MymAccAuthenticatorActivity extends AccountAuthenticatorActivity {
         setResult(RESULT_OK, intent);
 
         finish();
+    }
+
+    public void showAlert() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setTitle(getText(R.string.loginfailed));
+        alert.setMessage(getText(R.string.pta));
+
+        alert.setNegativeButton(getText(R.string.ok), new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        /*
+        alert.setPositiveButton("Done", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Toast.makeText(getBaseContext(), name, Toast.LENGTH_SHORT).show();
+            }
+        });
+        */
+        alert.show();
     }
 
 }

@@ -120,4 +120,10 @@
     <string name="sharingvideousing">Compartilhe este vídeo capturado usando:</string>
     <string name="off">OFF</string>
     <string name="zero">0</string>
+    <string name="pta">Por favor tente novamente.</string>
+    <string name="loginfailed">Falha no log in.</string>
+    <string name="nosetupfiles">Erro: Arquivos de configuração faltando.</string>
+    <string name="nosetupfileexp">Não há arquivos de configuração e não é possível contactar o servidor MyMensor. Se quiser continuar novos arquivos serão criados e os eventuais antigos serão APAGADOS. Deseja continuar?</string>
+    <string name="continu">CONTINUAR</string>
+    <string name="leaveapp">SAIR DA APLICAÇÃO</string>
 </resources>
