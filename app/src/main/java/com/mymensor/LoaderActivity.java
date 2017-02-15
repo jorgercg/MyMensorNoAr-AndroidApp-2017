@@ -732,7 +732,10 @@ public class LoaderActivity extends Activity
 
                                 @Override
                                 public void onError(int id, Exception ex) {
-                                    Log.e(TAG, "descvpFile loadFinalDefinitions: Descvp loading failed, see stack trace:"+observer.getKey());
+                                    Log.e(TAG, "descvpFile loadFinalDefinitions: Descvp loading failed, see stack trace:"+observer.getKey()+"with Exception:"+ex.toString());
+                                    File faileddescvpFile = new File(getApplicationContext().getFilesDir(), observer.getAbsoluteFilePath());
+                                    boolean faileddescvpFileIsDeleted = faileddescvpFile.delete();
+                                    Log.e(TAG, "faileddescvpFileIsDeleted ="+faileddescvpFileIsDeleted);
                                     publishProgress(getString(R.string.checkcfgfiles));
                                     finishApp = true;
                                     finish();
@@ -822,6 +825,9 @@ public class LoaderActivity extends Activity
                                 @Override
                                 public void onError(int id, Exception ex) {
                                     Log.e(TAG, "markervpFile loadFinalDefinitions: Markervp loading failed, see stack trace:"+observer.getKey());
+                                    File failedmarkervpFile = new File(getApplicationContext().getFilesDir(), observer.getAbsoluteFilePath());
+                                    boolean failedmarkervpFileIsDeleted = failedmarkervpFile.delete();
+                                    Log.e(TAG, "failedmarkervpFileIsDeleted ="+failedmarkervpFileIsDeleted);
                                     publishProgress(getString(R.string.checkcfgfiles));
                                     finishApp = true;
                                     finish();
@@ -870,47 +876,45 @@ public class LoaderActivity extends Activity
                     } while ((prod==0)&&((System.currentTimeMillis()-startChk2)<240000));
                 }
                 Log.d(TAG,"configFromRemoteStorageExistsAndAccessible: Wait is Finished!!!!!!");
-            }
-
-            int product = 0;
-            long startChk = System.currentTimeMillis();
-            do {
-                for (int k = 0; k < (qtyVps); k++){
-                    try{
-                        File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k) + ".png");
-                        File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k) + ".png");
-                        if (    descvpFileCHK.exists() &&
-                                markervpFileCHK.exists() &&
-                                descvpFileCHK.length()==vpDescFileSize[k] &&
-                                markervpFileCHK.length()==vpMarkerFileSize[k] ) {
-                            if (k == 0) {
-                                product = Math.abs(1);
+            } else {
+                int product = 0;
+                long startChk = System.currentTimeMillis();
+                do {
+                    for (int k = 0; k < (qtyVps); k++){
+                        try{
+                            File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k) + ".png");
+                            File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k) + ".png");
+                            if (    descvpFileCHK.exists() &&
+                                    markervpFileCHK.exists() &&
+                                    descvpFileCHK.length()==vpDescFileSize[k] &&
+                                    markervpFileCHK.length()==vpMarkerFileSize[k] ) {
+                                if (k == 0) {
+                                    product = Math.abs(1);
+                                } else {
+                                    product *= Math.abs(1);
+                                }
                             } else {
-                                product *= Math.abs(1);
+                                if (k == 0) {
+                                    product = Math.abs(0);
+                                } else {
+                                    product *= Math.abs(0);
+                                }
                             }
-                        } else {
-                            if (k == 0) {
-                                product = Math.abs(0);
-                            } else {
-                                product *= Math.abs(0);
-                            }
+                        } catch (Exception e) {
+                            Log.e (TAG, "Image Files Checking Failed:"+e.toString());
                         }
-                    } catch (Exception e) {
-                        Log.e (TAG, "Image Files Checking Failed:"+e.toString());
                     }
+                } while ((product==0)&&((System.currentTimeMillis()-startChk)<240000));
+
+                if (product==0) {
+                    Log.e(TAG, "Image files downloading verification Error."+(System.currentTimeMillis()-loopstart));
+                    publishProgress(getString(R.string.checkcfgfiles));
+                    finishApp = true;
+                    finish();
                 }
-            } while ((product==0)&&((System.currentTimeMillis()-startChk)<240000));
 
-            if (product==0) {
-                Log.e(TAG, "Image files downloading verification Error."+(System.currentTimeMillis()-loopstart));
-                publishProgress(getString(R.string.checkcfgfiles));
-                finishApp = true;
-                finish();
+                Log.d(TAG,"Loading Image Config Files: imageFilesOK="+product);
             }
-
-            Log.d(TAG,"Loading Image Config Files: imageFilesOK="+product);
-
-
 
             publishProgress(getString(R.string.load_assets_finished));
             return null;
@@ -918,6 +922,7 @@ public class LoaderActivity extends Activity
 
         @Override
         protected void onPostExecute(Void result) {
+            Log.d(TAG,"onPostExecute CALLED: finishApp="+finishApp);
             super.onPostExecute(result);
             if (finishApp) {
                 finish();

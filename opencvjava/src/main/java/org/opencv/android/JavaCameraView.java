@@ -197,6 +197,10 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
                     /* Finally we are ready to start the preview */
                     Log.d(TAG, "OPENCV startPreview: W="+mFrameWidth+" H="+mFrameHeight);
+
+                    if (mFrameWidth<1280) mFrameWidth=1280;
+                    if (mFrameHeight<720) mFrameHeight=720;
+
                     mCamera.startPreview();
                 }
                 else

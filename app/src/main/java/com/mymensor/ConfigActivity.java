@@ -284,7 +284,7 @@ public class ConfigActivity extends Activity implements
 
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (((metrics.widthPixels)*(metrics.heightPixels))<921600) {
+        if (((metrics.widthPixels)*(metrics.heightPixels))<=921600) {
             window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
