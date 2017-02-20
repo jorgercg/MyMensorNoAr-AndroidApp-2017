@@ -743,7 +743,8 @@ public class LoaderActivity extends Activity
 
                             });
                         } else {
-                            Log.d(TAG,"descvpFile loadFinalDefinitions: "+ "descvp" + (j) + ".jpg"+" isNewFileAvailable= FALSE");
+                            descvpFileCHK[j] = true;
+                            Log.d(TAG,"descvpFile loadFinalDefinitions: "+ "descvp" + (j) + ".jpg"+" isNewFileAvailable= FALSE  :::::  descvpFileCHK[j] ="+descvpFileCHK[j]);
                         }
                     }
 
@@ -835,7 +836,8 @@ public class LoaderActivity extends Activity
 
                             });
                         } else {
-                            Log.d(TAG,"markervpFile loadFinalDefinitions: "+ "markervp" + (j) + ".jpg"+" isNewFileAvailable= FALSE");
+                            markervpFileCHK[j] = true;
+                            Log.d(TAG,"markervpFile loadFinalDefinitions: "+ "markervp" + (j) + ".jpg"+" isNewFileAvailable= FALSE   ::::::   markervpFileCHK[j]="+markervpFileCHK[j]);
                         }
                     }
                 }
