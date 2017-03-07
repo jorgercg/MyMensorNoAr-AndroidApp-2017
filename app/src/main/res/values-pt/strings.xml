@@ -126,4 +126,5 @@
     <string name="nosetupfileexp">Não há arquivos de configuração e não é possível contactar o servidor MyMensor. Se quiser continuar novos arquivos serão criados e os eventuais antigos serão APAGADOS. Deseja continuar?</string>
     <string name="continu">CONTINUAR</string>
     <string name="leaveapp">SAIR DA APLICAÇÃO</string>
+    <string name="sdk_lower_then_kitkat">Esta app não é compatível com versões do Android anteriores à KitKat. Fechando agora.</string>
 </resources>

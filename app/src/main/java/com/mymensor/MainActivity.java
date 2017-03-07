@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -88,6 +89,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT){
+            Toast.makeText(getBaseContext(), getString(R.string.sdk_lower_then_kitkat), Toast.LENGTH_LONG).show();
+        }
 
         if (!getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             Toast.makeText(getBaseContext(), getString(R.string.no_camera), Toast.LENGTH_LONG).show();

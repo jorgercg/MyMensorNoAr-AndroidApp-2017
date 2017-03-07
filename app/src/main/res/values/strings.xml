@@ -129,4 +129,5 @@
     <string name="nosetupfileexp">There are no local setup files and no connection to MyMensor server. If you decide to continue new files will be created and eventual old ones will be ERASED. Do you wish to continue?</string>
     <string name="continu">CONTINUE</string>
     <string name="leaveapp">LEAVE APP</string>
+    <string name="sdk_lower_then_kitkat">Thsi app is not compatible with Android versions prior to KitKat. Closing now.</string>
 </resources>

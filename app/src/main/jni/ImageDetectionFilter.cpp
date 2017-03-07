@@ -69,6 +69,15 @@ ImageDetectionFilter::ImageDetectionFilter(std::vector<cv::Mat> &referenceImageG
     mTracking = false;
 
     frame=0;
+    dampIndex=0;
+    for (int i=0; i<8; i++){
+        mPose_0[i]=0;
+        mPose_1[i]=0;
+        mPose_2[i]=0;
+        mPose_3[i]=0;
+        mPose_4[i]=0;
+        mPose_5[i]=0;
+    }
 }
 
 float *ImageDetectionFilter::getPose()
@@ -179,12 +188,25 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
                             //LOGD("mCandidateSceneCorners.type() = %d", mCandidateSceneCorners.type());
                             cv::solvePnP(mReferenceCorners3D, mCandidateSceneCorners, cameraMatrix,
                                          mDistCoeffs, mRVec, mTVec, 0);
-                            mPose[0] = (float) mTVec.at<double>(0);// X Translation
-                            mPose[1] = (float) mTVec.at<double>(1);// Y Translation
-                            mPose[2] = (float) mTVec.at<double>(2);// Z Translation
-                            mPose[3] = (float) mRVec.at<double>(0);// X Rotation
-                            mPose[4] = (float) mRVec.at<double>(1);// Y Rotation
-                            mPose[5] = (float) mRVec.at<double>(2);// Z Rotation
+
+                            if (dampIndex>7) dampIndex = 0;
+
+                            mPose_0[dampIndex] = (float) mTVec.at<double>(0);// X Translation
+                            mPose_1[dampIndex] = (float) mTVec.at<double>(1);// Y Translation
+                            mPose_2[dampIndex] = (float) mTVec.at<double>(2);// Z Translation
+                            mPose_3[dampIndex] = (float) mRVec.at<double>(0);// X Rotation
+                            mPose_4[dampIndex] = (float) mRVec.at<double>(1);// Y Rotation
+                            mPose_5[dampIndex] = (float) mRVec.at<double>(2);// Z Rotation
+
+                            mPose[0] = (mPose_0[0]+mPose_0[1]+mPose_0[2]+mPose_0[3]+mPose_0[4]+mPose_0[5]+mPose_0[6]+mPose_0[7])/8;
+                            mPose[1] = (mPose_1[0]+mPose_1[1]+mPose_1[2]+mPose_1[3]+mPose_1[4]+mPose_1[5]+mPose_1[6]+mPose_1[7])/8;
+                            mPose[2] = (mPose_2[0]+mPose_2[1]+mPose_2[2]+mPose_2[3]+mPose_2[4]+mPose_2[5]+mPose_2[6]+mPose_2[7])/8;
+                            mPose[3] = (mPose_3[0]+mPose_3[1]+mPose_3[2]+mPose_3[3]+mPose_3[4]+mPose_3[5]+mPose_3[6]+mPose_3[7])/8;
+                            mPose[4] = (mPose_4[0]+mPose_4[1]+mPose_4[2]+mPose_4[3]+mPose_4[4]+mPose_4[5]+mPose_4[6]+mPose_4[7])/8;
+                            mPose[5] = (mPose_5[0]+mPose_5[1]+mPose_5[2]+mPose_5[3]+mPose_5[4]+mPose_5[5]+mPose_5[6]+mPose_5[7])/8;
+
+                            dampIndex++;
+
                             if (isSingleImage == 0){
                                 mPose[6] = (float) (k+1); // VP currently being tracked
                             } else {

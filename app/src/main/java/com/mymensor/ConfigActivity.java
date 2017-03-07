@@ -269,10 +269,15 @@ public class ConfigActivity extends Activity implements
     boolean videoRecordStartedSoundIDLoaded = false;
     boolean videoRecordStopedSoundIDLoaded = false;
 
+    protected Boolean mymIsRunningOnKitKat = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            mymIsRunningOnKitKat = true;
+        }
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
@@ -476,8 +481,13 @@ public class ConfigActivity extends Activity implements
         buttonCallImagecap.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.confirmimagecaploading), Snackbar.LENGTH_LONG)
-                        .setAction(getText(R.string.confirm), confirmOnClickListenerButtonCallImagecap).show();
+                if (!mymIsRunningOnKitKat){
+                    Snackbar.make(view, getText(R.string.confirmimagecaploading), Snackbar.LENGTH_LONG)
+                            .setAction(getText(R.string.confirm), confirmOnClickListenerButtonCallImagecap).show();
+                } else {
+                    callImageCapActivity();
+                }
+
             }
         });
 

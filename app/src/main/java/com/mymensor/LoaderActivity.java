@@ -886,6 +886,8 @@ public class LoaderActivity extends Activity
                         try{
                             File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k) + ".png");
                             File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k) + ".png");
+                            Log.d(TAG,"descvp" + (k) + ".png : exists="+descvpFileCHK.exists()+" Length="+descvpFileCHK.length()+" vpDescFileSize[k]="+vpDescFileSize[k]);
+                            Log.d(TAG,"markervp" + (k) + ".png : exists="+markervpFileCHK.exists()+" Length="+markervpFileCHK.length()+" vpMarkerFileSize[k]="+vpMarkerFileSize[k]);
                             if (    descvpFileCHK.exists() &&
                                     markervpFileCHK.exists() &&
                                     descvpFileCHK.length()==vpDescFileSize[k] &&
@@ -906,7 +908,7 @@ public class LoaderActivity extends Activity
                             Log.e (TAG, "Image Files Checking Failed:"+e.toString());
                         }
                     }
-                } while ((product==0)&&((System.currentTimeMillis()-startChk)<240000));
+                } while ((product==0)&&((System.currentTimeMillis()-startChk)<20000));
 
                 if (product==0) {
                     Log.e(TAG, "Image files downloading verification Error."+(System.currentTimeMillis()-loopstart));

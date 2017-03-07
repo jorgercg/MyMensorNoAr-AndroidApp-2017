@@ -85,6 +85,14 @@ private:
 
     long int frame;
 
+    int dampIndex;
+    float mPose_0[8];
+    float mPose_1[8];
+    float mPose_2[8];
+    float mPose_3[8];
+    float mPose_4[8];
+    float mPose_5[8];
+
     std::vector<cv::Point2f> goodReferencePoints;
     std::vector<cv::Point2f> goodScenePoints;
 
