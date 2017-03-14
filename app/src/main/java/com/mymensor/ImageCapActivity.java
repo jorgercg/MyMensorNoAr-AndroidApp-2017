@@ -1,7 +1,6 @@
 package com.mymensor;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -37,7 +36,6 @@ import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Xml;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -118,7 +116,6 @@ import java.util.TimeZone;
 
 
 import static com.mymensor.Constants.cameraWidthInPixels;
-import static com.mymensor.R.color.mymensorblue;
 import static com.mymensor.R.drawable.circular_button_gray;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -979,40 +976,44 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "shareMediaButton:");
-                Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                if (showingMediaType.equalsIgnoreCase("p")) {
-                    shareIntent.setType("image/jpg");
-                    try {
-                        InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
-                        File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
-                        OutputStream out = new FileOutputStream(outFile);
-                        MymUtils.copyFile(in, out);
-                    } catch (IOException e) {
-                        Log.e(TAG, "shareMediaButton: Failed to copy Photo file to share");
+                if (showingMediaSha256.equalsIgnoreCase("")) {
+                    MymUtils.showToastMessage(getApplicationContext(),getString(R.string.error_to_obtain_sha256));
+                } else{
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    if (showingMediaType.equalsIgnoreCase("p")) {
+                        shareIntent.setType("image/jpg");
+                        try {
+                            InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
+                            File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
+                            OutputStream out = new FileOutputStream(outFile);
+                            MymUtils.copyFile(in, out);
+                        } catch (IOException e) {
+                            Log.e(TAG, "shareMediaButton: Failed to copy Photo file to share");
+                        }
+                        File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
+                        Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
+                        shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
                     }
-                    File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
-                    Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
-                    shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
-                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
-                }
-                if (showingMediaType.equalsIgnoreCase("v")) {
-                    shareIntent.setType("video/*");
-                    try {
-                        InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
-                        File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
-                        OutputStream out = new FileOutputStream(outFile);
-                        MymUtils.copyFile(in, out);
-                    } catch (IOException e) {
-                        Log.e(TAG, "shareMediaButton: Failed to copy Video file to share");
+                    if (showingMediaType.equalsIgnoreCase("v")) {
+                        shareIntent.setType("video/*");
+                        try {
+                            InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
+                            File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
+                            OutputStream out = new FileOutputStream(outFile);
+                            MymUtils.copyFile(in, out);
+                        } catch (IOException e) {
+                            Log.e(TAG, "shareMediaButton: Failed to copy Video file to share");
+                        }
+                        File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
+                        Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
+                        shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                     }
-                    File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
-                    Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
-                    shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
-                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                 }
             }
         });

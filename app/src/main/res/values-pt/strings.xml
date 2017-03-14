@@ -127,4 +127,10 @@
     <string name="continu">CONTINUAR</string>
     <string name="leaveapp">SAIR DA APLICAÇÃO</string>
     <string name="sdk_lower_then_kitkat">Esta app não é compatível com versões do Android anteriores à KitKat. Fechando agora.</string>
+    <string name="error_to_obtain_sha256">Erro ao recuperar a assinatura da mídia.</string>
+    <string name="first_time_usage">Criando arquivos locais de configuração.</string>
+    <string name="start_with_server_connection">Conectado ao servidor. Iniciando com a última configuração.</string>
+    <string name="start_with_no_server_connection">Sem conexão ao servidor. Iniciando com a cofiguração local disponível.</string>
+    <string name="checkcfgfiles_online">Algum erro ocorreu durante o download da configuração do servidor. Por favor tente novamente.</string>
+    <string name="checkcfgfiles_offline">Ocorreu um erro durante a leitura da configuração local. Por favor tente novamente e contate o suporte caso o erro persista.</string>
 </resources>
