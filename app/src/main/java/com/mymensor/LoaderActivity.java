@@ -810,12 +810,13 @@ public class LoaderActivity extends Activity {
 
             int prod = 0;
 
-            if (configFromRemoteStorageExistsAndAccessible) {
+            if (configFromRemoteStorageExistsAndAccessible && ((loadingDescvpFile) || (loadingMarkervpFile))) {
                 Log.d(TAG, "configFromRemoteStorageExistsAndAccessible: Starting the wait....");
                 long startChk2 = System.currentTimeMillis();
                 if ((loadingDescvpFile) || (loadingMarkervpFile)) {
                     do {
                         for (int k = 0; k < (qtyVps); k++) {
+                            Log.d(TAG,"descvpFileCHK["+k+"]="+descvpFileCHK[k]+"- markervpFileCHK["+k+"]="+markervpFileCHK[k]);
                             if (descvpFileCHK[k] && markervpFileCHK[k]) {
                                 if (k == 0) {
                                     prod = Math.abs(1);

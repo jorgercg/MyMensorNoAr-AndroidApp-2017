@@ -1461,7 +1461,7 @@ public class ImageCapActivity extends Activity implements
             if (!TransferState.COMPLETED.equals(observer.getState())) {
                 observer.setTransferListener(listener);
                 pendingUploadTransfers++;
-                Log.d(TAG, "Observer ID:" + observer.getId() + " key:" + observer.getKey() + " state:" + observer.getState() + " %:" + (observer.getBytesTransferred() / observer.getBytesTotal()) * 100);
+                Log.d(TAG, "Observer ID:" + observer.getId() + " key:" + observer.getKey() + " state:" + observer.getState() + " %:" + observer.getBytesTransferred());
                 transferUtility.resume(observer.getId());
             }
         }
