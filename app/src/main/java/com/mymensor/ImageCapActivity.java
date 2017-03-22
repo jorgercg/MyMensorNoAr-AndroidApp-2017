@@ -240,8 +240,8 @@ public class ImageCapActivity extends Activity implements
 
     ImageButton showPreviousVpCaptureButton;
     ImageButton showNextVpCaptureButton;
-    Button acceptVpPhotoButton;
-    Button rejectVpPhotoButton;
+    ImageButton acceptVpPhotoButton;
+    ImageButton rejectVpPhotoButton;
 
     LinearLayout arSwitchLinearLayout;
     LinearLayout uploadPendingLinearLayout;
@@ -568,8 +568,8 @@ public class ImageCapActivity extends Activity implements
 
         recText = (TextView) this.findViewById(R.id.cronoText);
 
-        acceptVpPhotoButton = (Button) this.findViewById(R.id.buttonAcceptVpPhoto);
-        rejectVpPhotoButton = (Button) this.findViewById(R.id.buttonRejectVpPhoto);
+        acceptVpPhotoButton = (ImageButton) this.findViewById(R.id.buttonAcceptVpPhoto);
+        rejectVpPhotoButton = (ImageButton) this.findViewById(R.id.buttonRejectVpPhoto);
 
         isVpPhotoOkTextView = (TextView) this.findViewById(R.id.textViewIsPhotoOK);
 
@@ -779,10 +779,10 @@ public class ImageCapActivity extends Activity implements
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss zz");
                     String lastUpdatedOn = sdf.format(mLastUpdateTime);
                     lastUpdatedOn = " (" + lastUpdatedOn + ")";
-                    Snackbar.make(view, getText(R.string.position_is_certified) + lastUpdatedOn, Snackbar.LENGTH_LONG)
+                    Snackbar.make(positionCertifiedButton.getRootView(), getText(R.string.position_is_certified) + lastUpdatedOn, Snackbar.LENGTH_LONG)
                             .setAction(getText(R.string.turn_off_location_updates), turnOffClickListenerPositionButton).show();
                 } else {
-                    Snackbar.make(view, getText(R.string.position_not_certified), Snackbar.LENGTH_LONG)
+                    Snackbar.make(positionCertifiedButton.getRootView(), getText(R.string.position_not_certified), Snackbar.LENGTH_LONG)
                             .setAction(getText(R.string.turn_on_location_updates), turnOnClickListenerPositionButton).show();
                 }
             }

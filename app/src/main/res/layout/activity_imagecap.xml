@@ -6,6 +6,8 @@
     android:layout_height="match_parent"
     android:background="@android:color/transparent"
     android:padding="0dp"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     tools:context=".ImageCapActivity">
 
     <org.opencv.android.JavaCameraView
@@ -14,8 +16,7 @@
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:visibility="visible"
-        />
+        android:visibility="visible" />
 
     <com.mymensor.TouchImageView
         android:id="@+id/imageView1"
@@ -36,7 +37,7 @@
     <ListView
         android:id="@+id/vp_list"
         android:layout_width="130dp"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_gravity="top|start"
         android:background="@android:color/transparent"
         android:padding="1dp"
@@ -335,7 +336,7 @@
         android:textSize="20dp"
         android:visibility="gone" />
 
-    <Button
+    <ImageButton
         android:id="@+id/buttonAcceptVpPhoto"
         android:layout_width="100dp"
         android:layout_height="50dp"
@@ -343,16 +344,15 @@
         android:layout_marginStart="4dp"
         android:layout_marginTop="110dp"
         android:background="@drawable/yesbutton"
-        android:clickable="true"
+        android:foregroundGravity="center_vertical|center_horizontal"
         android:gravity="center"
         android:onClick="onButtonClick"
         android:padding="0dp"
-        android:text="@string/button_accept_vp_photo"
-        android:textColor="#000000"
-        android:textSize="20dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_check_white_18dp"
         android:visibility="gone" />
 
-    <Button
+    <ImageButton
         android:id="@+id/buttonRejectVpPhoto"
         android:layout_width="100dp"
         android:layout_height="50dp"
@@ -362,13 +362,14 @@
         android:layout_marginTop="235dp"
         android:background="@drawable/nobutton"
         android:clickable="true"
+        android:foregroundGravity="center_vertical|center_horizontal"
         android:gravity="center"
         android:onClick="onButtonClick"
         android:padding="0dp"
-        android:text="@string/button_reject_vp_photo"
-        android:textColor="#FFFFFF"
-        android:textSize="20dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_close_white_18dp"
         android:visibility="gone" />
+
 
 
     <ImageView
@@ -520,19 +521,17 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_below="@id/videoCameraShutterStopButton"
-        android:layout_marginRight="16dp"
-        android:layout_marginTop="1dp"
-        android:gravity="top|center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true">
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/positionCertifiedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="1dp"
-            android:layout_marginTop="0dp"
+            android:layout_marginBottom="2dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="16dp"
             android:clickable="true"
             opencv:backgroundTint="@android:color/holo_green_dark"
             opencv:elevation="0dp"
@@ -543,8 +542,9 @@
             android:id="@+id/timeCertifiedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="1dp"
-            android:layout_marginTop="0dp"
+            android:layout_marginBottom="2dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="16dp"
             android:clickable="true"
             opencv:backgroundTint="@android:color/holo_green_dark"
             opencv:elevation="0dp"
@@ -555,8 +555,9 @@
             android:id="@+id/connectedToServerButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="0dp"
-            android:layout_marginTop="1dp"
+            android:layout_marginBottom="2dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="16dp"
             android:clickable="true"
             opencv:backgroundTint="@android:color/holo_green_dark"
             opencv:elevation="0dp"
