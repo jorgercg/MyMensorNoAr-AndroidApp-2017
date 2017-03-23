@@ -680,7 +680,6 @@ public class ImageCapActivity extends Activity implements
         deleteLocalMediaButton = (FloatingActionButton) findViewById(R.id.deleteLocalMediaButton);
         shareMediaButton = (FloatingActionButton) findViewById(R.id.shareMediaButton);
 
-
         // Camera Shutter Button
 
         cameraShutterButton.setOnClickListener(new View.OnClickListener() {
