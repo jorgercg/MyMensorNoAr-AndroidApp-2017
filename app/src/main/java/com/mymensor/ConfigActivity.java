@@ -1775,6 +1775,7 @@ public class ConfigActivity extends Activity implements
                     // VP Location Description TextView
                     vpLocationDesEditTextView.setText(vpLocationDesText[position]);
                     vpLocationDesEditTextView.setVisibility(View.VISIBLE);
+                    vpLocationDesEditTextView.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
                     vpLocationDesEditTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                         @Override
                         public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {

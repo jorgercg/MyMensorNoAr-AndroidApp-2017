@@ -133,4 +133,6 @@
     <string name="start_with_no_server_connection">Sem conexão ao servidor. Iniciando com a cofiguração local disponível.</string>
     <string name="checkcfgfiles_online">Algum erro ocorreu durante o download da configuração do servidor. Por favor tente novamente.</string>
     <string name="checkcfgfiles_offline">Ocorreu um erro durante a leitura da configuração local. Por favor tente novamente e contate o suporte caso o erro persista.</string>
+    <string name="remark">Comente a captura</string>
+    <string name="sizelimit100">Limitado a 100 caracteres!!!</string>
 </resources>

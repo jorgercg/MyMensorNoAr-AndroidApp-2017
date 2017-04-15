@@ -336,40 +336,61 @@
         android:textSize="20dp"
         android:visibility="gone" />
 
-    <ImageButton
-        android:id="@+id/buttonAcceptVpPhoto"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="110dp"
-        android:background="@drawable/yesbutton"
-        android:foregroundGravity="center_vertical|center_horizontal"
-        android:gravity="center"
-        android:onClick="onButtonClick"
-        android:padding="0dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_check_white_18dp"
-        android:visibility="gone" />
 
-    <ImageButton
-        android:id="@+id/buttonRejectVpPhoto"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
+    <LinearLayout
+        android:id="@+id/linearLayoutAcceptImgButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
         android:layout_alignParentStart="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="235dp"
-        android:background="@drawable/nobutton"
-        android:clickable="true"
-        android:foregroundGravity="center_vertical|center_horizontal"
-        android:gravity="center"
-        android:onClick="onButtonClick"
-        android:padding="0dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_close_white_18dp"
-        android:visibility="gone" />
+        android:orientation="vertical">
+        <ImageButton
+            android:id="@+id/buttonAcceptVpPhoto"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/yesbutton"
+            android:foregroundGravity="center_vertical|center_horizontal"
+            android:gravity="center"
+            android:onClick="onButtonClick"
+            android:padding="0dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_check_white_18dp"
+            android:visibility="gone" />
 
+        <ImageButton
+            android:id="@+id/buttonRejectVpPhoto"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/nobutton"
+            android:clickable="true"
+            android:foregroundGravity="center_vertical|center_horizontal"
+            android:gravity="center"
+            android:onClick="onButtonClick"
+            android:padding="0dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_close_white_18dp"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/buttonRemarkVpPhoto"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/rembutton"
+            android:clickable="true"
+            android:foregroundGravity="center_vertical|center_horizontal"
+            android:gravity="center"
+            android:onClick="onButtonClick"
+            android:padding="0dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_menu_edit"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
 
     <ImageView

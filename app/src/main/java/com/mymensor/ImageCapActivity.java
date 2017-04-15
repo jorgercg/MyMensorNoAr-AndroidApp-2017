@@ -2,8 +2,10 @@ package com.mymensor;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -43,11 +45,13 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -173,7 +177,9 @@ public class ImageCapActivity extends Activity implements
 
     public boolean vpPhotoAccepted = false;
     public boolean vpPhotoRejected = false;
+    public boolean vpPhotoTobeRemarked = false;
     public boolean lastVpPhotoRejected = false;
+    private String vpPhotoRemark;
     public int lastVpSelectedByUser;
     public int mediaSelected = 0;
 
@@ -242,6 +248,7 @@ public class ImageCapActivity extends Activity implements
     ImageButton showNextVpCaptureButton;
     ImageButton acceptVpPhotoButton;
     ImageButton rejectVpPhotoButton;
+    ImageButton buttonRemarkVpPhoto;
 
     LinearLayout arSwitchLinearLayout;
     LinearLayout uploadPendingLinearLayout;
@@ -253,6 +260,7 @@ public class ImageCapActivity extends Activity implements
     LinearLayout linearLayoutConfigCaptureVps;
     LinearLayout linearLayoutVpArStatus;
     LinearLayout linearLayoutMarkerId;
+    LinearLayout linearLayoutAcceptImgButtons;
 
     FloatingActionButton buttonAmbiguousVpToggle;
     FloatingActionButton buttonSuperSingleVpToggle;
@@ -568,8 +576,10 @@ public class ImageCapActivity extends Activity implements
 
         recText = (TextView) this.findViewById(R.id.cronoText);
 
+        linearLayoutAcceptImgButtons = (LinearLayout) this.findViewById(R.id.linearLayoutAcceptImgButtons);
         acceptVpPhotoButton = (ImageButton) this.findViewById(R.id.buttonAcceptVpPhoto);
         rejectVpPhotoButton = (ImageButton) this.findViewById(R.id.buttonRejectVpPhoto);
+        buttonRemarkVpPhoto = (ImageButton) this.findViewById(R.id.buttonRemarkVpPhoto);
 
         isVpPhotoOkTextView = (TextView) this.findViewById(R.id.textViewIsPhotoOK);
 
@@ -1851,14 +1861,6 @@ public class ImageCapActivity extends Activity implements
                 } else {
                     capturingManualVideo = false;
                     stopManualVideo = false;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            recText.clearAnimation();
-                            videoCameraShutterButton.setVisibility(View.VISIBLE);
-                            videoCameraShutterStopButton.setVisibility(View.GONE);
-                        }
-                    });
                     AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
                     float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
                     float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
@@ -1867,7 +1869,14 @@ public class ImageCapActivity extends Activity implements
                         soundPool.play(videoRecordStopedSoundID, volume, volume, 1, 0, 1f);
                         Log.d(TAG, "Video STOP: Duartion limit exceeded Played sound");
                     }
-
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            recText.clearAnimation();
+                            videoCameraShutterButton.setVisibility(View.VISIBLE);
+                            videoCameraShutterStopButton.setVisibility(View.GONE);
+                        }
+                    });
                     try {
                         mMediaRecorder.stop();
                         mCameraView.setRecorder(null);
@@ -2350,7 +2359,7 @@ public class ImageCapActivity extends Activity implements
         if (bitmapImage != null) {
             // Turning tracking OFF
             mImageDetectionFilterIndex = 0;
-
+            // Playing photo capture sound
             AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
             float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
             float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
@@ -2360,7 +2369,7 @@ public class ImageCapActivity extends Activity implements
                 soundPool.play(camShutterSoundID, volume, volume, 1, 0, 1f);
                 Log.d(TAG, "takePhoto: Camera Shutter Played sound");
             }
-
+            // Preparing UI for user decision upon cpature acceptance
             if ((!vpPhotoAccepted) && (!vpPhotoRejected)) {
                 final Bitmap tmpBitmapImage = bitmapImage;
                 runOnUiThread(new Runnable() {
@@ -2373,6 +2382,7 @@ public class ImageCapActivity extends Activity implements
                         isVpPhotoOkTextView.setVisibility(View.VISIBLE);
                         acceptVpPhotoButton.setVisibility(View.VISIBLE);
                         rejectVpPhotoButton.setVisibility(View.VISIBLE);
+                        buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
                         vpsListView.setVisibility(View.GONE);
                         uploadPendingLinearLayout.setVisibility(View.INVISIBLE);
                         arSwitchLinearLayout.setVisibility(View.INVISIBLE);
@@ -2380,6 +2390,8 @@ public class ImageCapActivity extends Activity implements
                         positionCertifiedButton.setVisibility(View.INVISIBLE);
                         timeCertifiedButton.setVisibility(View.INVISIBLE);
                         connectedToServerButton.setVisibility(View.INVISIBLE);
+                        cameraShutterButton.setVisibility(View.INVISIBLE);
+                        videoCameraShutterButton.setVisibility(View.INVISIBLE);
                         if (radarScanImageView.isShown()) {
                             radarScanImageView.clearAnimation();
                             radarScanImageView.setVisibility(View.GONE);
@@ -2390,6 +2402,37 @@ public class ImageCapActivity extends Activity implements
 
             do {
                 // Waiting for user response
+                if (vpPhotoTobeRemarked){
+                    vpPhotoTobeRemarked = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            AlertDialog.Builder alert = new AlertDialog.Builder(ImageCapActivity.this);
+
+                            alert.setTitle(R.string.remark);
+                            alert.setMessage(R.string.sizelimit100);
+
+                            // Set an EditText view to get user input
+                            final EditText input = new EditText(ImageCapActivity.this);
+
+                            alert.setView(input);
+
+                            alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    vpPhotoRemark = input.getText().toString();
+                                }
+                            });
+
+                            alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    // Canceled.
+                                }
+                            });
+
+                            alert.show();
+                        }
+                    });
+                }
             } while ((!vpPhotoAccepted) && (!vpPhotoRejected));
 
             Log.d(TAG, "takePhoto: LOOP ENDED: vpPhotoAccepted:" + vpPhotoAccepted + " vpPhotoRejected:" + vpPhotoRejected);
@@ -2403,6 +2446,7 @@ public class ImageCapActivity extends Activity implements
                         isVpPhotoOkTextView.setVisibility(View.GONE);
                         acceptVpPhotoButton.setVisibility(View.GONE);
                         rejectVpPhotoButton.setVisibility(View.GONE);
+                        buttonRemarkVpPhoto.setVisibility(View.GONE);
                         vpsListView.setVisibility(View.VISIBLE);
                         vpChecked[vpTrackedInPose] = true;
                         locPhotoToExif = getLocationToExifStrings(mCurrentLocation, momento);
@@ -2413,10 +2457,18 @@ public class ImageCapActivity extends Activity implements
                         positionCertifiedButton.setVisibility(View.VISIBLE);
                         timeCertifiedButton.setVisibility(View.VISIBLE);
                         connectedToServerButton.setVisibility(View.VISIBLE);
+                        if (!isArSwitchOn){
+                            cameraShutterButton.setVisibility(View.VISIBLE);
+                            videoCameraShutterButton.setVisibility(View.VISIBLE);
+                        }
                     }
                 });
                 setVpsChecked();
                 saveVpsChecked();
+                if (vpPhotoRemark==null){
+                    vpPhotoRemark = "";
+                }
+                String vpPhotoRemarkLimitedTo100 = vpPhotoRemark.substring(0, Math.min(vpPhotoRemark.length(), 100));
                 try {
                     //pictureFile.renameTo(new File(getApplicationContext().getFilesDir(), pictureFileName));
                     FileOutputStream fos = new FileOutputStream(pictureFile);
@@ -2456,6 +2508,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("timecertified", locPhotoToExif[10]);
                     userMetadata.put("isarswitchOn", locPhotoToExif[13]);
                     userMetadata.put("sha-256", fileSha256Hash);
+                    userMetadata.put("remark", vpPhotoRemarkLimitedTo100);
                     //call setUserMetadata on our ObjectMetadata object, passing it our map
                     myObjectMetadata.setUserMetadata(userMetadata);
                     //uploading the objects
@@ -2524,13 +2577,18 @@ public class ImageCapActivity extends Activity implements
                         imageView.setVisibility(View.GONE);
                         acceptVpPhotoButton.setVisibility(View.GONE);
                         rejectVpPhotoButton.setVisibility(View.GONE);
+                        buttonRemarkVpPhoto.setVisibility(View.GONE);
                         isVpPhotoOkTextView.setVisibility(View.GONE);
                         vpsListView.setVisibility(View.VISIBLE);
                         // TURNING ON RADAR SCAN
-                        if (!isArSwitchOn) {
+                        if (isArSwitchOn) {
                             radarScanImageView.setVisibility(View.VISIBLE);
                             radarScanImageView.startAnimation(rotationRadarScan);
 
+                        }
+                        if (!isArSwitchOn){
+                            cameraShutterButton.setVisibility(View.VISIBLE);
+                            videoCameraShutterButton.setVisibility(View.VISIBLE);
                         }
                         if (pendingUploadTransfers > 0)
                             uploadPendingLinearLayout.setVisibility(View.VISIBLE);
@@ -2773,6 +2831,10 @@ public class ImageCapActivity extends Activity implements
         if (v.getId() == R.id.buttonRejectVpPhoto) {
             vpPhotoRejected = true;
             Log.d(TAG, "vpPhotoRejected BUTTON PRESSED: vpPhotoAccepted:" + vpPhotoAccepted + " vpPhotoRejected:" + vpPhotoRejected);
+        }
+        if (v.getId() == R.id.buttonRemarkVpPhoto) {
+            vpPhotoTobeRemarked = true;
+            Log.d(TAG, "buttonRemarkVpPhoto BUTTON PRESSED");
         }
         if (v.getId() == R.id.buttonShowPreviousVpCapture) {
             mediaSelected++;
