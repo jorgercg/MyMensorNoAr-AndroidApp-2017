@@ -134,5 +134,7 @@
     <string name="checkcfgfiles_online">Algum erro ocorreu durante o download da configuração do servidor. Por favor tente novamente.</string>
     <string name="checkcfgfiles_offline">Ocorreu um erro durante a leitura da configuração local. Por favor tente novamente e contate o suporte caso o erro persista.</string>
     <string name="remark">Comente a captura</string>
-    <string name="sizelimit100">Limitado a 100 caracteres!!!</string>
+    <string name="sizelimit100">Limitado a 1000 caracteres!!!</string>
+    <string name="cantadduser">Não é possível adicionar usuário</string>
+    <string name="onlyoneperdev">Somente é permitido um usuário por dispositivo. Para mudar de usuário, primeiro faça o logout.</string>
 </resources>

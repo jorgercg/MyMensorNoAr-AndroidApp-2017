@@ -1,10 +1,13 @@
 package com.mymensor;
 
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.hardware.Camera;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.Surface;
 import android.widget.Toast;
 
 import com.amazonaws.AmazonClientException;
@@ -92,8 +95,8 @@ public class MymUtils {
         TransferObserver observer = transferUtility.upload(
                 bucketName,		/* The bucket to upload to */
                 fileName,		/* The key for the uploaded object */
-                file,				/* The file where the data to upload exists */
-                objectMetadata			/* The ObjectMetadata associated with the object*/
+                file,			/* The file where the data to upload exists */
+                objectMetadata	/* The ObjectMetadata associated with the object*/
         );
 
         return observer;

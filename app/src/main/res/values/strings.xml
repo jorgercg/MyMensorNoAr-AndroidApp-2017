@@ -137,5 +137,7 @@
     <string name="checkcfgfiles_online">Something wrong happened while downloading configuration from server. Please try again.</string>
     <string name="checkcfgfiles_offline">Something wrong happened while reading local configuration. Please try again and contact support if problem persists.</string>
     <string name="remark">Write remark about capture</string>
-    <string name="sizelimit100">Limited to 100 characters!!!</string>
+    <string name="sizelimit100">Limited to 1000 characters!!!</string>
+    <string name="cantadduser">Not possible to add user</string>
+    <string name="onlyoneperdev">Only one user is allowed per device. To change user you first need to logout.</string>
 </resources>

@@ -390,6 +390,22 @@
             android:src="@android:drawable/ic_menu_edit"
             android:visibility="gone" />
 
+        <ImageButton
+            android:id="@+id/buttonReplayVpVideo"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="25dp"
+            android:background="@drawable/replaybutton"
+            android:clickable="true"
+            android:foregroundGravity="center_vertical|center_horizontal"
+            android:gravity="center"
+            android:onClick="onButtonClick"
+            android:padding="0dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_replay_white_18dp"
+            android:visibility="gone" />
+
     </LinearLayout>
 
 

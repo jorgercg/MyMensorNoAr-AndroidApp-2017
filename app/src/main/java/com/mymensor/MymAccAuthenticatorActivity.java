@@ -1,5 +1,6 @@
 package com.mymensor;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
@@ -7,8 +8,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
@@ -83,19 +86,32 @@ public class MymAccAuthenticatorActivity extends AccountAuthenticatorActivity {
 
         Log.d(TAG, "mAuthTokenType:"+mAuthTokenType);
 
-        findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                submit();
-            }
-        });
-        findViewById(R.id.signUp).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Constants.REGISTER_SERVER));
-                startActivity(browserIntent);
-            }
-        });
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.GET_ACCOUNTS)!= PackageManager.PERMISSION_GRANTED);
+
+        final Account availableAccounts[] = mAccountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
+
+        if (availableAccounts.length == 0){
+            Log.d(TAG, "availableAccounts[] = " + "nada!!!!" + " Qty= 0");
+            findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    submit();
+                }
+            });
+            findViewById(R.id.signUp).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Constants.REGISTER_SERVER));
+                    startActivity(browserIntent);
+                }
+            });
+        } else {
+            Log.d(TAG, "availableAccounts[] = " + availableAccounts[0] + " Qty="+availableAccounts.length);
+            Log.d(TAG, "One user is already logged in, this app accepts only one user per device!");
+            showAlertOnlyOneUserPerDevice();
+        }
+
+
     }
 
     public void submit() {
@@ -189,6 +205,31 @@ public class MymAccAuthenticatorActivity extends AccountAuthenticatorActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
+            }
+        });
+
+        /*
+        alert.setPositiveButton("Done", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Toast.makeText(getBaseContext(), name, Toast.LENGTH_SHORT).show();
+            }
+        });
+        */
+        alert.show();
+    }
+
+    public void showAlertOnlyOneUserPerDevice() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setTitle(getText(R.string.cantadduser));
+        alert.setMessage(getText(R.string.onlyoneperdev));
+
+        alert.setNegativeButton(getText(R.string.ok), new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                finish();
             }
         });
 

@@ -23,9 +23,9 @@ public class Constants {
     public static final int cameraHeigthInPixels = 720;
     public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440 // (1280-700)/2=290
     public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160 // (720-700)/2=10
-    public static final int[] validIdMarkersForMyMensor = {1,2,3,4,5,6,7,8,9,10,
-                                                            11,12,13,14,15,16,17,18,19,20,
-                                                            21,22,23,24,25,26,27,28,29,30};
+    public static final int[] validIdMarkersForMyMensor = { 10,11,12,13,14,15,17,18,19,
+                                                            20,21,22,23,24,25,26,27,28,29,
+                                                            30,31,32,33,34,35,36,37,38,39 };
 
     /**
      * OpenCV
@@ -44,7 +44,7 @@ public class Constants {
      * AWS S3
      */
     public static final String BUCKET_NAME = "mymstoragebr";
-    public static final String CONN_TST_FILE = "admin/a2f3@qw248fgsfreqlgkgjrufjsdad.pdf";
+    public static final String CONN_TST_FILE = "admin/a2f3qw248fgsfreqlgkgjrufjsdadpdf";
     /**
      * MyMensor User Authorization
      */

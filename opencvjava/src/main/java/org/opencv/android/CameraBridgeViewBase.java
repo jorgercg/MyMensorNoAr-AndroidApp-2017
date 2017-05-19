@@ -58,9 +58,11 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     public static final int RGBA = 1;
     public static final int GRAY = 2;
 
+    //Insertion to make possible recording
     public MediaRecorder mRecorder;
     public Surface mSurface = null;
 
+    //Insertion to make possible recording
     @TargetApi(21)
     public void setRecorder(MediaRecorder rec) {
         mRecorder = rec;
@@ -392,6 +394,8 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         }
     }
 
+
+    // Method modified to allow recording
     /**
      * This method shall be called by the subclasses when they have valid
      * object and want it to be delivered to external client (via callback) and

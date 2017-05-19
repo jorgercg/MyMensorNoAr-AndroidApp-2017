@@ -88,7 +88,7 @@ public class LoaderActivity extends Activity {
 
         // Retrieving SeaMensor Account information,
         mymensorAccount = getIntent().getExtras().get("account").toString();
-        ;
+
         Log.d(TAG, "OnCreate: MyMensor Account: " + mymensorAccount);
 
         appStartState = getIntent().getExtras().get("appstartstate").toString();
@@ -227,7 +227,6 @@ public class LoaderActivity extends Activity {
     }
 
     private void firstTimeLoader() {
-        MymUtils.showToastMessage(getApplicationContext(), getString(R.string.first_time_usage));
         try {
             File vpsFile = new File(getApplicationContext().getFilesDir(), Constants.vpsConfigFileName);
             File vpsCheckedFile = new File(getApplicationContext().getFilesDir(), Constants.vpsCheckedConfigFileName);

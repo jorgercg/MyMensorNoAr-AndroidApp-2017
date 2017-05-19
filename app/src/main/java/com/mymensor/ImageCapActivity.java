@@ -1,6 +1,7 @@
 package com.mymensor;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -10,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -23,6 +25,7 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.CamcorderProfile;
 import android.media.ExifInterface;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.SoundPool;
 import android.net.Uri;
@@ -39,6 +42,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -91,6 +95,7 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.Point;
@@ -178,8 +183,9 @@ public class ImageCapActivity extends Activity implements
     public boolean vpPhotoAccepted = false;
     public boolean vpPhotoRejected = false;
     public boolean vpPhotoTobeRemarked = false;
+    public boolean vpVideoTobeReplayed = false;
     public boolean lastVpPhotoRejected = false;
-    private String vpPhotoRemark;
+    private String vpPhotoRemark = null;
     public int lastVpSelectedByUser;
     public int mediaSelected = 0;
 
@@ -249,6 +255,7 @@ public class ImageCapActivity extends Activity implements
     ImageButton acceptVpPhotoButton;
     ImageButton rejectVpPhotoButton;
     ImageButton buttonRemarkVpPhoto;
+    ImageButton buttonReplayVpVideo;
 
     LinearLayout arSwitchLinearLayout;
     LinearLayout uploadPendingLinearLayout;
@@ -413,6 +420,7 @@ public class ImageCapActivity extends Activity implements
     protected String showingMediaSha256;
 
     protected Boolean mymIsRunningOnKitKat = false;
+    protected Boolean mymIsRunningOnFlippedDisplay = false;
 
 
     @Override
@@ -423,6 +431,14 @@ public class ImageCapActivity extends Activity implements
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             mymIsRunningOnKitKat = true;
         }
+
+        Log.d(TAG,"mymIsRunningOnKitKat = "+mymIsRunningOnKitKat);
+
+        if (Build.MODEL.equals("Nexus 5X")) {
+            mymIsRunningOnFlippedDisplay = true;
+        }
+
+        Log.d(TAG,"mymIsRunningOnFlippedDisplay = "+mymIsRunningOnFlippedDisplay);
 
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -452,7 +468,7 @@ public class ImageCapActivity extends Activity implements
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
 
-        Log.d(TAG, "onCreate: Starting ImageCapActivity with qtyVps=" + qtyVps);
+        Log.d(TAG, "onCreate: Starting ImageCapActivity with qtyVps=" + qtyVps +" MyM Account="+mymensorAccount);
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
@@ -552,9 +568,9 @@ public class ImageCapActivity extends Activity implements
             }
         }
         vpsListView = (ListView) this.findViewById(R.id.vp_list);
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_multiple_choice, newVpsList){
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_multiple_choice, newVpsList) {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent){
+            public View getView(int position, View convertView, ViewGroup parent) {
                 // Get the Item from ListView
                 View view = super.getView(position, convertView, parent);
                 // Initialize a TextView for ListView each Item
@@ -580,6 +596,7 @@ public class ImageCapActivity extends Activity implements
         acceptVpPhotoButton = (ImageButton) this.findViewById(R.id.buttonAcceptVpPhoto);
         rejectVpPhotoButton = (ImageButton) this.findViewById(R.id.buttonRejectVpPhoto);
         buttonRemarkVpPhoto = (ImageButton) this.findViewById(R.id.buttonRemarkVpPhoto);
+        buttonReplayVpVideo = (ImageButton) this.findViewById(R.id.buttonReplayVpVideo);
 
         isVpPhotoOkTextView = (TextView) this.findViewById(R.id.textViewIsPhotoOK);
 
@@ -656,7 +673,7 @@ public class ImageCapActivity extends Activity implements
                 if (isOn) {
                     isArSwitchOn = true;
                     cameraShutterButton.setVisibility(View.INVISIBLE);
-                    if (!mymIsRunningOnKitKat){
+                    if (!mymIsRunningOnKitKat) {
                         videoCameraShutterButton.setVisibility(View.INVISIBLE);
                     }
                     videoCameraShutterStopButton.setVisibility(View.GONE);
@@ -709,7 +726,7 @@ public class ImageCapActivity extends Activity implements
             }
         });
 
-        if (!mymIsRunningOnKitKat){
+        if (!mymIsRunningOnKitKat) {
             // videoCamera Shutter Button
 
             videoCameraShutterButton.setOnClickListener(new View.OnClickListener() {
@@ -986,8 +1003,8 @@ public class ImageCapActivity extends Activity implements
             public void onClick(View view) {
                 Log.d(TAG, "shareMediaButton:");
                 if (showingMediaSha256.equalsIgnoreCase("")) {
-                    MymUtils.showToastMessage(getApplicationContext(),getString(R.string.error_to_obtain_sha256));
-                } else{
+                    MymUtils.showToastMessage(getApplicationContext(), getString(R.string.error_to_obtain_sha256));
+                } else {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     if (showingMediaType.equalsIgnoreCase("p")) {
                         shareIntent.setType("image/jpg");
@@ -1001,6 +1018,11 @@ public class ImageCapActivity extends Activity implements
                         }
                         File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
                         Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
+                        List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(shareIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                        for (ResolveInfo resolveInfo : resInfoList) {
+                            String packageName = resolveInfo.activityInfo.packageName;
+                            grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
                         shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
                         shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
                         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -1018,6 +1040,11 @@ public class ImageCapActivity extends Activity implements
                         }
                         File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
                         Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
+                        List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(shareIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                        for (ResolveInfo resolveInfo : resInfoList) {
+                            String packageName = resolveInfo.activityInfo.packageName;
+                            grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
                         shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
                         shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
                         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -1339,11 +1366,28 @@ public class ImageCapActivity extends Activity implements
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "Closing VPx location photo");
-                //Turning tracking On
+                Log.d(TAG, "returnToInitialScreen");
+                DisplayMetrics metrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+                Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+                final Window window = getWindow();
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                    window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                }
                 mCameraView.setVisibility(View.VISIBLE);
                 linearLayoutButtonsOnShowVpCaptures.setVisibility(View.GONE);
                 linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.GONE);
+                uploadPendingLinearLayout.setVisibility(View.GONE);
+                linearLayoutVpArStatus.setVisibility(View.GONE);
                 mImageDetectionFilterIndex = 1;
                 isShowingVpPhoto = false;
                 vpLocationDesTextView.setVisibility(View.GONE);
@@ -1405,7 +1449,7 @@ public class ImageCapActivity extends Activity implements
             arSwitch.setChecked(true);
             isArSwitchOn = true;
             cameraShutterButton.setVisibility(View.INVISIBLE);
-            if (!mymIsRunningOnKitKat){
+            if (!mymIsRunningOnKitKat) {
                 videoCameraShutterButton.setVisibility(View.INVISIBLE);
                 videoCameraShutterStopButton.setVisibility(View.GONE);
             }
@@ -1445,6 +1489,23 @@ public class ImageCapActivity extends Activity implements
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume CALLED");
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+        Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+        Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+        final Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
 
         //OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, this, mLoaderCallback);
         if (!OpenCVLoader.initDebug()) {
@@ -1498,6 +1559,22 @@ public class ImageCapActivity extends Activity implements
     protected void onRestart() {
         super.onRestart();
         Log.d(TAG, "onRestart CALLED");
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+        Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+        Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+        final Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
         setVpsChecked();
         runOnUiThread(new Runnable() {
             @Override
@@ -1792,7 +1869,10 @@ public class ImageCapActivity extends Activity implements
 
     @Override
     public Mat onCameraFrame(final CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        final Mat rgba = inputFrame.rgba();
+        Mat rgba = inputFrame.rgba();
+        if (mymIsRunningOnFlippedDisplay) {
+            Core.flip(rgba, rgba, -1);
+        }
 
         verifyVpsChecked();
 
@@ -1877,97 +1957,11 @@ public class ImageCapActivity extends Activity implements
                             videoCameraShutterStopButton.setVisibility(View.GONE);
                         }
                     });
-                    try {
-                        mMediaRecorder.stop();
-                        mCameraView.setRecorder(null);
-                        videoRecorderPrepared = false;
-                        String path = getApplicationContext().getFilesDir().getPath();
-                        File directory = new File(path);
-                        String[] fileInDirectory = directory.list(new FilenameFilter() {
-                            @Override
-                            public boolean accept(File dir, String filename) {
-                                return filename.equalsIgnoreCase(videoFileName);
-                            }
-                        });
-                        if (fileInDirectory != null) {
-                            File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
-                            Log.d(TAG, "videoFile.getName()=" + videoFile.getName());
-                            Log.d(TAG, "videoFile.getPath()=" + videoFile.getPath());
-                            Log.d(TAG, "videoFileName=" + videoFileName);
-                            String fileSha256Hash = MymUtils.getFileHash(videoFile);
-                            locPhotoToExif = getLocationToExifStrings(mCurrentLocation, Long.toString(photoTakenTimeMillis[vpTrackedInPose]));
-                            ObjectMetadata myObjectMetadata = new ObjectMetadata();
-                            //create a map to store user metadata
-                            Map<String, String> userMetadata = new HashMap<String, String>();
-                            userMetadata.put("loclatitude", locPhotoToExif[8]);
-                            userMetadata.put("loclongitude", locPhotoToExif[9]);
-                            userMetadata.put("vp", "" + (vpTrackedInPose));
-                            userMetadata.put("mymensoraccount", mymensorAccount);
-                            userMetadata.put("locprecisioninm", locPhotoToExif[4]);
-                            userMetadata.put("localtitude", locPhotoToExif[7]);
-                            userMetadata.put("locmillis", locPhotoToExif[5]);
-                            userMetadata.put("locmethod", locPhotoToExif[6]);
-                            userMetadata.put("loccertified", locPhotoToExif[12]);
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
-                            sdf.setTimeZone(TimeZone.getDefault());
-                            String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose]);
-                            userMetadata.put("datetime", formattedDateTime);
-                            userMetadata.put("phototakenmillis", locPhotoToExif[11]);
-                            userMetadata.put("timecertified", locPhotoToExif[10]);
-                            userMetadata.put("isarswitchOn", locPhotoToExif[13]);
-                            userMetadata.put("sha-256", fileSha256Hash);
-                            //call setUserMetadata on our ObjectMetadata object, passing it our map
-                            myObjectMetadata.setUserMetadata(userMetadata);
-                            //uploading the objects
-                            TransferObserver observer = MymUtils.storeRemoteFileLazy(
-                                    transferUtility,
-                                    "cap/" + videoFileName,
-                                    Constants.BUCKET_NAME,
-                                    videoFile,
-                                    myObjectMetadata);
-
-                            observer.setTransferListener(new UploadListener());
-                            pendingUploadTransfers++;
-                            updatePendingUpload();
-                            if (observer != null) {
-                                Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getState().toString());
-                                Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getAbsoluteFilePath());
-                                Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getBucket());
-                                Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getKey());
-                            } else {
-                                Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
-                                vpChecked[vpTrackedInPose] = false;
-                                setVpsChecked();
-                                saveVpsChecked();
-                            }
-                            videoRecorderChronometer.stop();
-                        } else {
-                            Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
-                            vpChecked[vpTrackedInPose] = false;
-                            setVpsChecked();
-                            saveVpsChecked();
-                        }
-                    } catch (AmazonServiceException ase) {
-                        Log.e(TAG, "Failure to save video : AmazonServiceException: Error when writing captured image to Remote Storage:" + ase.toString());
-                        isConnectedToServer = false;
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (isConnectedToServer) {
-                                    connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
-                                } else {
-                                    connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
-                                }
-                            }
-                        });
-                    } catch (Exception e) {
-                        Log.e(TAG, "Failure to save video to remote storage:" + e.toString());
-                        vpChecked[vpTrackedInPose] = false;
-                        setVpsChecked();
-                        saveVpsChecked();
-                        //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
-                        e.printStackTrace();
-                    }
+                    mMediaRecorder.stop();
+                    mCameraView.setRecorder(null);
+                    videoRecorderPrepared = false;
+                    videoRecorderChronometer.stop();
+                    captureVideo();
                 }
             } else {
                 // prepare didn't work, release the camera
@@ -2285,6 +2279,296 @@ public class ImageCapActivity extends Activity implements
         return rgba;
     }
 
+    @TargetApi(21)
+    private void captureVideo() {
+
+        final String path = getApplicationContext().getFilesDir().getPath();
+        File directory = new File(path);
+        String[] fileInDirectory = directory.list(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String filename) {
+                return filename.equalsIgnoreCase(videoFileName);
+            }
+        });
+
+        // Preparing UI for user decision upon capture acceptance
+        if ((!vpPhotoAccepted) && (!vpPhotoRejected)) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    imageView.setVisibility(View.GONE);
+                    vpsListView.setVisibility(View.GONE);
+                    uploadPendingLinearLayout.setVisibility(View.INVISIBLE);
+                    arSwitchLinearLayout.setVisibility(View.INVISIBLE);
+                    arSwitch.setVisibility(View.INVISIBLE);
+                    positionCertifiedButton.setVisibility(View.INVISIBLE);
+                    timeCertifiedButton.setVisibility(View.INVISIBLE);
+                    connectedToServerButton.setVisibility(View.INVISIBLE);
+                    cameraShutterButton.setVisibility(View.INVISIBLE);
+                    videoCameraShutterButton.setVisibility(View.INVISIBLE);
+                    if (radarScanImageView.isShown()) {
+                        radarScanImageView.clearAnimation();
+                        radarScanImageView.setVisibility(View.GONE);
+                    }
+                    videoView.setVisibility(View.GONE);
+                    File videoFileTMP = new File(getApplicationContext().getFilesDir(), videoFileName);
+                    Log.d(TAG, "media PATH:" + videoFileTMP.getPath());
+                    boolean fileNotFound = true;
+                    do {
+                        try {
+                            videoView.setVideoPath(videoFileTMP.getPath());
+                            videoView.setVisibility(View.VISIBLE);
+                            fileNotFound = false;
+                        } catch (Exception e) {
+                            fileNotFound = true;
+                        }
+                        Log.d(TAG, "Trying Media:" + fileNotFound);
+                    } while (fileNotFound);
+                    videoView.setMediaController(mMediaController);
+                    videoView.start();
+                    videoView.setZOrderOnTop(true);
+                    videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+                        @Override
+                        public void onCompletion(MediaPlayer mp) {
+                            videoView.setZOrderOnTop(false);
+                            videoView.setVisibility(View.GONE);
+                            acceptVpPhotoButton.setVisibility(View.VISIBLE);
+                            rejectVpPhotoButton.setVisibility(View.VISIBLE);
+                            buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
+                            buttonReplayVpVideo.setVisibility(View.VISIBLE);
+                        }
+                    });
+                }
+            });
+        }
+
+        do {
+            // Waiting for user response
+            if (vpVideoTobeReplayed) {
+                vpVideoTobeReplayed = false;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        videoView.setVisibility(View.VISIBLE);
+                        videoView.start();
+                        videoView.setZOrderOnTop(true);
+                        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+                            @Override
+                            public void onCompletion(MediaPlayer mp) {
+                                videoView.setZOrderOnTop(false);
+                                videoView.setVisibility(View.GONE);
+                                acceptVpPhotoButton.setVisibility(View.VISIBLE);
+                                rejectVpPhotoButton.setVisibility(View.VISIBLE);
+                                buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
+                                buttonReplayVpVideo.setVisibility(View.VISIBLE);
+                            }
+                        });
+                    }
+                });
+            }
+            if (vpPhotoTobeRemarked) {
+                vpPhotoTobeRemarked = false;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder alert = new AlertDialog.Builder(ImageCapActivity.this);
+
+                        alert.setTitle(R.string.remark);
+                        alert.setMessage(R.string.sizelimit100);
+
+                        // Set an EditText view to get user input
+                        final EditText input = new EditText(ImageCapActivity.this);
+
+                        alert.setView(input);
+
+                        alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                vpPhotoRemark = input.getText().toString();
+                            }
+                        });
+
+                        alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                // Canceled.
+                            }
+                        });
+
+                        alert.show();
+                    }
+                });
+            }
+        } while ((!vpPhotoAccepted) && (!vpPhotoRejected));
+
+        Log.d(TAG, "takePhoto: LOOP ENDED: vpPhotoAccepted:" + vpPhotoAccepted + " vpPhotoRejected:" + vpPhotoRejected);
+
+        if (vpPhotoAccepted) {
+            Log.d(TAG, "AROFF Video: vpPhotoAccepted!!!!");
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mCameraView.setZOrderOnTop(true);
+                    videoView.setVisibility(View.GONE);
+                    acceptVpPhotoButton.setVisibility(View.GONE);
+                    rejectVpPhotoButton.setVisibility(View.GONE);
+                    buttonRemarkVpPhoto.setVisibility(View.GONE);
+                    buttonReplayVpVideo.setVisibility(View.GONE);
+                    isVpPhotoOkTextView.setVisibility(View.GONE);
+                    vpsListView.setVisibility(View.VISIBLE);
+                    // TURNING ON RADAR SCAN
+                    if (isArSwitchOn) {
+                        radarScanImageView.setVisibility(View.VISIBLE);
+                        radarScanImageView.startAnimation(rotationRadarScan);
+
+                    }
+                    if (!isArSwitchOn) {
+                        cameraShutterButton.setVisibility(View.VISIBLE);
+                        videoCameraShutterButton.setVisibility(View.VISIBLE);
+                    }
+                    if (pendingUploadTransfers > 0)
+                        uploadPendingLinearLayout.setVisibility(View.VISIBLE);
+                    arSwitchLinearLayout.setVisibility(View.VISIBLE);
+                    arSwitch.setVisibility(View.VISIBLE);
+                    positionCertifiedButton.setVisibility(View.VISIBLE);
+                    timeCertifiedButton.setVisibility(View.VISIBLE);
+                    connectedToServerButton.setVisibility(View.VISIBLE);
+                }
+            });
+            String vpPhotoRemark1000 = null;
+            if (vpPhotoRemark != null) {
+                vpPhotoRemark1000 = this.vpPhotoRemark.substring(0, Math.min(this.vpPhotoRemark.length(), 1000));
+                vpPhotoRemark = null;
+            }
+            try {
+                if (fileInDirectory != null) {
+                    File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
+                    Log.d(TAG, "videoFile.getName()=" + videoFile.getName());
+                    Log.d(TAG, "videoFile.getPath()=" + videoFile.getPath());
+                    Log.d(TAG, "videoFileName=" + videoFileName);
+                    String fileSha256Hash = MymUtils.getFileHash(videoFile);
+                    locPhotoToExif = getLocationToExifStrings(mCurrentLocation, Long.toString(photoTakenTimeMillis[vpTrackedInPose]));
+                    ObjectMetadata myObjectMetadata = new ObjectMetadata();
+                    //create a map to store user metadata
+                    Map<String, String> userMetadata = new HashMap<String, String>();
+                    userMetadata.put("loclatitude", locPhotoToExif[8]);
+                    userMetadata.put("loclongitude", locPhotoToExif[9]);
+                    userMetadata.put("vp", "" + (vpTrackedInPose));
+                    userMetadata.put("mymensoraccount", mymensorAccount);
+                    userMetadata.put("locprecisioninm", locPhotoToExif[4]);
+                    userMetadata.put("localtitude", locPhotoToExif[7]);
+                    userMetadata.put("locmillis", locPhotoToExif[5]);
+                    userMetadata.put("locmethod", locPhotoToExif[6]);
+                    userMetadata.put("loccertified", locPhotoToExif[12]);
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
+                    sdf.setTimeZone(TimeZone.getDefault());
+                    String formattedDateTime = sdf.format(photoTakenTimeMillis[vpTrackedInPose]);
+                    userMetadata.put("datetime", formattedDateTime);
+                    userMetadata.put("phototakenmillis", locPhotoToExif[11]);
+                    userMetadata.put("timecertified", locPhotoToExif[10]);
+                    userMetadata.put("isarswitchOn", locPhotoToExif[13]);
+                    userMetadata.put("sha-256", fileSha256Hash);
+                    userMetadata.put("remark", vpPhotoRemark1000);
+                    //call setUserMetadata on our ObjectMetadata object, passing it our map
+                    myObjectMetadata.setUserMetadata(userMetadata);
+                    //uploading the objects
+                    TransferObserver observer = MymUtils.storeRemoteFileLazy(
+                            transferUtility,
+                            "cap/" + videoFileName,
+                            Constants.BUCKET_NAME,
+                            videoFile,
+                            myObjectMetadata);
+
+                    observer.setTransferListener(new UploadListener());
+                    pendingUploadTransfers++;
+                    updatePendingUpload();
+                    vpPhotoAccepted = false;
+                    if (observer != null) {
+                        Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getState().toString());
+                        Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getAbsoluteFilePath());
+                        Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getBucket());
+                        Log.d(TAG, "takePhoto: AWS s3 Observer: " + observer.getKey());
+                    } else {
+                        Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                        vpChecked[vpTrackedInPose] = false;
+                        setVpsChecked();
+                        saveVpsChecked();
+                    }
+                } else {
+                    Log.d(TAG, "Failure to save video to remote storage: videoFile.exists()==false");
+                    vpChecked[vpTrackedInPose] = false;
+                    setVpsChecked();
+                    saveVpsChecked();
+                }
+            } catch (AmazonServiceException ase) {
+                Log.e(TAG, "Failure to save video : AmazonServiceException: Error when writing captured image to Remote Storage:" + ase.toString());
+                isConnectedToServer = false;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isConnectedToServer) {
+                            connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_green_dark)));
+                        } else {
+                            connectedToServerButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_red_dark)));
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Failure to save video to remote storage:" + e.toString());
+                vpChecked[vpTrackedInPose] = false;
+                setVpsChecked();
+                saveVpsChecked();
+                //waitingToCaptureVpAfterDisambiguationProcedureSuccessful =true;
+                e.printStackTrace();
+            }
+        }
+
+        if (vpPhotoRejected) {
+            Log.d(TAG, "AROFF Video: vpPhotoRejected!!!!");
+            File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
+            videoFile.delete();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    videoView.setVisibility(View.GONE);
+                    mCameraView.setZOrderOnTop(true);
+                    acceptVpPhotoButton.setVisibility(View.GONE);
+                    rejectVpPhotoButton.setVisibility(View.GONE);
+                    buttonRemarkVpPhoto.setVisibility(View.GONE);
+                    buttonReplayVpVideo.setVisibility(View.GONE);
+                    isVpPhotoOkTextView.setVisibility(View.GONE);
+                    vpsListView.setVisibility(View.VISIBLE);
+                    // TURNING ON RADAR SCAN
+                    if (isArSwitchOn) {
+                        radarScanImageView.setVisibility(View.VISIBLE);
+                        radarScanImageView.startAnimation(rotationRadarScan);
+
+                    }
+                    if (!isArSwitchOn) {
+                        cameraShutterButton.setVisibility(View.VISIBLE);
+                        videoCameraShutterButton.setVisibility(View.VISIBLE);
+                    }
+                    if (pendingUploadTransfers > 0)
+                        uploadPendingLinearLayout.setVisibility(View.VISIBLE);
+                    arSwitchLinearLayout.setVisibility(View.VISIBLE);
+                    arSwitch.setVisibility(View.VISIBLE);
+                    positionCertifiedButton.setVisibility(View.VISIBLE);
+                    timeCertifiedButton.setVisibility(View.VISIBLE);
+                    connectedToServerButton.setVisibility(View.VISIBLE);
+                }
+            });
+            vpChecked[vpTrackedInPose] = false;
+            setVpsChecked();
+            saveVpsChecked();
+            lastVpPhotoRejected = true;
+            vpPhotoRejected = false;
+            vpPhotoRequestInProgress = false;
+            Log.d(TAG, "takePhoto: vpPhotoRejected >>>>> calling setMarkerlessTrackingConfiguration");
+            Log.d(TAG, "takePhoto: vpPhotoRejected: vpPhotoRequestInProgress = " + vpPhotoRequestInProgress);
+            if ((!waitingUntilMultipleImageTrackingIsSet) && (isArSwitchOn)) {
+                setMultipleImageTrackingConfiguration();
+            }
+        }
+    }
+
 
     private void checkPositionToTarget(TrackingValues trackingValues, final Mat rgba) {
 
@@ -2341,6 +2625,7 @@ public class ImageCapActivity extends Activity implements
         File pictureFile = new File(getApplicationContext().getFilesDir(), pictureFileName);
 
         Log.d(TAG, "takePhoto: a new camera frame image is delivered " + momento);
+        Log.d(TAG, "takePhoto: pictureFileName including account: " + pictureFileName);
         if (isArSwitchOn) {
             if ((vpIsAmbiguous[vpTrackedInPose]) && (vpIsDisambiguated))
                 waitingToCaptureVpAfterDisambiguationProcedureSuccessful = false;
@@ -2369,7 +2654,7 @@ public class ImageCapActivity extends Activity implements
                 soundPool.play(camShutterSoundID, volume, volume, 1, 0, 1f);
                 Log.d(TAG, "takePhoto: Camera Shutter Played sound");
             }
-            // Preparing UI for user decision upon cpature acceptance
+            // Preparing UI for user decision upon capture acceptance
             if ((!vpPhotoAccepted) && (!vpPhotoRejected)) {
                 final Bitmap tmpBitmapImage = bitmapImage;
                 runOnUiThread(new Runnable() {
@@ -2379,7 +2664,6 @@ public class ImageCapActivity extends Activity implements
                         imageView.resetZoom();
                         imageView.setVisibility(View.VISIBLE);
                         if (imageView.getImageAlpha() == 128) imageView.setImageAlpha(255);
-                        isVpPhotoOkTextView.setVisibility(View.VISIBLE);
                         acceptVpPhotoButton.setVisibility(View.VISIBLE);
                         rejectVpPhotoButton.setVisibility(View.VISIBLE);
                         buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
@@ -2402,7 +2686,7 @@ public class ImageCapActivity extends Activity implements
 
             do {
                 // Waiting for user response
-                if (vpPhotoTobeRemarked){
+                if (vpPhotoTobeRemarked) {
                     vpPhotoTobeRemarked = false;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -2443,7 +2727,6 @@ public class ImageCapActivity extends Activity implements
                     @Override
                     public void run() {
                         imageView.setVisibility(View.GONE);
-                        isVpPhotoOkTextView.setVisibility(View.GONE);
                         acceptVpPhotoButton.setVisibility(View.GONE);
                         rejectVpPhotoButton.setVisibility(View.GONE);
                         buttonRemarkVpPhoto.setVisibility(View.GONE);
@@ -2457,7 +2740,7 @@ public class ImageCapActivity extends Activity implements
                         positionCertifiedButton.setVisibility(View.VISIBLE);
                         timeCertifiedButton.setVisibility(View.VISIBLE);
                         connectedToServerButton.setVisibility(View.VISIBLE);
-                        if (!isArSwitchOn){
+                        if (!isArSwitchOn) {
                             cameraShutterButton.setVisibility(View.VISIBLE);
                             videoCameraShutterButton.setVisibility(View.VISIBLE);
                         }
@@ -2465,10 +2748,11 @@ public class ImageCapActivity extends Activity implements
                 });
                 setVpsChecked();
                 saveVpsChecked();
-                if (vpPhotoRemark==null){
-                    vpPhotoRemark = "";
+                String vpPhotoRemark1000 = null;
+                if (vpPhotoRemark != null) {
+                    vpPhotoRemark1000 = this.vpPhotoRemark.substring(0, Math.min(this.vpPhotoRemark.length(), 1000));
+                    vpPhotoRemark = null;
                 }
-                String vpPhotoRemarkLimitedTo100 = vpPhotoRemark.substring(0, Math.min(vpPhotoRemark.length(), 100));
                 try {
                     //pictureFile.renameTo(new File(getApplicationContext().getFilesDir(), pictureFileName));
                     FileOutputStream fos = new FileOutputStream(pictureFile);
@@ -2508,7 +2792,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("timecertified", locPhotoToExif[10]);
                     userMetadata.put("isarswitchOn", locPhotoToExif[13]);
                     userMetadata.put("sha-256", fileSha256Hash);
-                    userMetadata.put("remark", vpPhotoRemarkLimitedTo100);
+                    userMetadata.put("remark", vpPhotoRemark1000);
                     //call setUserMetadata on our ObjectMetadata object, passing it our map
                     myObjectMetadata.setUserMetadata(userMetadata);
                     //uploading the objects
@@ -2578,7 +2862,6 @@ public class ImageCapActivity extends Activity implements
                         acceptVpPhotoButton.setVisibility(View.GONE);
                         rejectVpPhotoButton.setVisibility(View.GONE);
                         buttonRemarkVpPhoto.setVisibility(View.GONE);
-                        isVpPhotoOkTextView.setVisibility(View.GONE);
                         vpsListView.setVisibility(View.VISIBLE);
                         // TURNING ON RADAR SCAN
                         if (isArSwitchOn) {
@@ -2586,7 +2869,7 @@ public class ImageCapActivity extends Activity implements
                             radarScanImageView.startAnimation(rotationRadarScan);
 
                         }
-                        if (!isArSwitchOn){
+                        if (!isArSwitchOn) {
                             cameraShutterButton.setVisibility(View.VISIBLE);
                             videoCameraShutterButton.setVisibility(View.VISIBLE);
                         }
@@ -2836,6 +3119,10 @@ public class ImageCapActivity extends Activity implements
             vpPhotoTobeRemarked = true;
             Log.d(TAG, "buttonRemarkVpPhoto BUTTON PRESSED");
         }
+        if (v.getId() == R.id.buttonReplayVpVideo) {
+            vpVideoTobeReplayed = true;
+            Log.d(TAG, "buttonReplayVpVideo BUTTON PRESSED");
+        }
         if (v.getId() == R.id.buttonShowPreviousVpCapture) {
             mediaSelected++;
             showVpCaptures(lastVpSelectedByUser);
@@ -3023,6 +3310,7 @@ public class ImageCapActivity extends Activity implements
                     showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
                     fiscaps.close();
                     try {
+                        showingMediaSha256 = "";
                         getRemotePictureFileMetadata("cap/" + vpMediaFileName);
                     } catch (Exception e) {
                         Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
@@ -3082,6 +3370,7 @@ public class ImageCapActivity extends Activity implements
                             positionCertifiedImageview.setVisibility(View.GONE);
                             timeCertifiedImageview.setVisibility(View.GONE);
                             try {
+                                showingMediaSha256 = "";
                                 getRemoteFileMetadata("cap/" + vpMediaFileName);
                             } catch (Exception e) {
                                 Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
@@ -3095,9 +3384,26 @@ public class ImageCapActivity extends Activity implements
                             vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
                             vpLocationDesTextView.setVisibility(View.VISIBLE);
                             videoView.setVisibility(View.VISIBLE);
+                            Log.d(TAG, "showVpCaptures: setVideoPath=" + path + "/" + vpMediaFileName);
                             videoView.setVideoPath(path + "/" + vpMediaFileName);
                             videoView.setMediaController(mMediaController);
                             videoView.start();
+                            DisplayMetrics metrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+                            Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                            Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+                            final Window window = getWindow();
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                            if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                                        | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                            }
                         }
                     });
                 }

@@ -2,6 +2,7 @@ package org.opencv.android;
 
 import java.util.List;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -10,7 +11,9 @@ import android.hardware.Camera.PreviewCallback;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -157,6 +160,13 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
                     }
 
+                    /*
+                    if (Build.MODEL.equals("Nexus 5X")) {
+                        Log.d(TAG,"Running on Nexus 5X.");
+                        params.setRotation(180);
+                    }
+                    */
+
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
 
@@ -201,6 +211,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     if (mFrameWidth<1280) mFrameWidth=1280;
                     if (mFrameHeight<720) mFrameHeight=720;
 
+                    //setCameraDisplayOrientation(getContext(), mChainIdx, mCamera);
+
                     mCamera.startPreview();
                 }
                 else
@@ -213,6 +225,38 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
         return result;
     }
+
+    /*
+    public static void setCameraDisplayOrientation(Context context,
+                                                   int cameraId, android.hardware.Camera camera) {
+        android.hardware.Camera.CameraInfo info =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(cameraId, info);
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        int rotation = windowManager.getDefaultDisplay().getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
+        }
+
+        Log.d(TAG,"Rotation:"+rotation+" Degrees:"+degrees);
+
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        Log.d(TAG,"Result:"+result+" Rotat");
+        camera.setDisplayOrientation(result);
+        Log.d(TAG,"Rotation:"+rotation+" Degrees:"+degrees);
+    }
+
+    */
 
     protected void releaseCamera() {
         synchronized (this) {
