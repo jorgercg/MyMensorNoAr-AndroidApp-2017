@@ -87,6 +87,7 @@ import com.mymensor.filters.Filter;
 import com.mymensor.filters.IdMarkerDetectionFilter;
 import com.mymensor.filters.ImageDetectionFilter;
 import com.mymensor.filters.NoneARFilter;
+import com.mymensorar.R;
 
 import org.apache.commons.io.FileUtils;
 
@@ -125,11 +126,11 @@ import java.util.TimeZone;
 
 
 import static com.mymensor.Constants.cameraWidthInPixels;
-import static com.mymensor.R.drawable.circular_button_gray;
+import static com.mymensorar.R.drawable.circular_button_gray;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import static com.mymensor.R.drawable.circular_button_green;
-import static com.mymensor.R.drawable.circular_button_red;
+import static com.mymensorar.R.drawable.circular_button_green;
+import static com.mymensorar.R.drawable.circular_button_red;
 
 
 public class ImageCapActivity extends Activity implements

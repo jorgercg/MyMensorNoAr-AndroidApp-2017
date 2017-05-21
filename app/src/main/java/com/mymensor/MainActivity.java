@@ -39,6 +39,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import java.util.List;
 
 import com.mymensor.cognitoclient.AwsUtil;
+import com.mymensorar.R;
 
 
 public class MainActivity extends AppCompatActivity {

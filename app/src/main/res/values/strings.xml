@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">MyMensor</string>
+    <string name="app_name" translatable="false">MyMensorAR</string>
     <string name="action_settings">Settings</string>
     <string name="app_version_seamensor" translatable="false">MyMensor 1.0.0.0</string>
     <string name="app_version_smc" translatable="false">MyMensor 1.0.0.0</string>

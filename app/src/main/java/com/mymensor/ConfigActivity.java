@@ -53,6 +53,7 @@ import com.mymensor.filters.Filter;
 import com.mymensor.filters.IdMarkerDetectionFilter;
 import com.mymensor.filters.NoneARFilter;
 import com.mymensor.filters.VpConfigFilter;
+import com.mymensorar.R;
 
 import org.apache.commons.io.FileUtils;
 
@@ -84,8 +85,8 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import static android.R.color.holo_blue_bright;
-import static com.mymensor.R.drawable.border_marker_id_blue;
-import static com.mymensor.R.drawable.border_marker_id_red;
+import static com.mymensorar.R.drawable.border_marker_id_blue;
+import static com.mymensorar.R.drawable.border_marker_id_red;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ConfigActivity extends Activity implements

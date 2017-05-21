@@ -4,13 +4,18 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
+# [EDIT] Set Path to OpenCV and include the directories
+# pathToOpenCV is just an example to how to write in Mac.
+# General format: /Users/user-name/OpenCV-android-sdk/sdk/native
+# /opt/OpenCV-android-sdk-v3.1.0/sdk/native/jni/include
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds it for you.
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-             native-lib
+             MyMensor
 
              # Sets the library as a shared library.
              SHARED
@@ -18,7 +23,18 @@ add_library( # Sets the name of the library.
              # Provides a relative path to your source file(s).
              # Associated headers in the same location as their source
              # file are automatically included.
-             src/main/cpp/native-lib.cpp )
+             src/main/cpp/MyMensorJNI.cpp
+             src/main/cpp/IdMarkerDetectionFilter.cpp
+             src/main/cpp/ImageDetectionFilter.cpp
+             src/main/cpp/VpConfigureFilter.cpp)
+
+# [EDIT] Similar to above lines, add the OpenCV library
+include_directories(/opt/OpenCV-android-sdk-v3.1.0/sdk/native/jni/include)
+add_library( lib_opencv SHARED IMPORTED )
+set_target_properties(lib_opencv PROPERTIES IMPORTED_LOCATION /Users/jorgercg/projects/and/MyMensor/app/src/main/jniLibs/${ANDROID_ABI}/libopencv_java3.so)
+
+add_library( lib_opencvaruco SHARED IMPORTED )
+set_target_properties(lib_opencvaruco PROPERTIES IMPORTED_LOCATION /Users/jorgercg/projects/and/MyMensor/app/src/main/jniLibs/${ANDROID_ABI}/libopencv_aruco.so)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because system libraries are included in the search path by
@@ -38,8 +54,8 @@ find_library( # Sets the name of the path variable.
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-                       native-lib
+                       MyMensor
 
                        # Links the target library to the log library
                        # included in the NDK.
-                       ${log-lib} )
+                       ${log-lib} lib_opencv lib_opencvaruco)

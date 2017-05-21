@@ -1,71 +1,86 @@
-apply plugin: 'com.android.model.application'
+apply plugin: 'com.android.application'
 
-model {
-    android {
-        compileSdkVersion 25
-        buildToolsVersion "25.0.0"
+android {
+    compileSdkVersion 25
+    buildToolsVersion '25.0.3'
+    defaultConfig {
+        applicationId 'com.mymensorar'
+        minSdkVersion 19
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
 
-        defaultConfig {
-            applicationId "com.mymensor"
-            minSdkVersion.apiLevel 19
-            targetSdkVersion.apiLevel 25
-            versionCode 1
-            versionName "1.0"
-
-            buildConfigFields {
-                create() {
-                    type "int"
-                    name "VALUE"
-                    value "1"
-                }
-            }
-        }
-
-        buildTypes {
-            release {
-                minifyEnabled false
-                proguardFiles.add(file("proguard-rules.pro"))
+        externalNativeBuild {
+            cmake {
+                cppFlags "-frtti -fexceptions" //EDIT
             }
         }
 
         ndk {
-            moduleName = "MyMensor"
-            cppFlags.add("-I${file("/opt/OpenCV-android-sdk-v3.1.0/sdk/native/jni/include")}".toString())
-            cppFlags.add("-frtti")
-            cppFlags.add("-fexceptions")
-            ldLibs.add("log")
-            ldLibs.add("opencv_java3")
-            ldLibs.add("opencv_aruco")
-            stl "gnustl_static"
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your APK.
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
 
-        productFlavors {
-            // for detailed abiFilter descriptions, refer to "Supported ABIs" @
-            // https://developer.android.com/ndk/guides/abis.html#sa
-            create("arm") {
-                ndk {
-                    abiFilters.add("armeabi")
-                    ldFlags.add("-L${file('src/main/jniLibs/armeabi')}".toString())
-                }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    /*
+    ndk {
+        moduleName = "MyMensor"
+        cppFlags.add("-I${file("/opt/OpenCV-android-sdk-v3.1.0/sdk/native/jni/include")}".toString())
+        cppFlags.add("-frtti")
+        cppFlags.add("-fexceptions")
+        ldLibs.add("log")
+        ldLibs.add("opencv_java3")
+        ldLibs.add("opencv_aruco")
+        stl "gnustl_static"
+    }
+
+    productFlavors {
+        // for detailed abiFilter descriptions, refer to "Supported ABIs" @
+        // https://developer.android.com/ndk/guides/abis.html#sa
+        create("arm") {
+            ndk {
+                abiFilters.add("armeabi")
+                ldFlags.add("-L${file('src/main/jniLibs/armeabi')}".toString())
             }
-            create("arm7") {
-                ndk {
-                    abiFilters.add("armeabi-v7a")
-                    ldFlags.add("-L${file('src/main/jniLibs/armeabi-v7a')}".toString())
-                }
+        }
+        create("arm7") {
+            ndk {
+                abiFilters.add("armeabi-v7a")
+                ldFlags.add("-L${file('src/main/jniLibs/armeabi-v7a')}".toString())
             }
-            create("arm8") {
-                ndk {
-                    abiFilters.add("arm64-v8a")
-                    ldFlags.add("-L${file('src/main/jniLibs/arm64-v8a')}".toString())
-                }
+        }
+        create("arm8") {
+            ndk {
+                abiFilters.add("arm64-v8a")
+                ldFlags.add("-L${file('src/main/jniLibs/arm64-v8a')}".toString())
             }
         }
     }
+    */
+    productFlavors {
+    }
 }
 
+
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support:support-compat:25.3.1'
@@ -76,5 +91,5 @@ dependencies {
     compile 'com.amazonaws:aws-android-sdk-cognito:2.4.2'
     compile 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.4.2'
     compile files('libs/commons-io-2.5.jar')
-    compile project(":opencvjava")
+    compile project(':opencvjava')
 }

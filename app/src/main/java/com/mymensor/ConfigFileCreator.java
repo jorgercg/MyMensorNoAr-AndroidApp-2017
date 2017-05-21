@@ -10,6 +10,7 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.mymensorar.R;
 
 
 import org.apache.commons.io.FileUtils;
