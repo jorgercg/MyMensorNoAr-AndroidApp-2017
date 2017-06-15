@@ -7,7 +7,7 @@ android {
         applicationId 'com.mymensorar'
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 1
+        versionCode 10001
         versionName "1.0"
 
         externalNativeBuild {
@@ -75,6 +75,8 @@ android {
     }
     */
     productFlavors {
+        free {
+        }
     }
 }
 
