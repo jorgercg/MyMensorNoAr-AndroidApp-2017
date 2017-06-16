@@ -115,6 +115,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -418,7 +419,6 @@ public class ImageCapActivity extends Activity implements
 
     protected String showingMediaFileName;
     protected String showingMediaType;
-    protected String showingMediaSha256;
 
     protected Boolean mymIsRunningOnKitKat = false;
     protected Boolean mymIsRunningOnFlippedDisplay = false;
@@ -433,13 +433,13 @@ public class ImageCapActivity extends Activity implements
             mymIsRunningOnKitKat = true;
         }
 
-        Log.d(TAG,"mymIsRunningOnKitKat = "+mymIsRunningOnKitKat);
+        Log.d(TAG, "mymIsRunningOnKitKat = " + mymIsRunningOnKitKat);
 
         if (Build.MODEL.equals("Nexus 5X")) {
             mymIsRunningOnFlippedDisplay = true;
         }
 
-        Log.d(TAG,"mymIsRunningOnFlippedDisplay = "+mymIsRunningOnFlippedDisplay);
+        Log.d(TAG, "mymIsRunningOnFlippedDisplay = " + mymIsRunningOnFlippedDisplay);
 
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -469,7 +469,7 @@ public class ImageCapActivity extends Activity implements
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
 
-        Log.d(TAG, "onCreate: Starting ImageCapActivity with qtyVps=" + qtyVps +" MyM Account="+mymensorAccount);
+        Log.d(TAG, "onCreate: Starting ImageCapActivity with qtyVps=" + qtyVps + " MyM Account=" + mymensorAccount);
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
@@ -1003,55 +1003,55 @@ public class ImageCapActivity extends Activity implements
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "shareMediaButton:");
-                if (showingMediaSha256.equalsIgnoreCase("")) {
-                    MymUtils.showToastMessage(getApplicationContext(), getString(R.string.error_to_obtain_sha256));
-                } else {
-                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                    if (showingMediaType.equalsIgnoreCase("p")) {
-                        shareIntent.setType("image/jpg");
-                        try {
-                            InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
-                            File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
-                            OutputStream out = new FileOutputStream(outFile);
-                            MymUtils.copyFile(in, out);
-                        } catch (IOException e) {
-                            Log.e(TAG, "shareMediaButton: Failed to copy Photo file to share");
-                        }
-                        File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
-                        Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
-                        List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(shareIntent, PackageManager.MATCH_DEFAULT_ONLY);
-                        for (ResolveInfo resolveInfo : resInfoList) {
-                            String packageName = resolveInfo.activityInfo.packageName;
-                            grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        }
-                        shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                        shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
-                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
+                String fileSha256Hash = "";
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                if (showingMediaType.equalsIgnoreCase("p")) {
+                    shareIntent.setType("image/jpg");
+                    try {
+                        InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
+                        File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
+                        OutputStream out = new FileOutputStream(outFile);
+                        MymUtils.copyFile(in, out);
+                        fileSha256Hash = MymUtils.getFileHash(outFile);
+                    } catch (IOException e) {
+                        Log.e(TAG, "shareMediaButton: Failed to copy Photo file to share");
                     }
-                    if (showingMediaType.equalsIgnoreCase("v")) {
-                        shareIntent.setType("video/*");
-                        try {
-                            InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
-                            File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
-                            OutputStream out = new FileOutputStream(outFile);
-                            MymUtils.copyFile(in, out);
-                        } catch (IOException e) {
-                            Log.e(TAG, "shareMediaButton: Failed to copy Video file to share");
-                        }
-                        File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
-                        Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
-                        List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(shareIntent, PackageManager.MATCH_DEFAULT_ONLY);
-                        for (ResolveInfo resolveInfo : resInfoList) {
-                            String packageName = resolveInfo.activityInfo.packageName;
-                            grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        }
-                        shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                        shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + showingMediaSha256);
-                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
+                    File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
+                    Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
+                    List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(shareIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        String packageName = resolveInfo.activityInfo.packageName;
+                        grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
                 }
+                if (showingMediaType.equalsIgnoreCase("v")) {
+                    shareIntent.setType("video/*");
+                    try {
+                        InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
+                        File outFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
+                        OutputStream out = new FileOutputStream(outFile);
+                        MymUtils.copyFile(in, out);
+                        fileSha256Hash = MymUtils.getFileHash(outFile);
+                    } catch (IOException e) {
+                        Log.e(TAG, "shareMediaButton: Failed to copy Video file to share");
+                    }
+                    File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
+                    Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
+                    List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(shareIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        String packageName = resolveInfo.activityInfo.packageName;
+                        grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
+                }
+
             }
         });
 
@@ -2328,7 +2328,7 @@ public class ImageCapActivity extends Activity implements
                     videoView.setMediaController(mMediaController);
                     videoView.start();
                     videoView.setZOrderOnTop(true);
-                    videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+                    videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mp) {
                             videoView.setZOrderOnTop(false);
@@ -2353,7 +2353,7 @@ public class ImageCapActivity extends Activity implements
                         videoView.setVisibility(View.VISIBLE);
                         videoView.start();
                         videoView.setZOrderOnTop(true);
-                        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+                        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                             @Override
                             public void onCompletion(MediaPlayer mp) {
                                 videoView.setZOrderOnTop(false);
@@ -2436,7 +2436,7 @@ public class ImageCapActivity extends Activity implements
             });
             String vpPhotoRemark1000 = null;
             if (vpPhotoRemark != null) {
-                vpPhotoRemark1000 = this.vpPhotoRemark.substring(0, Math.min(this.vpPhotoRemark.length(), 1000));
+                vpPhotoRemark1000 = Uri.encode(this.vpPhotoRemark.substring(0, Math.min(this.vpPhotoRemark.length(), 1000)), "@#&=*+-_.,:!?()/~'%");
                 vpPhotoRemark = null;
             }
             try {
@@ -2750,10 +2750,15 @@ public class ImageCapActivity extends Activity implements
                 setVpsChecked();
                 saveVpsChecked();
                 String vpPhotoRemark1000 = null;
-                if (vpPhotoRemark != null) {
-                    vpPhotoRemark1000 = this.vpPhotoRemark.substring(0, Math.min(this.vpPhotoRemark.length(), 1000));
+                try {
+                    if (vpPhotoRemark != null) {
+                        vpPhotoRemark1000 = Uri.encode(this.vpPhotoRemark.substring(0, Math.min(this.vpPhotoRemark.length(), 1000)), "@#&=*+-_.,:!?()/~'%");
+                        vpPhotoRemark = null;
+                    }
+                } catch (Exception e) {
                     vpPhotoRemark = null;
                 }
+
                 try {
                     //pictureFile.renameTo(new File(getApplicationContext().getFilesDir(), pictureFileName));
                     FileOutputStream fos = new FileOutputStream(pictureFile);
@@ -3173,42 +3178,6 @@ public class ImageCapActivity extends Activity implements
     }
 
 
-    private void getRemotePictureFileMetadata(final String filename) {
-
-        new AsyncTask<Void, Void, ObjectMetadata>() {
-            @Override
-            protected void onPreExecute() {
-                Log.d(TAG, "getRemotePictureFileMetadata: onPreExecute");
-            }
-
-            @Override
-            protected ObjectMetadata doInBackground(Void... params) {
-                try {
-                    final ObjectMetadata objMetadata = s3Amazon.getObjectMetadata(Constants.BUCKET_NAME, filename);
-                    return objMetadata;
-                } catch (Exception e) {
-                    Log.e(TAG, "getRemotePictureFileMetadata: exception: " + e.toString());
-                    return null;
-                }
-            }
-
-            @Override
-            protected void onPostExecute(final ObjectMetadata objectMetadata) {
-                Log.d(TAG, "getRemotePictureFileMetadata: onPostExecute");
-                if (objectMetadata != null) {
-                    Map<String, String> userMetadata = new HashMap<String, String>();
-                    userMetadata = objectMetadata.getUserMetadata();
-                    Log.d(TAG, "userMetadata=" + userMetadata.toString());
-                    Log.d(TAG, "Location=sha-256=" + userMetadata.get("sha-256"));
-                    showingMediaSha256 = userMetadata.get("sha-256");
-                } else {
-                    showingMediaSha256 = "";
-                }
-            }
-        }.execute();
-    }
-
-
     private void getRemoteFileMetadata(final String filename) {
 
         new AsyncTask<Void, Void, ObjectMetadata>() {
@@ -3239,8 +3208,6 @@ public class ImageCapActivity extends Activity implements
                             userMetadata = objectMetadata.getUserMetadata();
                             Log.d(TAG, "userMetadata=" + userMetadata.toString());
                             Log.d(TAG, "Location=LocCertified=" + userMetadata.get("loccertified") + " Time=TimeCertified=" + userMetadata.get("timecertified"));
-                            Log.d(TAG, "Location=sha-256=" + userMetadata.get("sha-256"));
-                            showingMediaSha256 = userMetadata.get("sha-256");
                             if (userMetadata.get("loccertified").equalsIgnoreCase("1")) {
                                 //IsPositionCertified
                                 positionCertifiedImageview.setVisibility(View.VISIBLE);
@@ -3310,12 +3277,6 @@ public class ImageCapActivity extends Activity implements
                     final InputStream fiscaps = MymUtils.getLocalFile(vpMediaFileName, getApplicationContext());
                     showVpPhotoImageFileContents = BitmapFactory.decodeStream(fiscaps);
                     fiscaps.close();
-                    try {
-                        showingMediaSha256 = "";
-                        getRemotePictureFileMetadata("cap/" + vpMediaFileName);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
-                    }
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -3371,7 +3332,6 @@ public class ImageCapActivity extends Activity implements
                             positionCertifiedImageview.setVisibility(View.GONE);
                             timeCertifiedImageview.setVisibility(View.GONE);
                             try {
-                                showingMediaSha256 = "";
                                 getRemoteFileMetadata("cap/" + vpMediaFileName);
                             } catch (Exception e) {
                                 Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
