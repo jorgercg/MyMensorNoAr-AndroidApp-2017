@@ -9,6 +9,8 @@ public class Constants {
     public static final int frequencyValue = 20000;
     public static final float tolerancePosition = 50;
     public static final float toleranceRotation = 10;
+    public static final String capturesFolder = "cap";
+    public static final String usersConfigFolder = "usrcfg";
     public static final String vpsConfigFileName = "vps.xml";
     public static final String vpsCheckedConfigFileName = "vpschecked.xml";
     public static final long VpDescFileSize = 36156;
@@ -43,7 +45,7 @@ public class Constants {
     /**
      * AWS S3
      */
-    public static final String BUCKET_NAME = "mymstoragebr";
+    public static final String BUCKET_NAME = "mymstorageeuwest1";   // "mymstoragebr";
     public static final String CONN_TST_FILE = "admin/a2f3qw248fgsfreqlgkgjrufjsdadpdf";
     /**
      * MyMensor User Authorization

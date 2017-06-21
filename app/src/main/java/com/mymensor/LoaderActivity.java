@@ -103,10 +103,10 @@ public class LoaderActivity extends Activity {
 
         s3Amazon = CognitoSyncClientManager.getInstance();
 
-        descvpRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
-        markervpRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "mrk" + "/";
-        vpsRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
-        vpsCheckedRemotePath = mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
+        descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
+        markervpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "mrk" + "/";
+        vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
+        vpsCheckedRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
 
         // Creating AsyncTask
         backgroundLoader = new BackgroundLoader();

@@ -312,9 +312,9 @@ public class ConfigActivity extends Activity implements
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
 
-        descvpRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"dsc"+"/";
-        markervpRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"mrk"+"/";
-        vpsRemotePath = mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/";
+        descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"dsc"+"/";
+        markervpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"mrk"+"/";
+        vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/";
 
         if (savedInstanceState != null) {
             mCameraIndex = savedInstanceState.getInt(STATE_CAMERA_INDEX, 0);
@@ -668,7 +668,6 @@ public class ConfigActivity extends Activity implements
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
                     Log.d(TAG, "OpenCV loaded successfully");
-                    //TODO: Fix this
                     mCameraMatrix = MymUtils.getCameraMatrix(Constants.cameraWidthInPixels, Constants.cameraHeigthInPixels);
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();

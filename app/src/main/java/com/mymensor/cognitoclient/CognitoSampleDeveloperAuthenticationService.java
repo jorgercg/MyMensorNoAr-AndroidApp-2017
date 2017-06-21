@@ -39,11 +39,12 @@ public class CognitoSampleDeveloperAuthenticationService {
             HttpURLConnection connection = (HttpURLConnection) url
                     .openConnection();
             connection.setRequestProperty("Authorization","Token " + mymToken);
+            connection.setRequestProperty("From", "androidar1000@mymensor.com");
             responseCode = connection.getResponseCode();
             responseBody = CognitoSampleDeveloperAuthenticationService
                     .getResponse(connection);
             Log.i(LOG_TAG, "ResponseCode : [" + responseCode + "]");
-            Log.i(LOG_TAG, "Response : [" + responseBody + "]");
+            Log.i(LOG_TAG, "ResponseBody : [" + responseBody + "]");
 
             return reponseHandler.handleResponse(responseCode, responseBody);
         } catch (IOException exception) {

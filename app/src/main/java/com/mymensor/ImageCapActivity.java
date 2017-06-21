@@ -66,6 +66,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
@@ -212,7 +213,7 @@ public class ImageCapActivity extends Activity implements
     private boolean vpIsDisambiguated = true;
     private boolean doubleCheckingProcedureFinalized = false;
     private boolean doubleCheckingProcedureStarted = false;
-    private boolean resultSpecialTrk = false; //TODO
+    private boolean resultSpecialTrk = false;
     private boolean singleImageTrackingIsSet = false;
     private boolean waitingUntilSingleImageTrackingIsSet = false;
     private boolean multipleImageTrackingIsSet = false;
@@ -327,7 +328,7 @@ public class ImageCapActivity extends Activity implements
     private String videoFileName;
     private String videoFileNameLong;
 
-    public boolean isPositionCertified = false; // Or true ???????????
+    public boolean isPositionCertified = false;
     public boolean isConnectedToServer = false;
 
     // The camera view.
@@ -488,8 +489,8 @@ public class ImageCapActivity extends Activity implements
 
         s3Amazon = CognitoSyncClientManager.getInstance();
 
-        vpsRemotePath = mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
-        vpsCheckedRemotePath = mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
+        vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
+        vpsCheckedRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
 
         if (savedInstanceState != null) {
             mImageDetectionFilterIndex = savedInstanceState.getInt(
@@ -1648,7 +1649,6 @@ public class ImageCapActivity extends Activity implements
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
                     Log.d(TAG, "OpenCV loaded successfully");
-                    //TODO: Fix this
                     mCameraMatrix = MymUtils.getCameraMatrix(cameraWidthInPixels, Constants.cameraHeigthInPixels);
                     mCameraView.enableView();
                     //mCameraView.enableFpsMeter();
@@ -1932,7 +1932,7 @@ public class ImageCapActivity extends Activity implements
                 long momentoLong = MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference);
                 photoTakenTimeMillis[vpTrackedInPose] = momentoLong;
                 String momento = String.valueOf(momentoLong);
-                videoFileName = "cap_" + mymensorAccount + "_" + vpNumber[vpTrackedInPose] + "_v_" + momento + ".mp4";
+                videoFileName = vpNumber[vpTrackedInPose] + "_v_" + momento + ".mp4";
                 videoFileNameLong = getApplicationContext().getFilesDir() + "/" + videoFileName;
                 if (!capturingManualVideo) prepareVideoRecorder(videoFileNameLong);
             }
@@ -2473,7 +2473,7 @@ public class ImageCapActivity extends Activity implements
                     //uploading the objects
                     TransferObserver observer = MymUtils.storeRemoteFileLazy(
                             transferUtility,
-                            "cap/" + videoFileName,
+                            Constants.capturesFolder+"/"+mymensorAccount+"/"+videoFileName,
                             Constants.BUCKET_NAME,
                             videoFile,
                             myObjectMetadata);
@@ -2622,7 +2622,7 @@ public class ImageCapActivity extends Activity implements
         if (askForManualPhoto) askForManualPhoto = false;
         final String momento = String.valueOf(momentoLong);
         String pictureFileName;
-        pictureFileName = "cap_" + mymensorAccount + "_" + vpNumber[vpTrackedInPose] + "_p_" + momento + ".jpg";
+        pictureFileName = vpNumber[vpTrackedInPose] + "_p_" + momento + ".jpg";
         File pictureFile = new File(getApplicationContext().getFilesDir(), pictureFileName);
 
         Log.d(TAG, "takePhoto: a new camera frame image is delivered " + momento);
@@ -2804,7 +2804,7 @@ public class ImageCapActivity extends Activity implements
                     //uploading the objects
                     TransferObserver observer = MymUtils.storeRemoteFile(
                             transferUtility,
-                            "cap/" + pictureFileName,
+                            Constants.capturesFolder+"/"+mymensorAccount+"/"+pictureFileName,
                             Constants.BUCKET_NAME,
                             pictureFile,
                             myObjectMetadata);
@@ -3150,7 +3150,7 @@ public class ImageCapActivity extends Activity implements
         String[] capsInDirectory = directory.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String filename) {
-                return filename.startsWith("cap_" + mymensorAccount + "_" + vpToList + "_");
+                return filename.startsWith(vpToList + "_");
             }
         });
         int numOfEntries = 0;
@@ -3188,13 +3188,34 @@ public class ImageCapActivity extends Activity implements
 
             @Override
             protected ObjectMetadata doInBackground(Void... params) {
-                try {
-                    final ObjectMetadata objMetadata = s3Amazon.getObjectMetadata(Constants.BUCKET_NAME, filename);
-                    return objMetadata;
+                int retries = 4;
+                boolean nthtry = false;
+                try{
+                    do {
+                        final ObjectMetadata objMetadata = s3Amazon.getObjectMetadata(Constants.BUCKET_NAME, filename);
+                        try {
+                            if (objMetadata.getContentLength()>5) nthtry = true;
+                        } catch (Exception ex) {
+                            nthtry = false;
+                        }
+                        if (nthtry) {
+                            Log.d(TAG,"Request to s3Amazon.getObjectMetadata succeeded");
+                            return objMetadata;
+                        } else {
+                            Log.d(TAG,"Request to s3Amazon.getObjectMetadata failed or object does not exist");
+                        }
+                    } while (retries-- > 0);
+                } catch (AmazonServiceException ase){
+                    Log.d(TAG, "AmazonServiceException="+ase.toString());
+                    return null;
+                } catch (AmazonClientException ace) {
+                    Log.d(TAG, "AmazonClientException="+ace.toString());
+                    return null;
                 } catch (Exception e) {
-                    Log.e(TAG, "getRemoteFileMetadata: exception: " + e.toString());
+                    Log.d(TAG, "Exception="+e.toString());
                     return null;
                 }
+                return null;
             }
 
             @Override
@@ -3254,7 +3275,7 @@ public class ImageCapActivity extends Activity implements
         String[] capsInDirectory = directory.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String filename) {
-                return filename.startsWith("cap_" + mymensorAccount + "_" + vpToList + "_");
+                return filename.startsWith(vpToList + "_");
             }
         });
         int numOfEntries = 0;
@@ -3332,7 +3353,7 @@ public class ImageCapActivity extends Activity implements
                             positionCertifiedImageview.setVisibility(View.GONE);
                             timeCertifiedImageview.setVisibility(View.GONE);
                             try {
-                                getRemoteFileMetadata("cap/" + vpMediaFileName);
+                                getRemoteFileMetadata(Constants.capturesFolder+"/"+mymensorAccount+"/"+vpMediaFileName);
                             } catch (Exception e) {
                                 Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
                             }

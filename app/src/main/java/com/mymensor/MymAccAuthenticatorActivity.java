@@ -209,14 +209,6 @@ public class MymAccAuthenticatorActivity extends AccountAuthenticatorActivity {
             }
         });
 
-        /*
-        alert.setPositiveButton("Done", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Toast.makeText(getBaseContext(), name, Toast.LENGTH_SHORT).show();
-            }
-        });
-        */
         alert.show();
     }
 
@@ -234,14 +226,6 @@ public class MymAccAuthenticatorActivity extends AccountAuthenticatorActivity {
             }
         });
 
-        /*
-        alert.setPositiveButton("Done", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Toast.makeText(getBaseContext(), name, Toast.LENGTH_SHORT).show();
-            }
-        });
-        */
         alert.show();
     }
 
