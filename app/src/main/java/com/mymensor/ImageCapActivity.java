@@ -1025,7 +1025,7 @@ public class ImageCapActivity extends Activity implements
                         grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
                 }
@@ -1048,7 +1048,7 @@ public class ImageCapActivity extends Activity implements
                         grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/" + showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                 }
