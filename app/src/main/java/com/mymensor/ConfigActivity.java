@@ -103,6 +103,8 @@ public class ConfigActivity extends Activity implements
 
     private short qtyVps = 0;
     private short vpIndex;
+    private short lastVpSelectedByUser;
+
 
     private String mymensorAccount;
     private int dciNumber;
@@ -311,6 +313,7 @@ public class ConfigActivity extends Activity implements
         sntpTime = Long.parseLong(getIntent().getExtras().get("sntpTime").toString());
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
+        lastVpSelectedByUser = Short.parseShort(getIntent().getExtras().get("lastVpSelectedByUser").toString());
 
         descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"dsc"+"/";
         markervpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"mrk"+"/";
@@ -604,6 +607,7 @@ public class ConfigActivity extends Activity implements
             }
         });
 
+        if (lastVpSelectedByUser>0) startWithVpDefined(lastVpSelectedByUser);
 
     } // End of OnCreate
 
@@ -1829,6 +1833,126 @@ public class ConfigActivity extends Activity implements
         catch (Exception e)
         {
             Log.e(TAG, "vpLocationDescImageFile failed, see stack trace"+e.toString());
+        }
+
+    }
+
+
+    public void startWithVpDefined(final int position)
+    {
+        vpLocationDescImageFileContents = null;
+        vpIndex = (short) (position);
+        if (position > (qtyVps+1))
+        {
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    vpsListView.setItemChecked(position, false);
+                    String message = getString(R.string.vp_name)+vpIndex+" "+getString(R.string.vp_out_of_bounds);
+                    Snackbar.make(vpsListView.getRootView(),message, Snackbar.LENGTH_LONG).show();
+                }
+            });
+            return;
+        }
+        if (vpIndex==0) {
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    vpsListView.setItemChecked(position, false);
+                    String message = getString(R.string.vp_name)+vpIndex+" "+getString(R.string.vp_notconfigurable);
+                    Snackbar.make(vpsListView.getRootView(),message, Snackbar.LENGTH_LONG).show();
+                }
+            });
+            return;
+        }
+        // Local file path of VP Location Picture Image
+        try
+        {
+            InputStream fis = MymUtils.getLocalFile("descvp"+(position)+".png",getApplicationContext());
+            if (!(fis==null)){
+                vpLocationDescImageFileContents = BitmapFactory.decodeStream(fis);
+                fis.close();
+            }
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Log.d(TAG, "Showing vpLocationDescImageFile for VP="+vpIndex+"(vpLocationDescImageFileContents==null)"+(vpLocationDescImageFileContents==null));
+                    // VP Location Picture ImageView
+                    if (!(vpLocationDescImageFileContents==null))
+                    {
+                        imageView.setImageBitmap(vpLocationDescImageFileContents);
+                        imageView.setVisibility(View.VISIBLE);
+                    }
+                    isShowingVpPhoto = true;
+                    vpsListView.setItemChecked(position, vpChecked[position]);
+                    // VP Location # TextView
+                    String vpId = Integer.toString(vpNumber[position]);
+                    vpId = getString(R.string.vp_name)+vpId;
+                    vpIdNumber.setText(vpId);
+                    vpIdNumber.setVisibility(View.VISIBLE);
+                    // VP Location Description TextView
+                    vpLocationDesEditTextView.setText(vpLocationDesText[position]);
+                    vpLocationDesEditTextView.setVisibility(View.VISIBLE);
+                    vpLocationDesEditTextView.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                    vpLocationDesEditTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                        @Override
+                        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                            if (actionId == EditorInfo.IME_ACTION_DONE)
+                            {
+                                vpLocationDesText[position] = vpLocationDesEditTextView.getText().toString();
+                            }
+                            return false;
+                        }
+
+                    });
+                    vpsListView.setVisibility(View.GONE);
+                    // VP Acquired
+                    if ((vpAcquired[vpIndex])&&(vpArIsConfigured[vpIndex])) {
+                        vpAcquiredStatus.setText(R.string.vpAcquiredStatus);
+                    } else {
+                        vpAcquiredStatus.setText(R.string.off);
+                    }
+                    if (!vpAcquired[vpIndex]) vpAcquiredStatus.setText(R.string.vpNotAcquiredStatus);
+                    linearLayoutVpArStatus.setVisibility(View.VISIBLE);
+                    vpAcquiredStatus.setVisibility(View.VISIBLE);
+                    cameraShutterButton.setEnabled(true);
+                    cameraShutterButton.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_bright)));
+                    cameraShutterButton.setVisibility(View.INVISIBLE);
+                    drawTargetFrame = false;
+                    // Draw Location Description Button and other buttons
+                    requestPhotoButton.setVisibility(View.VISIBLE);
+                    qtyVpsLinearLayout.setVisibility(View.INVISIBLE);
+                    buttonCallImagecap.setVisibility(View.INVISIBLE);
+                    linearLayoutConfigCaptureVps.setVisibility(View.VISIBLE);
+                    linearLayoutCaptureNewVp.setVisibility(View.VISIBLE);
+                    linearLayoutAmbiguousVp.setVisibility(View.VISIBLE);
+                    linearLayoutSuperSingleVp.setVisibility(View.VISIBLE);
+                    ambiguousVpToggle.setVisibility(View.VISIBLE);
+                    if (vpIsAmbiguous[vpIndex]) ambiguousVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+                    if (!vpIsAmbiguous[vpIndex]) ambiguousVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
+                    superSingleVpToggle.setVisibility(View.VISIBLE);
+                    if (vpIsSuperSingle[vpIndex]) superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_blue_dark)));
+                    if (!vpIsSuperSingle[vpIndex]) superSingleVpToggle.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray)));
+                    Log.d(TAG,"onItemClick: markerIdInPose vpSuperMarkerId["+vpIndex+"]="+vpSuperMarkerId[vpIndex]);
+                    if (vpSuperMarkerId[vpIndex]!=0) {
+                        linearLayoutMarkerId.setVisibility(View.VISIBLE);
+                        idMarkerNumberTextView.setText(Integer.toString(vpSuperMarkerId[vpIndex]));
+                    } else {
+                        linearLayoutMarkerId.setVisibility(View.INVISIBLE);
+                        idMarkerNumberTextView.setText("--");
+                    }
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            Log.e(TAG, "startWithVpDefined - vpLocationDescImageFile failed, see stack trace"+e.toString());
         }
 
     }

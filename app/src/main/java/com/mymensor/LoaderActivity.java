@@ -919,6 +919,7 @@ public class LoaderActivity extends Activity {
                 intent.putExtra("sntpTime", sntpTime);
                 intent.putExtra("sntpReference", sntpReference);
                 intent.putExtra("isTimeCertified", clockSetSuccess);
+                intent.putExtra("lastVpSelectedByUser", 0);
                 startActivity(intent);
             } catch (Exception e) {
                 Toast toast = Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT);

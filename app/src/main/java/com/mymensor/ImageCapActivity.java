@@ -903,6 +903,7 @@ public class ImageCapActivity extends Activity implements
                     intent.putExtra("sntpTime", sntpTime);
                     intent.putExtra("sntpReference", sntpTimeReference);
                     intent.putExtra("isTimeCertified", isTimeCertified);
+                    intent.putExtra("lastVpSelectedByUser", lastVpSelectedByUser);
                     startActivity(intent);
                 } catch (Exception e) {
                     Toast toast = Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT);
@@ -949,6 +950,7 @@ public class ImageCapActivity extends Activity implements
                 alphaToggleButton.setVisibility(View.GONE);
                 showVpCapturesButton.setVisibility(View.GONE);
                 callConfigButton.setVisibility(View.GONE);
+                linearLayoutConfigCaptureVps.setVisibility(View.GONE);
                 showPreviousVpCaptureButton.setVisibility(View.VISIBLE);
                 showNextVpCaptureButton.setVisibility(View.VISIBLE);
                 imageView.resetZoom();
@@ -1025,7 +1027,7 @@ public class ImageCapActivity extends Activity implements
                         grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "Media Shared by MyMensor Mobile App - https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
                 }
@@ -1048,7 +1050,7 @@ public class ImageCapActivity extends Activity implements
                         grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "Media Shared by MyMensor Mobile App - https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                 }
@@ -1956,6 +1958,7 @@ public class ImageCapActivity extends Activity implements
                             recText.clearAnimation();
                             videoCameraShutterButton.setVisibility(View.VISIBLE);
                             videoCameraShutterStopButton.setVisibility(View.GONE);
+                            videoRecorderTimeLayout.setVisibility(View.GONE);
                         }
                     });
                     mMediaRecorder.stop();

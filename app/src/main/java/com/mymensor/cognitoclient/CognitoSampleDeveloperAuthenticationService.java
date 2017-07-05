@@ -39,7 +39,7 @@ public class CognitoSampleDeveloperAuthenticationService {
             HttpURLConnection connection = (HttpURLConnection) url
                     .openConnection();
             connection.setRequestProperty("Authorization","Token " + mymToken);
-            connection.setRequestProperty("From", "androidar1000@mymensor.com");
+            connection.setRequestProperty("From", "androidarCode10001Name10@mymensor.com");
             responseCode = connection.getResponseCode();
             responseBody = CognitoSampleDeveloperAuthenticationService
                     .getResponse(connection);
