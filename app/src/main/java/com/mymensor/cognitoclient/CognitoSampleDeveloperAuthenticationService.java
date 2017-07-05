@@ -2,6 +2,8 @@ package com.mymensor.cognitoclient;
 
 import android.util.Log;
 
+import com.mymensor.Constants;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +41,7 @@ public class CognitoSampleDeveloperAuthenticationService {
             HttpURLConnection connection = (HttpURLConnection) url
                     .openConnection();
             connection.setRequestProperty("Authorization","Token " + mymToken);
-            connection.setRequestProperty("From", "androidarCode10001Name10@mymensor.com");
+            connection.setRequestProperty("From", Constants.CLIENT_SOFTWARE_TYPE);
             responseCode = connection.getResponseCode();
             responseBody = CognitoSampleDeveloperAuthenticationService
                     .getResponse(connection);
