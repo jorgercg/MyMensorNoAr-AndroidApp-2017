@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 public class AmazonSharedPreferencesWrapper {
 
     private static final String MYM_USER_KEY = "MYM_USER_KEY";
+    private static final String MYM_USER_GROUP = "MYM_USER_GROUP";
 
     /**
      * Set all of the Shared Preferences used by the sample Cognito developer
@@ -36,6 +37,16 @@ public class AmazonSharedPreferencesWrapper {
     public static String getKeyForUser(SharedPreferences sharedPreferences) {
         return AmazonSharedPreferencesWrapper.getValueFromSharedPreferences(
                 sharedPreferences, MYM_USER_KEY);
+    }
+
+    public static void registerUserGroup(SharedPreferences sharedPreferences, String group) {
+        AmazonSharedPreferencesWrapper.storeValueInSharedPreferences(
+                sharedPreferences, MYM_USER_GROUP, group);
+    }
+
+    public static String getGroupForUser(SharedPreferences sharedPreferences) {
+        return AmazonSharedPreferencesWrapper.getValueFromSharedPreferences(
+                sharedPreferences, MYM_USER_GROUP);
     }
 
     protected static void storeValueInSharedPreferences(

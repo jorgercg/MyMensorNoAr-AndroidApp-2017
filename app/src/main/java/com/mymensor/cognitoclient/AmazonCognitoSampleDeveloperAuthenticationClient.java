@@ -61,6 +61,9 @@ public class AmazonCognitoSampleDeveloperAuthenticationClient {
         if (response.requestWasSuccessful()) {
             AmazonSharedPreferencesWrapper.registerUserKey(
                     this.sharedPreferences,((LoginResponse) response).getKey());
+            AmazonSharedPreferencesWrapper.registerUserGroup(
+                    this.sharedPreferences,((LoginResponse) response).getAppMymensorGroup());
+            Log.d(LOG_TAG,"appMymensorGroup:"+((LoginResponse) response).getAppMymensorGroup());
         }
         return response;
     }

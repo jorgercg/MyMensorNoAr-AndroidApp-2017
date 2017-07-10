@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
@@ -26,6 +27,7 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 
+import com.mymensor.cognitoclient.AmazonSharedPreferencesWrapper;
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensorar.R;
 
@@ -40,6 +42,7 @@ public class LoaderActivity extends Activity {
 
     private String activityToBeCalled = null;
     private String mymensorAccount = null;
+    private String mymensorUserGroup = null;
     private String descvpRemotePath;
     private String vpsRemotePath;
     private String vpsCheckedRemotePath;
@@ -81,16 +84,13 @@ public class LoaderActivity extends Activity {
     private Boolean loadingMarkervpFile = false;
     private Boolean configFromRemoteStorageExistsAndAccessible = false;
 
+    SharedPreferences amazonSharedPref;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activityToBeCalled = getIntent().getExtras().get("activitytobecalled").toString();
-
-        // Retrieving SeaMensor Account information,
-        mymensorAccount = getIntent().getExtras().get("account").toString();
-
-        Log.d(TAG, "OnCreate: MyMensor Account: " + mymensorAccount);
 
         appStartState = getIntent().getExtras().get("appstartstate").toString();
         Log.d(TAG, "OnCreate: appStartState: " + appStartState);
@@ -102,11 +102,6 @@ public class LoaderActivity extends Activity {
         transferUtility = AwsUtil.getTransferUtility(s3Client, getApplicationContext());
 
         s3Amazon = CognitoSyncClientManager.getInstance();
-
-        descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
-        markervpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "mrk" + "/";
-        vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
-        vpsCheckedRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
 
         // Creating AsyncTask
         backgroundLoader = new BackgroundLoader();
@@ -126,21 +121,11 @@ public class LoaderActivity extends Activity {
         rotationCircles = AnimationUtils.loadAnimation(this, R.anim.clockwise_rotation);
         mymensorLogoCircles.startAnimation(rotationCircles);
 
-
-        if (mymensorAccount.equalsIgnoreCase("")) {
-            Snackbar.make(logoLinearLayout.getRootView(), getText(R.string.nomymensoraccount), Snackbar.LENGTH_LONG)
-                    .setAction(getText(R.string.ok), null).show();
-            Log.d(TAG, "Closing the app");
-            finish();
-        }
-
-
         File vpsFileCHK = new File(getApplicationContext().getFilesDir(), Constants.vpsConfigFileName);
 
         if (vpsFileCHK.exists()) {
             localFilesExist = true;
         }
-
 
         if (appStartState.equalsIgnoreCase("firstever")) {
             // TODO
@@ -165,7 +150,7 @@ public class LoaderActivity extends Activity {
             }
         });
 
-        backgroundLoader.execute();
+        startUpLoader();
 
     }
 
@@ -197,6 +182,38 @@ public class LoaderActivity extends Activity {
         else
             Snackbar.make(logoLinearLayout, getString(R.string.double_bck_exit), Snackbar.LENGTH_LONG).show();
         back_pressed = System.currentTimeMillis();
+    }
+
+
+    private void startUpLoader(){
+        // Retrieving SeaMensor Account information,
+        mymensorAccount = getIntent().getExtras().get("account").toString();
+
+        Log.d(TAG, "startUpLoader: MyMensor Account from Mobile App: " + mymensorAccount);
+
+        if (mymensorAccount.equalsIgnoreCase("")) {
+            Snackbar.make(logoLinearLayout.getRootView(), getText(R.string.nomymensoraccount), Snackbar.LENGTH_LONG)
+                    .setAction(getText(R.string.ok), null).show();
+            Log.d(TAG, "Closing the app");
+            finish();
+        }
+
+        amazonSharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+
+        mymensorUserGroup = AmazonSharedPreferencesWrapper.getGroupForUser(amazonSharedPref);
+
+        Log.d(TAG,"startUpLoader: MYM_USR_GROUP: "+ mymensorUserGroup);
+
+        if (mymensorUserGroup.equalsIgnoreCase("mymARmobileapp")) {
+            mymensorAccount = mymensorAccount.substring(7, (mymensorAccount.length()-1));
+        }
+
+        descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
+        markervpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "mrk" + "/";
+        vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
+        vpsCheckedRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
+
+        backgroundLoader.execute();
     }
 
 

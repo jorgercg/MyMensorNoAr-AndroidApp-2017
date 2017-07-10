@@ -5,7 +5,7 @@ import com.amazonaws.regions.Regions;
 public class Constants {
 
 
-    public static final String CLIENT_SOFTWARE_TYPE = "androidarCode10002Name10@mymensor.com";
+    public static final String CLIENT_SOFTWARE_TYPE = "androidarCode10004Name10@mymensor.com";
 
     public static final short maxQtyVps = 31;
     public static final String frequencyUnit = "millis";
@@ -62,6 +62,7 @@ public class Constants {
     public static final String REGISTER_SERVER = "https://app.mymensor.com/accounts/register/";
     public static final String MYM_KEY = "mym_authToken";
     public static final String MYM_USER = "mym_user";
+    public static final String MYM_USR_GROUP = "MYM_USER_GROUP";
 }
 
 
