@@ -195,10 +195,14 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
+        if (!noUserLogged) {
+            do {
+                //Nothing....
+            } while (sharedPref.getString(Constants.MYM_USER,"").equals(""));
+        }
 
         if (!noUserLogged){
-            Log.d(TAG, "Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+            Log.d(TAG, "OnCreate - Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
             Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
             launch_intent.putExtra("activitytobecalled", "imagecapactivity");
             launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
@@ -295,7 +299,7 @@ public class MainActivity extends AppCompatActivity {
                         getExistingAccountAuthToken(availableAccounts[which], authTokenType);
                     userLogged.setText(getText(R.string.userstate_loggedin)+" "+availableAccounts[which].name);
                     noUserLogged = false;
-                    Log.d(TAG, "Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+                    Log.d(TAG, "Account Picker - Calling the imagecapactivity, with user="+sharedPref.getString(Constants.MYM_USER,""));
                     Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
                     launch_intent.putExtra("activitytobecalled", "imagecapactivity");
                     launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
@@ -338,6 +342,7 @@ public class MainActivity extends AppCompatActivity {
                     final String authtoken = bnd.getString(AccountManager.KEY_AUTHTOKEN);
                     final String userName = bnd.getString(AccountManager.KEY_ACCOUNT_NAME);
                     SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString(Constants.MYM_USER ,userName);
                     editor.putString(Constants.MYM_KEY,authtoken);
                     editor.commit();
                     Log.d(TAG, "GetToken Bundle is " + bnd);
@@ -376,7 +381,7 @@ public class MainActivity extends AppCompatActivity {
                     String mymtoken = sharedPref.getString(Constants.MYM_KEY," ");
                     Log.d(TAG, "AddNewAccount Token is " + mymtoken);
                     getCognitoIdAndToken(mymtoken);
-                    Log.d(TAG, "Calling the imagecapactivity Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
+                    Log.d(TAG, "addNewAccount - Calling the imagecapactivity Capture Activity, with user="+sharedPref.getString(Constants.MYM_USER,""));
                     Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
                     launch_intent.putExtra("activitytobecalled", "imagecapactivity");
                     launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));

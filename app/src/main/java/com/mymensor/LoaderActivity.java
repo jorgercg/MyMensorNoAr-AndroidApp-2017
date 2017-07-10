@@ -200,12 +200,13 @@ public class LoaderActivity extends Activity {
 
         amazonSharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
-        mymensorUserGroup = AmazonSharedPreferencesWrapper.getGroupForUser(amazonSharedPref);
-
-        Log.d(TAG,"startUpLoader: MYM_USR_GROUP: "+ mymensorUserGroup);
+        do {
+            mymensorUserGroup = AmazonSharedPreferencesWrapper.getGroupForUser(amazonSharedPref);
+            Log.d(TAG,"startUpLoader: MYM_USR_GROUP: "+ mymensorUserGroup);
+        } while (mymensorUserGroup==null);
 
         if (mymensorUserGroup.equalsIgnoreCase("mymARmobileapp")) {
-            mymensorAccount = mymensorAccount.substring(7, (mymensorAccount.length()-1));
+            mymensorAccount = mymensorAccount.substring(7, mymensorAccount.length());
         }
 
         descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
