@@ -102,7 +102,7 @@ float *ImageDetectionFilter::getPose()
 
 void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, cv::Mat &cameraMatrix) {
 
-    LOGD("Frame=%d Remainder=%d",frame,frame%6);
+    //LOGD("Frame=%d Remainder=%d",frame,frame%6);
 
     cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(6, 12, 0)); //matcher(new cv::flann::LshIndexParams(6, 12, 1));
     // Convert the scene to grayscale.
@@ -127,7 +127,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
         kmax = qtVp - 1;
     }
     do {
-        LOGD("k=%d kmax=%d",k,kmax);
+        //LOGD("k=%d kmax=%d",k,kmax);
         cv::Mat localReferenceDescriptors;
         mReferenceDescriptors[k].copyTo(localReferenceDescriptors);
         matcher.match(mSceneDescriptors, localReferenceDescriptors, mMatches);
@@ -135,7 +135,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
         //LOGD("Searching for VP: %d    Matches Found: %d", (k + 1), mMatches.size());
         // Attempt to find the target image's 3D pose in the scene.
         if (mMatches.size() >= 4) {
-            LOGD("Searching for VP: %d    Matches Found: %d", (k+1), mMatches.size());
+            //LOGD("Searching for VP: %d    Matches Found: %d", (k+1), mMatches.size());
             // There are sufficient matches to find the pose.
             // Calculate the max and min distances between keypoints.
             float maxDist = 0.0f;
@@ -214,7 +214,7 @@ void ImageDetectionFilter::apply(cv::Mat &src, int isHudOn, int isSingleImage, c
                             }
                             mTracking = true;
                             lostTrackingCounter = 0;
-                            LOGD("POSE: VP#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0]+xShift,mPose[1]+yShift,mPose[2],mPose[3],mPose[4],mPose[5]);
+                            //LOGD("POSE: VP#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0]+xShift,mPose[1]+yShift,mPose[2],mPose[3],mPose[4],mPose[5]);
                             draw(mCandidateSceneCorners, src, isHudOn);
                         } else {
                             mTracking = false;
@@ -239,7 +239,7 @@ void ImageDetectionFilter::draw(cv::Mat sceneCorners, cv::Mat src, int isHudOn)
 {
     if (((mTracking) || ((!mTracking)&&(lostTrackingCounter<12)))&&(isHudOn==1)) {
         // The target has been found.
-        LOGD("isHudOn= %d",isHudOn);
+        //LOGD("isHudOn= %d",isHudOn);
         // Outline the found target in SeaMate blue.
         cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(0, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(0, 0)[1])+yShift), cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift), cv::Scalar(0.0,175.0,239.0), 8);
         cv::line(src, cv::Point2d((sceneCorners.at<cv::Vec2f>(1, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(1, 0)[1])+yShift), cv::Point2d((sceneCorners.at<cv::Vec2f>(2, 0)[0])+xShift,(sceneCorners.at<cv::Vec2f>(2, 0)[1])+yShift), cv::Scalar(0.0,175.0,239.0), 8);

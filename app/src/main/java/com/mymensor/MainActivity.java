@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     public enum AppStart {
         FIRST_TIME, FIRST_TIME_VERSION, NORMAL;
     }
-    private static final String LAST_APP_VERSION = "1000";
+    private static final String LAST_APP_VERSION = Constants.CURR_APP_VERSION;
     private static AppStart appStart = null;
     private String appStartState;
 

@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name" translatable="false">MyMensorAR</string>
     <string name="action_settings">Settings</string>
-    <string name="app_version_seamensor" translatable="false">MyMensor 1.0.0.0</string>
-    <string name="app_version_smc" translatable="false">MyMensor 1.0.0.0</string>
     <string name="double_bck_exit">Press Back twice quickly to exit!</string>
     <string name="button_exit">Press Button twice quickly to exit!</string>
     <string name="starting_to_load_assets">Starting.....</string>
@@ -90,7 +88,7 @@
     <string name="arswitchisoff">AR is OFF, use the camera button to capture VPs.</string>
     <string name="vp_notconfigurable">This is a special VP for photos without AR, thus not configurable.</string>
     <string name="vpcfgfileloadfailed">Vps configuration file load failed.</string>
-    <string name="vp_capture_placeholder_description_freevp">Photos captured without using Augmented Reality</string>
+    <string name="vp_capture_placeholder_description_freevp">Media captured without using Augmented Reality</string>
     <string name="to">" to "</string>
     <string name="qtyvps_increased">Quantity of VPs increased from</string>
     <string name="qtyvps_decreased">Quantity of VPs decreased from</string>
@@ -129,7 +127,7 @@
     <string name="nosetupfileexp">There are no local setup files and no connection to MyMensor server. If you decide to continue new files will be created and eventual old ones will be ERASED. Do you wish to continue?</string>
     <string name="continu">CONTINUE</string>
     <string name="leaveapp">LEAVE APP</string>
-    <string name="sdk_lower_then_kitkat">Thsi app is not compatible with Android versions prior to KitKat. Closing now.</string>
+    <string name="sdk_lower_then_kitkat">This app is not compatible with Android versions prior to KitKat. Closing now.</string>
     <string name="error_to_obtain_sha256">Error while retrieving Media Signature.</string>
     <string name="first_time_usage">Creating local configuration files.</string>
     <string name="start_with_server_connection">Connected to server. Starting with latest configuration.</string>
@@ -140,4 +138,5 @@
     <string name="sizelimit100">Limited to 1000 characters!!!</string>
     <string name="cantadduser">Not possible to add user</string>
     <string name="onlyoneperdev">Only one user is allowed per device. To change user you first need to logout.</string>
+    <string name="error_while_playing_video">An error ocurred while playing video.</string>
 </resources>

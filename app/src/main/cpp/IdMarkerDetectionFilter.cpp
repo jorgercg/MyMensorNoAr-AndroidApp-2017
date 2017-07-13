@@ -60,7 +60,7 @@ void IdMarkerDetectionFilter::apply(cv::Mat &src, int isHudOn, cv::Mat &cameraMa
             mPose[5] = (float) mRVec[0](2);// Z Rotation
             mPose[6] = (float) ((ids[0])/10); // marker currently being tracked
             lostTrackingCounter = 0;
-            LOGD("POSE: Id#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0],mPose[1],mPose[2],mPose[3]*180/3.141592,mPose[4]*180/3.141592,mPose[5]*180/3.141592);
+            //LOGD("POSE: Id#%f x=%f y=%f z=%f rx=%f ry=%f rz=%f",mPose[6], mPose[0],mPose[1],mPose[2],mPose[3]*180/3.141592,mPose[4]*180/3.141592,mPose[5]*180/3.141592);
             if (isHudOn==1) {
                 cv::aruco::drawDetectedMarkers(src, corners, ids);
                 cv::aruco::drawAxis(src, cameraMatrix, mDistCoeffs, mRVec[0], mTVec[0], markerLength * 0.5f);

@@ -25,6 +25,7 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.CamcorderProfile;
 import android.media.ExifInterface;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.SoundPool;
@@ -33,7 +34,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
@@ -43,17 +43,14 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Xml;
 import android.view.Gravity;
-import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -83,7 +80,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.mymensor.cognitoclient.AmazonSharedPreferencesWrapper;
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensor.filters.ARFilter;
 import com.mymensor.filters.Filter;
@@ -118,7 +114,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -261,6 +256,7 @@ public class ImageCapActivity extends Activity implements
     ImageButton rejectVpPhotoButton;
     ImageButton buttonRemarkVpPhoto;
     ImageButton buttonReplayVpVideo;
+    ImageButton buttonStartVideoInVpCaptures;
 
     LinearLayout arSwitchLinearLayout;
     LinearLayout uploadPendingLinearLayout;
@@ -329,6 +325,8 @@ public class ImageCapActivity extends Activity implements
 
     private String videoFileName;
     private String videoFileNameLong;
+    private String videoThumbnailFileName;
+    private String videoThumbnailFileNameLong;
 
     public boolean isPositionCertified = false;
     public boolean isConnectedToServer = false;
@@ -427,6 +425,7 @@ public class ImageCapActivity extends Activity implements
     protected Boolean mymIsRunningOnFlippedDisplay = false;
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -453,6 +452,7 @@ public class ImageCapActivity extends Activity implements
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+            Log.d(TAG, "onCreate - Calling FULLSCREEN");
             window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -548,6 +548,7 @@ public class ImageCapActivity extends Activity implements
         mCameraView.setCameraIndex(0);
         mCameraView.setMaxFrameSize(cameraWidthInPixels, Constants.cameraHeigthInPixels);
         mCameraView.setCvCameraViewListener(this);
+
 
         circularButtonGreen = ContextCompat.getDrawable(getApplicationContext(), circular_button_green);
 
@@ -655,6 +656,8 @@ public class ImageCapActivity extends Activity implements
 
         showNextVpCaptureButton = (ImageButton) this.findViewById(R.id.buttonShowNextVpCapture);
 
+        buttonStartVideoInVpCaptures = (ImageButton) this.findViewById(R.id.buttonStartVideoInVpCaptures);
+
         videoRecorderChronometer = (Chronometer) this.findViewById(R.id.recordingChronometer);
 
         arSwitch = (Switch) findViewById(R.id.arSwitch);
@@ -738,6 +741,7 @@ public class ImageCapActivity extends Activity implements
                 public void onClick(View view) {
                     Log.d(TAG, "Video Camera Start Button clicked!!!");
                     askForManualVideo = true;
+                    stopManualVideo = false;
                     videoCameraShutterButton.setVisibility(View.GONE);
                     videoCameraShutterStopButton.setVisibility(View.VISIBLE);
                     videoRecorderChronometer.setBase(SystemClock.elapsedRealtime());
@@ -1189,7 +1193,7 @@ public class ImageCapActivity extends Activity implements
         mCurrentLocation = location;
         mLastUpdateTime = MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference);
         mLocationUpdated = true;
-        Log.d(TAG, "onLocationChanged: mLastUpdateTime=" + mLastUpdateTime + " mCurrentLocation=" + mCurrentLocation.toString());
+        //Log.d(TAG, "onLocationChanged: mLastUpdateTime=" + mLastUpdateTime + " mCurrentLocation=" + mCurrentLocation.toString());
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1332,7 +1336,6 @@ public class ImageCapActivity extends Activity implements
                 locationString[5] = " ";
                 locationString[6] = " ";
                 locationString[7] = " ";
-
             }
             for (int index = 0; index < locationString.length; index++) {
                 if (locationString[index] == null) locationString[index] = " ";
@@ -1372,7 +1375,7 @@ public class ImageCapActivity extends Activity implements
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "returnToInitialScreen");
+                //Log.d(TAG, "returnToInitialScreen");
                 DisplayMetrics metrics = new DisplayMetrics();
                 getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
@@ -1382,6 +1385,7 @@ public class ImageCapActivity extends Activity implements
                 final Window window = getWindow();
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                    Log.d(TAG, "returnToInitialScreen - Calling FULLSCREEN");
                     window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -1389,7 +1393,11 @@ public class ImageCapActivity extends Activity implements
                             | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
                             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
                 }
-                mCameraView.setVisibility(View.VISIBLE);
+                if (videoView.isPlaying()) videoView.stopPlayback();
+                videoView.setZOrderOnTop(false);
+                videoView.setVisibility(View.GONE);
+                imageView.setVisibility(View.GONE);
+                //mCameraView.setVisibility(View.VISIBLE);
                 linearLayoutButtonsOnShowVpCaptures.setVisibility(View.GONE);
                 linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.GONE);
                 uploadPendingLinearLayout.setVisibility(View.GONE);
@@ -1398,13 +1406,13 @@ public class ImageCapActivity extends Activity implements
                 isShowingVpPhoto = false;
                 vpLocationDesTextView.setVisibility(View.GONE);
                 vpIdNumber.setVisibility(View.GONE);
-                if (videoView.isPlaying()) videoView.stopPlayback();
-                videoView.setVisibility(View.GONE);
-                imageView.setVisibility(View.GONE);
                 callConfigButton.setVisibility(View.GONE);
                 alphaToggleButton.setVisibility(View.GONE);
                 showPreviousVpCaptureButton.setVisibility(View.GONE);
                 showNextVpCaptureButton.setVisibility(View.GONE);
+                if (buttonStartVideoInVpCaptures.isShown()){
+                    buttonStartVideoInVpCaptures.setVisibility(View.GONE);
+                }
                 showVpCapturesButton.setVisibility(View.GONE);
 
                 // Layout showing VP configuration state
@@ -1443,7 +1451,7 @@ public class ImageCapActivity extends Activity implements
 
     @Override
     public void onBackPressed() {
-        Log.d(TAG, "Testando JNI:" + getSecretKeyFromJNI());
+        //Log.d(TAG, "Testando JNI:" + getSecretKeyFromJNI());
         boolean specialBackClick = false;
         if (isShowingVpPhoto) {
             specialBackClick = true;
@@ -1505,6 +1513,7 @@ public class ImageCapActivity extends Activity implements
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+            Log.d(TAG, "onResume - Calling FULLSCREEN");
             window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -1574,6 +1583,7 @@ public class ImageCapActivity extends Activity implements
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+            Log.d(TAG, "onRestart - Calling FULLSCREEN");
             window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -1836,6 +1846,7 @@ public class ImageCapActivity extends Activity implements
         }
     }
 
+    @TargetApi(21)
     private boolean prepareVideoRecorder(String videoFileName) {
         mMediaRecorder = new MediaRecorder();
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -1865,11 +1876,13 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
+        Log.d(TAG,"onCameraViewStarted CALLED width:"+width+" height:"+height);
     }
 
 
     @Override
     public void onCameraViewStopped() {
+        Log.d(TAG,"onCameraViewStopped CALLED");
     }
 
     @Override
@@ -1937,37 +1950,42 @@ public class ImageCapActivity extends Activity implements
                 photoTakenTimeMillis[vpTrackedInPose] = momentoLong;
                 String momento = String.valueOf(momentoLong);
                 videoFileName = vpNumber[vpTrackedInPose] + "_v_" + momento + ".mp4";
+                videoThumbnailFileName = vpNumber[vpTrackedInPose] + "_t_" + momento + ".jpg";
                 videoFileNameLong = getApplicationContext().getFilesDir() + "/" + videoFileName;
+                videoThumbnailFileNameLong = getApplicationContext().getFilesDir() + "/" + videoThumbnailFileName;
                 if (!capturingManualVideo) prepareVideoRecorder(videoFileNameLong);
             }
             if (videoRecorderPrepared) {
                 if (((System.currentTimeMillis() - videoCaptureStartmillis) < Constants.shortVideoLength) && (!stopManualVideo)) {
-                    Log.d(TAG, "Waiting for video recording to end:" + (System.currentTimeMillis() - videoCaptureStartmillis));
+                    //Log.d(TAG, "Waiting for video recording to end:" + (System.currentTimeMillis() - videoCaptureStartmillis));
                 } else {
-                    capturingManualVideo = false;
-                    stopManualVideo = false;
-                    AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-                    float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
-                    float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
-                    float volume = actualVolume / maxVolume;
-                    if (videoRecordStopedSoundIDLoaded) {
-                        soundPool.play(videoRecordStopedSoundID, volume, volume, 1, 0, 1f);
-                        Log.d(TAG, "Video STOP: Duartion limit exceeded Played sound");
-                    }
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            recText.clearAnimation();
-                            videoCameraShutterButton.setVisibility(View.VISIBLE);
-                            videoCameraShutterStopButton.setVisibility(View.GONE);
-                            videoRecorderTimeLayout.setVisibility(View.GONE);
+                    if (capturingManualVideo){
+                        stopManualVideo = false;
+                        capturingManualVideo = false;
+                        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                        float actualVolume = (float) audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+                        float maxVolume = (float) audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION);
+                        float volume = actualVolume / maxVolume;
+                        if (videoRecordStopedSoundIDLoaded) {
+                            soundPool.play(videoRecordStopedSoundID, volume, volume, 1, 0, 1f);
+                            Log.d(TAG, "Video STOP: Duartion limit exceeded Played sound");
                         }
-                    });
-                    mMediaRecorder.stop();
-                    mCameraView.setRecorder(null);
-                    videoRecorderPrepared = false;
-                    videoRecorderChronometer.stop();
-                    captureVideo();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                recText.clearAnimation();
+                                videoCameraShutterButton.setVisibility(View.VISIBLE);
+                                videoCameraShutterStopButton.setVisibility(View.GONE);
+                                videoRecorderTimeLayout.setVisibility(View.GONE);
+                            }
+                        });
+                        mMediaRecorder.stop();
+                        mCameraView.setRecorder(null);
+                        videoRecorderPrepared = false;
+                        videoRecorderChronometer.stop();
+                        releaseMediaRecorder();
+                        captureVideo();
+                    }
                 }
             } else {
                 // prepare didn't work, release the camera
@@ -2243,7 +2261,7 @@ public class ImageCapActivity extends Activity implements
                         }
                     });
                     if (isHudOn == 0) isHudOn = 1;
-                    Log.d(TAG, "INVALID VP TRACKED IN POSE");
+                    //Log.d(TAG, "INVALID VP TRACKED IN POSE");
                 }
 
             } else {
@@ -2285,9 +2303,9 @@ public class ImageCapActivity extends Activity implements
         return rgba;
     }
 
+
     @TargetApi(21)
     private void captureVideo() {
-
         final String path = getApplicationContext().getFilesDir().getPath();
         File directory = new File(path);
         String[] fileInDirectory = directory.list(new FilenameFilter() {
@@ -2317,12 +2335,12 @@ public class ImageCapActivity extends Activity implements
                         radarScanImageView.setVisibility(View.GONE);
                     }
                     videoView.setVisibility(View.GONE);
-                    File videoFileTMP = new File(getApplicationContext().getFilesDir(), videoFileName);
+                    Uri videoFileTMP = Uri.fromFile(new File(getApplicationContext().getFilesDir(), videoFileName));
                     Log.d(TAG, "media PATH:" + videoFileTMP.getPath());
                     boolean fileNotFound = true;
                     do {
                         try {
-                            videoView.setVideoPath(videoFileTMP.getPath());
+                            videoView.setVideoURI(videoFileTMP);
                             videoView.setVisibility(View.VISIBLE);
                             fileNotFound = false;
                         } catch (Exception e) {
@@ -2332,7 +2350,6 @@ public class ImageCapActivity extends Activity implements
                     } while (fileNotFound);
                     videoView.setMediaController(mMediaController);
                     videoView.start();
-                    videoView.setZOrderOnTop(true);
                     videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mp) {
@@ -2342,6 +2359,24 @@ public class ImageCapActivity extends Activity implements
                             rejectVpPhotoButton.setVisibility(View.VISIBLE);
                             buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
                             buttonReplayVpVideo.setVisibility(View.VISIBLE);
+                            Log.d(TAG,"Turned on VIDEO Decision Buttons!!!! captureVideo 1:vpphta:"+vpPhotoAccepted+"vpphtr:"+vpPhotoRejected);
+                            DisplayMetrics metrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+                            Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                            Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+                            final Window window = getWindow();
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                            if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                                Log.d(TAG, "captureVideo Acceptance - Calling FULLSCREEN");
+                                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                                        | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                            }
                         }
                     });
                 }
@@ -2367,6 +2402,24 @@ public class ImageCapActivity extends Activity implements
                                 rejectVpPhotoButton.setVisibility(View.VISIBLE);
                                 buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
                                 buttonReplayVpVideo.setVisibility(View.VISIBLE);
+                                Log.d(TAG,"Turned on VIDEO Decision Buttons!!!! captureVideo 2");
+                                DisplayMetrics metrics = new DisplayMetrics();
+                                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+                                Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                                Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+                                final Window window = getWindow();
+                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                                    Log.d(TAG, "captureVideo Acceptance - Calling FULLSCREEN");
+                                    window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                                            | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                                }
                             }
                         });
                     }
@@ -2390,11 +2443,45 @@ public class ImageCapActivity extends Activity implements
                         alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int whichButton) {
                                 vpPhotoRemark = input.getText().toString();
+                                DisplayMetrics metrics = new DisplayMetrics();
+                                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+                                Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                                Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+                                final Window window = getWindow();
+                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                                    Log.d(TAG, "captureVideo Acceptance - Calling FULLSCREEN");
+                                    window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                                            | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                                }
                             }
                         });
 
                         alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int whichButton) {
+                                DisplayMetrics metrics = new DisplayMetrics();
+                                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+                                Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                                Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+
+                                final Window window = getWindow();
+                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                                    Log.d(TAG, "captureVideo Acceptance - Calling FULLSCREEN");
+                                    window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                                            | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                                }
                                 // Canceled.
                             }
                         });
@@ -2404,7 +2491,8 @@ public class ImageCapActivity extends Activity implements
                 });
             }
         } while ((!vpPhotoAccepted) && (!vpPhotoRejected));
-
+        vpVideoTobeReplayed = false;
+        vpPhotoTobeRemarked = false;
         Log.d(TAG, "takePhoto: LOOP ENDED: vpPhotoAccepted:" + vpPhotoAccepted + " vpPhotoRejected:" + vpPhotoRejected);
 
         if (vpPhotoAccepted) {
@@ -2412,7 +2500,6 @@ public class ImageCapActivity extends Activity implements
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    mCameraView.setZOrderOnTop(true);
                     videoView.setVisibility(View.GONE);
                     acceptVpPhotoButton.setVisibility(View.GONE);
                     rejectVpPhotoButton.setVisibility(View.GONE);
@@ -2447,9 +2534,64 @@ public class ImageCapActivity extends Activity implements
             try {
                 if (fileInDirectory != null) {
                     File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
+                    File pictureVideoThumbnailFile = new File(videoThumbnailFileNameLong);
+                    Bitmap videoThumbnailHdBitmap = null;
+                    MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
+                    try {
+                        mediaMetadataRetriever.setDataSource(videoFileNameLong);
+                        videoThumbnailHdBitmap = mediaMetadataRetriever.getFrameAtTime();
+                    } catch (IllegalArgumentException iae) {
+                        Log.e(TAG, "MediaMetadataRetriever exception: "+iae.toString());
+                    } finally {
+                        mediaMetadataRetriever.release();
+                    }
+                    if (videoThumbnailHdBitmap != null) {
+                        try {
+                            FileOutputStream fos = new FileOutputStream(pictureVideoThumbnailFile);
+                            videoThumbnailHdBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                            fos.close();
+                        } catch (Exception e) {
+                            Log.e(TAG, "videoThumbnailHdBitmap saving to videoThumbnailFileNameLong failed:" + e.toString());
+                        }
+                    } else {
+                        try {
+                            InputStream fis = MymUtils.getLocalFile("descvp0.png", getApplicationContext());
+                            if (!(fis == null)) {
+                                videoThumbnailHdBitmap = BitmapFactory.decodeStream(fis);
+                                fis.close();
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "videoThumbnailHdBitmap contents from vpLocationDescImageFile0 failed:" + e.toString());
+                        }
+                        try {
+                            FileOutputStream fos = new FileOutputStream(pictureVideoThumbnailFile);
+                            videoThumbnailHdBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+                            fos.close();
+                        } catch (Exception e) {
+                            Log.e(TAG, "videoThumbnailHdBitmap saving to videoThumbnailFileNameLong from descvp0 failed:" + e.toString());
+                        }
+                    }
+                    Log.d(TAG,"pictureFile.getName()="+pictureVideoThumbnailFile.getName());
+                    Log.d(TAG,"pictureVideoThumbnailFile.getPath()=" + pictureVideoThumbnailFile.getPath());
+                    ObjectMetadata thumbnailMetadata = new ObjectMetadata();
+                    Map<String, String> userThumbMetadata = new HashMap<String, String>();
+                    userThumbMetadata.put("vp", "" + (vpTrackedInPose));
+                    userThumbMetadata.put("mymensoraccount", mymensorAccount);
+                    //call setUserMetadata on our ObjectMetadata object, passing it our map
+                    thumbnailMetadata.setUserMetadata(userThumbMetadata);
+                    //uploading the objects
+                    TransferObserver thumbObserver = MymUtils.storeRemoteFile(
+                            transferUtility,
+                            Constants.capturesFolder+"/"+mymensorAccount+"/"+videoThumbnailFileName,
+                            Constants.BUCKET_NAME,
+                            pictureVideoThumbnailFile,
+                            thumbnailMetadata);
+                    thumbObserver.setTransferListener(new UploadListener());
+                    pendingUploadTransfers++;
+                    updatePendingUpload();
+
                     Log.d(TAG, "videoFile.getName()=" + videoFile.getName());
                     Log.d(TAG, "videoFile.getPath()=" + videoFile.getPath());
-                    Log.d(TAG, "videoFileName=" + videoFileName);
                     String fileSha256Hash = MymUtils.getFileHash(videoFile);
                     locPhotoToExif = getLocationToExifStrings(mCurrentLocation, Long.toString(photoTakenTimeMillis[vpTrackedInPose]));
                     ObjectMetadata myObjectMetadata = new ObjectMetadata();
@@ -2530,12 +2672,19 @@ public class ImageCapActivity extends Activity implements
         if (vpPhotoRejected) {
             Log.d(TAG, "AROFF Video: vpPhotoRejected!!!!");
             File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
-            videoFile.delete();
+            try {
+                if (!videoFile.delete()) {
+                    Log.d(TAG,"Rejected video could not be deleted!!!!!!!");
+                }
+            } catch (Exception e) {
+                Log.e(TAG,"Exception while deletion rejected video:"+e.toString());
+            }
+
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     videoView.setVisibility(View.GONE);
-                    mCameraView.setZOrderOnTop(true);
+                    //mCameraView.setZOrderOnTop(true);
                     acceptVpPhotoButton.setVisibility(View.GONE);
                     rejectVpPhotoButton.setVisibility(View.GONE);
                     buttonRemarkVpPhoto.setVisibility(View.GONE);
@@ -3264,13 +3413,8 @@ public class ImageCapActivity extends Activity implements
 
 
     private void showVpCaptures(int vpSelected) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mCameraView.setVisibility(View.GONE);
-            }
-        });
         final Bitmap showVpPhotoImageFileContents;
+        final Bitmap showVpVideoThumbImageFileContents;
         Log.d(TAG, "vpSelected=" + vpSelected + " lastVpSelectedByUser=" + lastVpSelectedByUser);
         final int position = vpSelected;
         final int vpToList = vpSelected;
@@ -3280,7 +3424,7 @@ public class ImageCapActivity extends Activity implements
         String[] capsInDirectory = directory.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String filename) {
-                return filename.startsWith(vpToList + "_");
+                return filename.startsWith(vpToList + "_p") || filename.startsWith(vpToList + "_v");
             }
         });
         int numOfEntries = 0;
@@ -3290,8 +3434,9 @@ public class ImageCapActivity extends Activity implements
                 if (mediaSelected == -1) mediaSelected = numOfEntries - 1;
                 if (mediaSelected < 0) mediaSelected = 0;
                 if (mediaSelected > (numOfEntries - 1)) mediaSelected = 0;
-                Log.d(TAG, "vpSelected=" + vpSelected + " lastVpSelectedByUser=" + lastVpSelectedByUser + " mediaSelected=" + mediaSelected);
+                Log.d(TAG, "SHOWVPCAPTURES: vpSelected=" + vpSelected + " lastVpSelectedByUser=" + lastVpSelectedByUser + " mediaSelected=" + mediaSelected);
                 vpMediaFileName = capsInDirectory[mediaSelected];
+                Log.d(TAG, "SHOWVPCAPTURES: vpMediaFileName=" + vpMediaFileName);
                 showingMediaFileName = vpMediaFileName;
                 Log.d(TAG, "showVpCaptures: vpMediaFileName=" + vpMediaFileName);
                 StringBuilder sb = new StringBuilder(vpMediaFileName);
@@ -3348,51 +3493,92 @@ public class ImageCapActivity extends Activity implements
                         }
                     });
                 } else {
-                    // when the item is a video.
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageView.setVisibility(View.GONE);
-                            linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
-                            linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
-                            positionCertifiedImageview.setVisibility(View.GONE);
-                            timeCertifiedImageview.setVisibility(View.GONE);
-                            try {
-                                getRemoteFileMetadata(Constants.capturesFolder+"/"+mymensorAccount+"/"+vpMediaFileName);
-                            } catch (Exception e) {
-                                Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
-                            }
-                            String lastTimeAcquired = "";
-                            Date lastDate = new Date(Long.parseLong(millisMoment));
-                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(), "dd-MMM-yyyy HH:mm:ss zz"));
-                            sdf.setTimeZone(TimeZone.getDefault());
-                            String formattedLastDate = sdf.format(lastDate);
-                            lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " + formattedLastDate;
-                            vpLocationDesTextView.setText(vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired);
-                            vpLocationDesTextView.setVisibility(View.VISIBLE);
-                            videoView.setVisibility(View.VISIBLE);
-                            Log.d(TAG, "showVpCaptures: setVideoPath=" + path + "/" + vpMediaFileName);
-                            videoView.setVideoPath(path + "/" + vpMediaFileName);
-                            videoView.setMediaController(mMediaController);
-                            videoView.start();
-                            DisplayMetrics metrics = new DisplayMetrics();
-                            getWindowManager().getDefaultDisplay().getMetrics(metrics);
-
-                            Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
-                            Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
-
-                            final Window window = getWindow();
-                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                            if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
-                                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
-                                        | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
-                                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-                            }
+                    if (mediaType.equalsIgnoreCase("v")) {
+                        // when the item is a video.
+                        try {
+                            getRemoteFileMetadata(Constants.capturesFolder+"/"+mymensorAccount+"/"+vpMediaFileName);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
                         }
-                    });
+                        String lastTimeAcquired = "";
+                        Date lastDate = new Date(Long.parseLong(millisMoment));
+                        SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(), "dd-MMM-yyyy HH:mm:ss zz"));
+                        sdf.setTimeZone(TimeZone.getDefault());
+                        String formattedLastDate = sdf.format(lastDate);
+                        lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " + formattedLastDate;
+                        final String desTextView = vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired;
+                        final Uri videoFileTMP = Uri.fromFile(new File(getApplicationContext().getFilesDir(), vpMediaFileName));
+                        final InputStream fisthumbs = MymUtils.getLocalFile(vpSelected+"_t_"+millisMoment+".jpg", getApplicationContext());
+                        showVpVideoThumbImageFileContents = BitmapFactory.decodeStream(fisthumbs);
+                        fisthumbs.close();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                videoView.setVisibility(View.GONE);
+                                imageView.setVisibility(View.VISIBLE);
+                                imageView.setImageBitmap(showVpVideoThumbImageFileContents);
+                                imageView.resetZoom();
+                                if (imageView.getImageAlpha() == 128) imageView.setImageAlpha(255);
+
+                                buttonStartVideoInVpCaptures.setVisibility(View.VISIBLE);
+                                linearLayoutButtonsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                                linearLayoutImageViewsOnShowVpCaptures.setVisibility(View.VISIBLE);
+                                positionCertifiedImageview.setVisibility(View.GONE);
+                                timeCertifiedImageview.setVisibility(View.GONE);
+                                if (radarScanImageView.isShown()) {
+                                    radarScanImageView.clearAnimation();
+                                    radarScanImageView.setVisibility(View.GONE);
+                                }
+                                vpLocationDesTextView.setText(desTextView);
+                                vpLocationDesTextView.setVisibility(View.VISIBLE);
+
+                                buttonStartVideoInVpCaptures.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        buttonStartVideoInVpCaptures.setVisibility(View.GONE);
+                                        videoView.setVisibility(View.VISIBLE);
+                                        videoView.setVideoURI(videoFileTMP);
+                                        videoView.setMediaController(mMediaController);
+                                        videoView.start();
+                                        videoView.setZOrderOnTop(true);
+                                        videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                                            @Override
+                                            public boolean onError(MediaPlayer mp, int what, int extra) {
+                                                String message = getString(R.string.error_while_playing_video);
+                                                Snackbar.make(videoView, message, Snackbar.LENGTH_LONG).show();
+                                                returnToInitialScreen();
+                                                return false;
+                                            }
+                                        });
+                                        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                                            @Override
+                                            public void onCompletion(MediaPlayer mp) {
+                                                videoView.setZOrderOnTop(false);
+                                                videoView.setVisibility(View.GONE);
+                                                Log.d(TAG,"onCompletion Listener VIDEO showVpCaptures");
+                                                buttonStartVideoInVpCaptures.setVisibility(View.VISIBLE);
+                                                DisplayMetrics metrics = new DisplayMetrics();
+                                                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                                                Log.d(TAG, "SCRRES Display Width (Pixels):" + metrics.widthPixels);
+                                                Log.d(TAG, "SCRRES Display Heigth (Pixels):" + metrics.heightPixels);
+                                                final Window window = getWindow();
+                                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                                if (((metrics.widthPixels) * (metrics.heightPixels)) <= 921600) {
+                                                    Log.d(TAG, "showVpCaptures - Calling FULLSCREEN");
+                                                    window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                                                            | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
                 }
             } else {
                 //when no item has been acquired to the vp.
@@ -3402,33 +3588,6 @@ public class ImageCapActivity extends Activity implements
                         String message = getString(R.string.no_photo_captured_in_this_vp);
                         Snackbar.make(imageView, message, Snackbar.LENGTH_LONG).show();
                         returnToInitialScreen();
-                        /*
-
-
-                        String lastTimeAcquiredAndNextOne = "";
-                        String formattedNextDate="";
-                        if (photoTakenTimeMillis[position]>0)
-                        {
-                            Date lastDate = new Date(photoTakenTimeMillis[position]);
-                            Date nextDate = new Date(vpNextCaptureMillis[position]);
-                            SimpleDateFormat sdf = new SimpleDateFormat(DateFormat.getBestDateTimePattern(Locale.getDefault(),"dd-MMM-yyyy HH:mm:ss zz"));
-                            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-                            String formattedLastDate = sdf.format(lastDate);
-                            formattedNextDate = sdf.format(nextDate);
-                            lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
-                                    formattedLastDate+"  "+
-                                    getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
-                                    formattedNextDate;
-                        }
-                        else
-                        {
-                            lastTimeAcquiredAndNextOne = getString(R.string.date_vp_touched_last_acquired) + ": " +
-                                    getString(R.string.date_vp_touched_not_acquired)+"  "+
-                                    getString(R.string.date_vp_touched_free_to_be_acquired)+ ": "+
-                                    getString(R.string.date_vp_touched_first_acquisition);
-                        }
-                        vpLocationDesTextView.setText(vpLocationDesText[position] + "\n" + lastTimeAcquiredAndNextOne);
-                        */
                     }
                 });
             }

@@ -87,7 +87,7 @@
     <string name="arswitchisoff">AR está DESLIGADA, use o botão da câmera para capturar VPs.</string>
     <string name="vp_notconfigurable">Este é um VP especial para fotos sem AR, portanto não configurável.</string>
     <string name="vpcfgfileloadfailed">Falhou a leitura dos arquivos de configuração dos Vps.</string>
-    <string name="vp_capture_placeholder_description_freevp">Fotos capturadas sem o uso da Realidade Aumentada</string>
+    <string name="vp_capture_placeholder_description_freevp">Mídias capturadas sem o uso da Realidade Aumentada</string>
     <string name="to">" para "</string>
     <string name="qtyvps_increased">"Aumentada a quantidade de VPs de "</string>
     <string name="qtyvps_decreased">"Reduzida a quantidade de VPs de "</string>
@@ -137,4 +137,5 @@
     <string name="sizelimit100">Limitado a 1000 caracteres!!!</string>
     <string name="cantadduser">Não é possível adicionar usuário</string>
     <string name="onlyoneperdev">Somente é permitido um usuário por dispositivo. Para mudar de usuário, primeiro faça o logout.</string>
+    <string name="error_while_playing_video">Ocorreu um erro na reprodução do vídeo.</string>
 </resources>
