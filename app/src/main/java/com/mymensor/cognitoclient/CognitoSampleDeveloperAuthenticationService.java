@@ -3,6 +3,7 @@ package com.mymensor.cognitoclient;
 import android.util.Log;
 
 import com.mymensor.Constants;
+import com.mymensor.MainActivity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.net.URL;
 public class CognitoSampleDeveloperAuthenticationService {
     private static final String LOG_TAG = "CogntSmplDvlprAuthSrv";
     private static final String ERROR = "Internal Server Error";
+    public static boolean isConnectedToServer = false;
 
     /**
      * A function to send request to the sample Cognito developer authentication
@@ -42,9 +44,12 @@ public class CognitoSampleDeveloperAuthenticationService {
                     .openConnection();
             connection.setRequestProperty("Authorization","Token " + mymToken);
             connection.setRequestProperty("From", Constants.CLIENT_SOFTWARE_TYPE);
+            connection.setRequestProperty("Warning", MainActivity.mymClientGUID);
+            Log.i(LOG_TAG, "mymClientGUID : [" + MainActivity.mymClientGUID + "]");
             responseCode = connection.getResponseCode();
             responseBody = CognitoSampleDeveloperAuthenticationService
                     .getResponse(connection);
+            if (responseCode==200) isConnectedToServer=true;
             Log.i(LOG_TAG, "ResponseCode : [" + responseCode + "]");
             Log.i(LOG_TAG, "ResponseBody : [" + responseBody + "]");
 

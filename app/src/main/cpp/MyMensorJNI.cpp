@@ -189,6 +189,12 @@ Java_com_mymensor_filters_IdMarkerDetectionFilter_apply__JJIJ(JNIEnv *env, jclas
 }
 
 JNIEXPORT jstring JNICALL
+Java_com_mymensor_MainActivity_getSecretKeyFromJNI(JNIEnv *env, jobject instance) {
+
+    return env->NewStringUTF("gxcXrj5y7e533ATvtyu4jD26f7sV96");
+}
+
+JNIEXPORT jstring JNICALL
 Java_com_mymensor_ImageCapActivity_getSecretKeyFromJNI(JNIEnv *env, jobject instance) {
 
     return env->NewStringUTF("Testing");

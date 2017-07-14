@@ -3477,6 +3477,9 @@ public class ImageCapActivity extends Activity implements
                                     Log.e(TAG, "Problem with Exif tags or drawable setting:" + e.toString());
                                 }
                                 videoView.setVisibility(View.GONE);
+                                if (buttonStartVideoInVpCaptures.isShown()) {
+                                    buttonStartVideoInVpCaptures.setVisibility(View.GONE);
+                                }
                                 imageView.setVisibility(View.VISIBLE);
                                 imageView.setImageBitmap(showVpPhotoImageFileContents);
                                 imageView.resetZoom();

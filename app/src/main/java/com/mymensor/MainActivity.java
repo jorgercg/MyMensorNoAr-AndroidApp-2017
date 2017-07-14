@@ -14,6 +14,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -36,17 +37,27 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferType;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
 
+import java.nio.charset.Charset;
 import java.util.List;
+import java.util.UUID;
 
 import com.mymensor.cognitoclient.AwsUtil;
 import com.mymensorar.R;
+
+import javax.crypto.SecretKey;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MYMMainActivity";
 
-    public byte[] aesKey;
+    static {
+        System.loadLibrary("MyMensor");
+    }
+
+    public native String getSecretKeyFromJNI();
+
+    public SecretKey aesKey;
 
     private static long back_pressed;
 
@@ -59,7 +70,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String LAST_APP_VERSION = Constants.CURR_APP_VERSION;
     private static AppStart appStart = null;
     private String appStartState;
-
+    public static String mymClientGUID;
+    private String mymClientGUIDEncrypted;
 
     private AccountManager mAccountManager;
     private AlertDialog mAlertDialog;
@@ -82,8 +94,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        //aesKey = MymCrypt.getRawKey(stringFromJNI().getBytes(Charset.forName("ISO-8859-1")));
 
         super.onCreate(savedInstanceState);
 
@@ -109,7 +119,30 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPref = getApplicationContext().getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
-        /**
+        mymClientGUIDEncrypted = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
+
+        aesKey = MymCrypt.getSecretKeySecurely(getSecretKeyFromJNI(), sharedPref);
+
+        if (mymClientGUIDEncrypted.equals("NOTSET")){
+            final String androidId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+            //mymClientGUID = UUID.nameUUIDFromBytes(androidId.getBytes(Charset.forName("ISO-8859-1"))).toString();
+            //mymClientGUID = UUID.randomUUID().toString();
+            mymClientGUID = androidId;
+            mymClientGUIDEncrypted = new String(MymCrypt.encryptData(mymClientGUID.getBytes(Charset.forName("ISO-8859-1")),
+                    MymCrypt.retrieveIv(sharedPref),
+                    aesKey),Charset.forName("ISO-8859-1"));
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString(Constants.MYM_CLIENT_GUID, mymClientGUIDEncrypted);
+            editor.commit();
+        } else {
+            mymClientGUID = new String(MymCrypt.decryptData(mymClientGUIDEncrypted.getBytes(Charset.forName("ISO-8859-1")),
+                    MymCrypt.retrieveIv(sharedPref),
+                    aesKey),Charset.forName("ISO-8859-1"));
+        }
+
+
+
+        /*
          * Initializes the sync client. This must be call before you can use it.
          */
         CognitoSyncClientManager.init(getApplicationContext());
@@ -180,20 +213,6 @@ public class MainActivity extends AppCompatActivity {
         if (availableAccounts.length > 1){
             showAccountPicker(Constants.AUTHTOKEN_TYPE_FULL_ACCESS, invalidate);
         }
-
-        /*
-        try {
-            Log.d(TAG," Original:"+"GAWQE-F9AQU-2G87F-8HKED-Q7BTG-TY29G-RV85A-XN3ZP-A9KGM-E8LB6-VC2XW-VTKAK-ANJLG-2P8NX-UZMAH-Q");
-            String encrypt = MymCrypt.encrypt(aesKey,"GAWQE-F9AQU-2G87F-8HKED-Q7BTG-TY29G-RV85A-XN3ZP-A9KGM-E8LB6-VC2XW-VTKAK-ANJLG-2P8NX-UZMAH-Q");
-            Log.d(TAG," Encrypt:["+ encrypt+"]");
-            String decrypt = MymCrypt.decrypt(aesKey,encrypt);
-            Log.d(TAG," Decrypt:"+ decrypt);
-        } catch (Exception e){
-            Log.e(TAG,"Exception:"+ e.toString());
-        }
-        */
-
-
 
         if (!noUserLogged) {
             do {

@@ -4,8 +4,8 @@ import com.amazonaws.regions.Regions;
 
 public class Constants {
 
-    public static final String CURR_APP_VERSION = "10005";
-    public static final String CLIENT_SOFTWARE_TYPE = "androidarCode10005Name10@mymensor.com";
+    public static final String CURR_APP_VERSION = "10006";
+    public static final String CLIENT_SOFTWARE_TYPE = "androidarCode10006Name10@mymensor.com";
 
     public static final short maxQtyVps = 31;
     public static final String frequencyUnit = "millis";
@@ -63,6 +63,9 @@ public class Constants {
     public static final String MYM_KEY = "mym_authToken";
     public static final String MYM_USER = "mym_user";
     public static final String MYM_USR_GROUP = "MYM_USER_GROUP";
+    public static final String MYM_CLIENT_GUID = "mym_client_guid";
+    public static final String MYM_CLIENT_SALT = "mym_client_salt";
+    public static final String MYM_CLIENT_IV = "mym_client_iv";
 }
 
 

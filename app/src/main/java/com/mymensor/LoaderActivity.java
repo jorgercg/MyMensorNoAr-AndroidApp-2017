@@ -1,7 +1,9 @@
 package com.mymensor;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -15,6 +17,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -29,6 +32,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.mymensor.cognitoclient.AmazonSharedPreferencesWrapper;
 import com.mymensor.cognitoclient.AwsUtil;
+import com.mymensor.cognitoclient.CognitoSampleDeveloperAuthenticationService;
 import com.mymensorar.R;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -51,6 +55,7 @@ public class LoaderActivity extends Activity {
     private boolean finishApp = false;
     private boolean localFilesExist = false;
     private boolean responseFromRemoteStorage = false;
+    private boolean searchForServerEnded  = false;
     public boolean isConnectedToServer = false;
     private boolean areRemoteFilesNewerThanLocal = false;
 
@@ -106,6 +111,10 @@ public class LoaderActivity extends Activity {
         // Creating AsyncTask
         backgroundLoader = new BackgroundLoader();
 
+        Log.d(TAG, "onCreate(): calling checkConnectionToServer().");
+
+        checkConnectionToServer();
+
         setContentView(R.layout.activity_loader);
         logoLinearLayout = (LinearLayout) findViewById(R.id.MyMensorLogoLinearLayout1);
         logoLinearLayout.setVisibility(View.VISIBLE);
@@ -127,10 +136,6 @@ public class LoaderActivity extends Activity {
             localFilesExist = true;
         }
 
-        if (appStartState.equalsIgnoreCase("firstever")) {
-            // TODO
-        }
-
         final View.OnClickListener undoOnClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -150,7 +155,7 @@ public class LoaderActivity extends Activity {
             }
         });
 
-        startUpLoader();
+
 
     }
 
@@ -158,6 +163,7 @@ public class LoaderActivity extends Activity {
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart(): CALLED");
+        startUpLoader();
 
     }
 
@@ -202,9 +208,8 @@ public class LoaderActivity extends Activity {
 
         do {
             mymensorUserGroup = AmazonSharedPreferencesWrapper.getGroupForUser(amazonSharedPref);
-            Log.d(TAG,"startUpLoader: MYM_USR_GROUP: "+ mymensorUserGroup);
         } while (mymensorUserGroup==null);
-
+        Log.d(TAG,"startUpLoader: MYM_USR_GROUP: "+ mymensorUserGroup);
         if (mymensorUserGroup.equalsIgnoreCase("mymARmobileapp")) {
             mymensorAccount = mymensorAccount.substring(7, mymensorAccount.length());
         }
@@ -214,7 +219,44 @@ public class LoaderActivity extends Activity {
         vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
         vpsCheckedRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
 
-        backgroundLoader.execute();
+        Log.d(TAG,"startUpLoader: appStartState ="+appStartState);
+        if (appStartState.equalsIgnoreCase("firstever")) {
+            Log.d(TAG,"startUpLoader: confirmation of server connection RECEIVED: isConnectedToServer="+CognitoSampleDeveloperAuthenticationService.isConnectedToServer);
+            if (!CognitoSampleDeveloperAuthenticationService.isConnectedToServer){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder alert = new AlertDialog.Builder(LoaderActivity.this);
+
+                        alert.setTitle(R.string.caution_no_server);
+                        alert.setMessage(R.string.caution_proceed_or_not);
+
+                        alert.setPositiveButton(R.string.caution_proceed, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                backgroundLoader.execute();
+                            }
+                        });
+
+                        alert.setNegativeButton(R.string.caution_exit, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                finish();
+                            }
+                        });
+
+                        alert.show();
+                    }
+                });
+            } else {
+                Log.d(TAG,"startUpLoader: connected to server proceeding normally");
+                backgroundLoader.execute();
+            }
+        } else {
+            Log.d(TAG,"startUpLoader: not the first time app install is run in this device proceeding normally");
+            backgroundLoader.execute();
+        }
+
+        Log.d(TAG,"startUpLoader: END");
+
     }
 
 
@@ -228,13 +270,13 @@ public class LoaderActivity extends Activity {
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                boolean result = MymUtils.isS3Available(s3Amazon);
-                return result;
+                return MymUtils.isS3Available(s3Amazon);
             }
 
             @Override
-            protected void onPostExecute(final Boolean result) {
+            protected void onPostExecute(Boolean result) {
                 Log.d(TAG, "checkConnectionToServer: onPostExecute: result=" + result);
+                searchForServerEnded = true;
                 if (result) {
                     isConnectedToServer = true;
                 } else {
@@ -385,15 +427,6 @@ public class LoaderActivity extends Activity {
                 sntpTime = 0;
                 sntpReference = 0;
             }
-
-
-            /*
-            *********************************************************************************************************************
-             */
-
-            Log.d(TAG, "loadConfiguration(): checking CONNECTION TO SERVER.");
-
-            checkConnectionToServer();
 
 
             /*
@@ -834,7 +867,7 @@ public class LoaderActivity extends Activity {
                 if ((loadingDescvpFile) || (loadingMarkervpFile)) {
                     do {
                         for (int k = 0; k < (qtyVps); k++) {
-                            Log.d(TAG,"descvpFileCHK["+k+"]="+descvpFileCHK[k]+"- markervpFileCHK["+k+"]="+markervpFileCHK[k]);
+                            //Log.d(TAG,"descvpFileCHK["+k+"]="+descvpFileCHK[k]+"- markervpFileCHK["+k+"]="+markervpFileCHK[k]);
                             if (descvpFileCHK[k] && markervpFileCHK[k]) {
                                 if (k == 0) {
                                     prod = Math.abs(1);
@@ -859,8 +892,8 @@ public class LoaderActivity extends Activity {
                         try {
                             File descvpFileCHK = new File(getApplicationContext().getFilesDir(), "descvp" + (k) + ".png");
                             File markervpFileCHK = new File(getApplicationContext().getFilesDir(), "markervp" + (k) + ".png");
-                            Log.d(TAG, "descvp" + (k) + ".png : exists=" + descvpFileCHK.exists() + " Length=" + descvpFileCHK.length() + " vpDescFileSize[k]=" + vpDescFileSize[k]);
-                            Log.d(TAG, "markervp" + (k) + ".png : exists=" + markervpFileCHK.exists() + " Length=" + markervpFileCHK.length() + " vpMarkerFileSize[k]=" + vpMarkerFileSize[k]);
+                            //Log.d(TAG, "descvp" + (k) + ".png : exists=" + descvpFileCHK.exists() + " Length=" + descvpFileCHK.length() + " vpDescFileSize[k]=" + vpDescFileSize[k]);
+                            //Log.d(TAG, "markervp" + (k) + ".png : exists=" + markervpFileCHK.exists() + " Length=" + markervpFileCHK.length() + " vpMarkerFileSize[k]=" + vpMarkerFileSize[k]);
                             if (descvpFileCHK.exists() &&
                                     markervpFileCHK.exists() &&
                                     descvpFileCHK.length() == vpDescFileSize[k] &&

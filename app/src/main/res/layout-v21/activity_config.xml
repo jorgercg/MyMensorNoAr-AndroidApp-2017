@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/transparent"
-    tools:context=".ImageCapActivity"
     android:padding="0dp">
 
     <org.opencv.android.JavaCameraView
@@ -109,7 +108,6 @@
 
     <LinearLayout
         android:id="@+id/linearLayoutQtyVps"
-        android:layout_below="@id/descVPEditText"
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -129,7 +127,6 @@
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="20dp"
-
             />
 
         <LinearLayout
@@ -214,9 +211,7 @@
 
         <LinearLayout
             android:id="@+id/linearLayoutCaptureNewVp"
-            android:layout_below="@id/descVPEditText"
             android:orientation="horizontal"
-            android:layout_alignParentEnd="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 

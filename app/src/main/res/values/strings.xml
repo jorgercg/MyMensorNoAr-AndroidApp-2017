@@ -139,4 +139,8 @@
     <string name="cantadduser">Not possible to add user</string>
     <string name="onlyoneperdev">Only one user is allowed per device. To change user you first need to logout.</string>
     <string name="error_while_playing_video">An error ocurred while playing video.</string>
+    <string name="caution_no_server">MyMensor Server is not Reachable</string>
+    <string name="caution_proceed_or_not">If you proceed a new configuration will be created and will overwrite (if you have one) your existing one.</string>
+    <string name="caution_proceed">PROCEED</string>
+    <string name="caution_exit">EXIT</string>
 </resources>

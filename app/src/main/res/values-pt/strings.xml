@@ -138,4 +138,8 @@
     <string name="cantadduser">Não é possível adicionar usuário</string>
     <string name="onlyoneperdev">Somente é permitido um usuário por dispositivo. Para mudar de usuário, primeiro faça o logout.</string>
     <string name="error_while_playing_video">Ocorreu um erro na reprodução do vídeo.</string>
+    <string name="caution_no_server">Sem conexão com Servidor MyMensor</string>
+    <string name="caution_proceed_or_not">Se você continuar uma nova configuração será criada e apagará (se voc6e possuir uma) a sua atual.</string>
+    <string name="caution_proceed">CONTINUAR</string>
+    <string name="caution_exit">SAIR</string>
 </resources>

@@ -273,6 +273,7 @@ public class ConfigActivity extends Activity implements
     boolean videoRecordStopedSoundIDLoaded = false;
 
     protected Boolean mymIsRunningOnKitKat = false;
+    protected Boolean hdDisplay = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -293,6 +294,7 @@ public class ConfigActivity extends Activity implements
         final Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (((metrics.widthPixels)*(metrics.heightPixels))<=921600) {
+            hdDisplay = true;
             window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -485,10 +487,11 @@ public class ConfigActivity extends Activity implements
         buttonCallImagecap.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (!mymIsRunningOnKitKat){
-                    Snackbar.make(view, getText(R.string.confirmimagecaploading), Snackbar.LENGTH_LONG)
+                if (!mymIsRunningOnKitKat && !hdDisplay){
+                    Snackbar.make(mCameraView, getText(R.string.confirmimagecaploading), Snackbar.LENGTH_LONG)
                             .setAction(getText(R.string.confirm), confirmOnClickListenerButtonCallImagecap).show();
                 } else {
+
                     callImageCapActivity();
                 }
 
