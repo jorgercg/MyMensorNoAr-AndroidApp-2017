@@ -47,6 +47,8 @@ public class LoaderActivity extends Activity {
     private String activityToBeCalled = null;
     private String mymensorAccount = null;
     private String mymensorUserGroup = null;
+    private String origMymAcc;
+    private String deviceId;
     private String descvpRemotePath;
     private String vpsRemotePath;
     private String vpsCheckedRemotePath;
@@ -194,6 +196,7 @@ public class LoaderActivity extends Activity {
     private void startUpLoader(){
         // Retrieving SeaMensor Account information,
         mymensorAccount = getIntent().getExtras().get("account").toString();
+        deviceId = getIntent().getExtras().get("deviceid").toString();
 
         Log.d(TAG, "startUpLoader: MyMensor Account from Mobile App: " + mymensorAccount);
 
@@ -211,7 +214,10 @@ public class LoaderActivity extends Activity {
         } while (mymensorUserGroup==null);
         Log.d(TAG,"startUpLoader: MYM_USR_GROUP: "+ mymensorUserGroup);
         if (mymensorUserGroup.equalsIgnoreCase("mymARmobileapp")) {
+            origMymAcc = mymensorAccount;
             mymensorAccount = mymensorAccount.substring(7, mymensorAccount.length());
+        } else {
+            origMymAcc = mymensorAccount;
         }
 
         descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/" + "dsc" + "/";
@@ -965,6 +971,8 @@ public class LoaderActivity extends Activity {
             try {
                 Intent intent = new Intent(getApplicationContext(), ConfigActivity.class);
                 intent.putExtra("mymensoraccount", mymensorAccount);
+                intent.putExtra("origmymacc", origMymAcc);
+                intent.putExtra("deviceid", deviceId);
                 intent.putExtra("dcinumber", dciNumber);
                 intent.putExtra("QtyVps", qtyVps);
                 intent.putExtra("sntpTime", sntpTime);
@@ -984,6 +992,8 @@ public class LoaderActivity extends Activity {
             try {
                 Intent intent = new Intent(getApplicationContext(), ImageCapActivity.class);
                 intent.putExtra("mymensoraccount", mymensorAccount);
+                intent.putExtra("origmymacc", origMymAcc);
+                intent.putExtra("deviceid", deviceId);
                 intent.putExtra("dcinumber", dciNumber);
                 intent.putExtra("QtyVps", qtyVps);
                 intent.putExtra("sntpTime", sntpTime);

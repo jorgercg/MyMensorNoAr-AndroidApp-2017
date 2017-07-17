@@ -74,7 +74,6 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -89,7 +88,6 @@ import com.mymensor.filters.NoneARFilter;
 import com.mymensorar.R;
 
 import org.apache.commons.io.FileUtils;
-
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -101,13 +99,13 @@ import org.opencv.core.MatOfDouble;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
-
 import org.opencv.imgproc.Imgproc;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlSerializer;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -123,13 +121,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-
 import static com.mymensor.Constants.cameraWidthInPixels;
 import static com.mymensorar.R.drawable.circular_button_gray;
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import static com.mymensorar.R.drawable.circular_button_green;
 import static com.mymensorar.R.drawable.circular_button_red;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 public class ImageCapActivity extends Activity implements
@@ -150,6 +146,8 @@ public class ImageCapActivity extends Activity implements
     private static long backPressed;
 
     private String mymensorAccount;
+    private String origMymAcc;
+    private String deviceId;
     private int dciNumber;
     private short qtyVps = 0;
 
@@ -425,7 +423,6 @@ public class ImageCapActivity extends Activity implements
     protected Boolean mymIsRunningOnFlippedDisplay = false;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -471,8 +468,10 @@ public class ImageCapActivity extends Activity implements
         sntpTime = Long.parseLong(getIntent().getExtras().get("sntpTime").toString());
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
+        origMymAcc = getIntent().getExtras().get("origmymacc").toString();
+        deviceId = getIntent().getExtras().get("deviceid").toString();
 
-        Log.d(TAG, "onCreate: Starting ImageCapActivity with qtyVps=" + qtyVps + " MyM Account=" + mymensorAccount);
+        Log.d(TAG, "onCreate: Starting ImageCapActivity with qtyVps=" + qtyVps + " MyM Account=" + mymensorAccount + " Orig MyM Account=" + origMymAcc);
 
         sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
 
@@ -491,8 +490,8 @@ public class ImageCapActivity extends Activity implements
 
         s3Amazon = CognitoSyncClientManager.getInstance();
 
-        vpsRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
-        vpsCheckedRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
+        vpsRemotePath = Constants.usersConfigFolder + "/" + mymensorAccount + "/" + "cfg" + "/" + dciNumber + "/" + "vps" + "/";
+        vpsCheckedRemotePath = Constants.usersConfigFolder + "/" + mymensorAccount + "/" + "chk" + "/" + dciNumber + "/";
 
         if (savedInstanceState != null) {
             mImageDetectionFilterIndex = savedInstanceState.getInt(
@@ -1015,6 +1014,32 @@ public class ImageCapActivity extends Activity implements
                 String fileSha256Hash = "";
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 if (showingMediaType.equalsIgnoreCase("p")) {
+                    try {
+                        File inFile = new File(getApplicationContext().getFilesDir(),showingMediaFileName);
+                        fileSha256Hash = MymUtils.getFileHash(inFile);
+                    } catch (IOException e) {
+                        Log.e(TAG, "shareMediaButton: Failed to hash Photo file to share");
+                    }
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/mc/1/cap/" + mymensorAccount + "/" + showingMediaFileName + "/" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Photo shared by MyMensor Mobile App");
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
+                }
+                if (showingMediaType.equalsIgnoreCase("v")) {
+                    try {
+                        File inFile = new File(getApplicationContext().getFilesDir(),showingMediaFileName);
+                        fileSha256Hash = MymUtils.getFileHash(inFile);
+                    } catch (IOException e) {
+                        Log.e(TAG, "shareMediaButton: Failed to hash Video file to share");
+                    }
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/mc/1/cap/" + mymensorAccount + "/" + showingMediaFileName + "/" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Video shared by MyMensor Mobile App");
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
+                }
+
+                /*
+                if (showingMediaType.equalsIgnoreCase("p")) {
                     shareIntent.setType("image/jpg");
                     try {
                         InputStream in = getApplicationContext().openFileInput(showingMediaFileName);
@@ -1033,7 +1058,7 @@ public class ImageCapActivity extends Activity implements
                         grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "Media Shared by MyMensor Mobile App - https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "Media Shared by MyMensor Mobile App - https://app.mymensor.com/mc/1/cap/" + mymensorAccount + "/" + showingMediaFileName + "/" + fileSha256Hash);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
                 }
@@ -1056,11 +1081,11 @@ public class ImageCapActivity extends Activity implements
                         grantUriPermission(packageName, shareFileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                     shareIntent.putExtra(Intent.EXTRA_STREAM, shareFileUri);
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, "Media Shared by MyMensor Mobile App - https://app.mymensor.com/landing/?type=1&key=cap/"+mymensorAccount+"/"+showingMediaFileName + "&signature=" + fileSha256Hash);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "Media Shared by MyMensor Mobile App - https://app.mymensor.com/mc/1/cap/" + mymensorAccount + "/" + showingMediaFileName + "/ " + fileSha256Hash);
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                 }
-
+                */
             }
         });
 
@@ -1410,9 +1435,8 @@ public class ImageCapActivity extends Activity implements
                 alphaToggleButton.setVisibility(View.GONE);
                 showPreviousVpCaptureButton.setVisibility(View.GONE);
                 showNextVpCaptureButton.setVisibility(View.GONE);
-                if (buttonStartVideoInVpCaptures.isShown()){
+                if (buttonStartVideoInVpCaptures.isShown())
                     buttonStartVideoInVpCaptures.setVisibility(View.GONE);
-                }
                 showVpCapturesButton.setVisibility(View.GONE);
 
                 // Layout showing VP configuration state
@@ -1620,6 +1644,8 @@ public class ImageCapActivity extends Activity implements
                 observer.cleanTransferListener();
             }
         }
+        if (buttonStartVideoInVpCaptures.isShown())
+            buttonStartVideoInVpCaptures.setVisibility(View.GONE);
     }
 
     @Override
@@ -1876,13 +1902,13 @@ public class ImageCapActivity extends Activity implements
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
-        Log.d(TAG,"onCameraViewStarted CALLED width:"+width+" height:"+height);
+        Log.d(TAG, "onCameraViewStarted CALLED width:" + width + " height:" + height);
     }
 
 
     @Override
     public void onCameraViewStopped() {
-        Log.d(TAG,"onCameraViewStopped CALLED");
+        Log.d(TAG, "onCameraViewStopped CALLED");
     }
 
     @Override
@@ -1959,7 +1985,7 @@ public class ImageCapActivity extends Activity implements
                 if (((System.currentTimeMillis() - videoCaptureStartmillis) < Constants.shortVideoLength) && (!stopManualVideo)) {
                     //Log.d(TAG, "Waiting for video recording to end:" + (System.currentTimeMillis() - videoCaptureStartmillis));
                 } else {
-                    if (capturingManualVideo){
+                    if (capturingManualVideo) {
                         stopManualVideo = false;
                         capturingManualVideo = false;
                         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
@@ -2341,13 +2367,14 @@ public class ImageCapActivity extends Activity implements
                     do {
                         try {
                             videoView.setVideoURI(videoFileTMP);
-                            videoView.setVisibility(View.VISIBLE);
                             fileNotFound = false;
                         } catch (Exception e) {
                             fileNotFound = true;
                         }
                         Log.d(TAG, "Trying Media:" + fileNotFound);
                     } while (fileNotFound);
+                    videoView.setZOrderOnTop(true);
+                    videoView.setVisibility(View.VISIBLE);
                     videoView.setMediaController(mMediaController);
                     videoView.start();
                     videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -2359,7 +2386,7 @@ public class ImageCapActivity extends Activity implements
                             rejectVpPhotoButton.setVisibility(View.VISIBLE);
                             buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
                             buttonReplayVpVideo.setVisibility(View.VISIBLE);
-                            Log.d(TAG,"Turned on VIDEO Decision Buttons!!!! captureVideo 1:vpphta:"+vpPhotoAccepted+"vpphtr:"+vpPhotoRejected);
+                            Log.d(TAG, "Turned on VIDEO Decision Buttons!!!! captureVideo 1:vpphta:" + vpPhotoAccepted + "vpphtr:" + vpPhotoRejected);
                             DisplayMetrics metrics = new DisplayMetrics();
                             getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
@@ -2402,7 +2429,7 @@ public class ImageCapActivity extends Activity implements
                                 rejectVpPhotoButton.setVisibility(View.VISIBLE);
                                 buttonRemarkVpPhoto.setVisibility(View.VISIBLE);
                                 buttonReplayVpVideo.setVisibility(View.VISIBLE);
-                                Log.d(TAG,"Turned on VIDEO Decision Buttons!!!! captureVideo 2");
+                                Log.d(TAG, "Turned on VIDEO Decision Buttons!!!! captureVideo 2");
                                 DisplayMetrics metrics = new DisplayMetrics();
                                 getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
@@ -2541,7 +2568,7 @@ public class ImageCapActivity extends Activity implements
                         mediaMetadataRetriever.setDataSource(videoFileNameLong);
                         videoThumbnailHdBitmap = mediaMetadataRetriever.getFrameAtTime();
                     } catch (IllegalArgumentException iae) {
-                        Log.e(TAG, "MediaMetadataRetriever exception: "+iae.toString());
+                        Log.e(TAG, "MediaMetadataRetriever exception: " + iae.toString());
                     } finally {
                         mediaMetadataRetriever.release();
                     }
@@ -2571,8 +2598,8 @@ public class ImageCapActivity extends Activity implements
                             Log.e(TAG, "videoThumbnailHdBitmap saving to videoThumbnailFileNameLong from descvp0 failed:" + e.toString());
                         }
                     }
-                    Log.d(TAG,"pictureFile.getName()="+pictureVideoThumbnailFile.getName());
-                    Log.d(TAG,"pictureVideoThumbnailFile.getPath()=" + pictureVideoThumbnailFile.getPath());
+                    Log.d(TAG, "pictureFile.getName()=" + pictureVideoThumbnailFile.getName());
+                    Log.d(TAG, "pictureVideoThumbnailFile.getPath()=" + pictureVideoThumbnailFile.getPath());
                     ObjectMetadata thumbnailMetadata = new ObjectMetadata();
                     Map<String, String> userThumbMetadata = new HashMap<String, String>();
                     userThumbMetadata.put("vp", "" + (vpTrackedInPose));
@@ -2582,7 +2609,7 @@ public class ImageCapActivity extends Activity implements
                     //uploading the objects
                     TransferObserver thumbObserver = MymUtils.storeRemoteFile(
                             transferUtility,
-                            Constants.capturesFolder+"/"+mymensorAccount+"/"+videoThumbnailFileName,
+                            Constants.capturesFolder + "/" + mymensorAccount + "/" + videoThumbnailFileName,
                             Constants.BUCKET_NAME,
                             pictureVideoThumbnailFile,
                             thumbnailMetadata);
@@ -2600,7 +2627,9 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("loclatitude", locPhotoToExif[8]);
                     userMetadata.put("loclongitude", locPhotoToExif[9]);
                     userMetadata.put("vp", "" + (vpTrackedInPose));
-                    userMetadata.put("mymensoraccount", mymensorAccount);
+                    userMetadata.put("mymensoraccount",mymensorAccount);
+                    userMetadata.put("origmymacc",origMymAcc);
+                    userMetadata.put("deviceid",deviceId);
                     userMetadata.put("locprecisioninm", locPhotoToExif[4]);
                     userMetadata.put("localtitude", locPhotoToExif[7]);
                     userMetadata.put("locmillis", locPhotoToExif[5]);
@@ -2620,7 +2649,7 @@ public class ImageCapActivity extends Activity implements
                     //uploading the objects
                     TransferObserver observer = MymUtils.storeRemoteFileLazy(
                             transferUtility,
-                            Constants.capturesFolder+"/"+mymensorAccount+"/"+videoFileName,
+                            Constants.capturesFolder + "/" + mymensorAccount + "/" + videoFileName,
                             Constants.BUCKET_NAME,
                             videoFile,
                             myObjectMetadata);
@@ -2674,10 +2703,10 @@ public class ImageCapActivity extends Activity implements
             File videoFile = new File(getApplicationContext().getFilesDir(), videoFileName);
             try {
                 if (!videoFile.delete()) {
-                    Log.d(TAG,"Rejected video could not be deleted!!!!!!!");
+                    Log.d(TAG, "Rejected video could not be deleted!!!!!!!");
                 }
             } catch (Exception e) {
-                Log.e(TAG,"Exception while deletion rejected video:"+e.toString());
+                Log.e(TAG, "Exception while deletion rejected video:" + e.toString());
             }
 
             runOnUiThread(new Runnable() {
@@ -2938,7 +2967,9 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("loclatitude", locPhotoToExif[8]);
                     userMetadata.put("loclongitude", locPhotoToExif[9]);
                     userMetadata.put("vp", "" + (vpTrackedInPose));
-                    userMetadata.put("mymensoraccount", mymensorAccount);
+                    userMetadata.put("mymensoraccount",mymensorAccount);
+                    userMetadata.put("origmymacc",origMymAcc);
+                    userMetadata.put("deviceid",deviceId);
                     userMetadata.put("locprecisioninm", locPhotoToExif[4]);
                     userMetadata.put("localtitude", locPhotoToExif[7]);
                     userMetadata.put("locmillis", locPhotoToExif[5]);
@@ -2958,7 +2989,7 @@ public class ImageCapActivity extends Activity implements
                     //uploading the objects
                     TransferObserver observer = MymUtils.storeRemoteFile(
                             transferUtility,
-                            Constants.capturesFolder+"/"+mymensorAccount+"/"+pictureFileName,
+                            Constants.capturesFolder + "/" + mymensorAccount + "/" + pictureFileName,
                             Constants.BUCKET_NAME,
                             pictureFile,
                             myObjectMetadata);
@@ -3110,6 +3141,9 @@ public class ImageCapActivity extends Activity implements
             //create a map to store user metadata
             Map<String, String> userMetadata = new HashMap<String, String>();
             userMetadata.put("timestamp", MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference).toString());
+            userMetadata.put("mymensoraccount",mymensorAccount);
+            userMetadata.put("origmymacc",origMymAcc);
+            userMetadata.put("deviceid",deviceId);
             myObjectMetadata.setUserMetadata(userMetadata);
             TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsCheckedRemotePath + Constants.vpsCheckedConfigFileName), Constants.BUCKET_NAME, vpsCheckedFile, myObjectMetadata);
             observer.setTransferListener(new UploadListener());
@@ -3344,29 +3378,29 @@ public class ImageCapActivity extends Activity implements
             protected ObjectMetadata doInBackground(Void... params) {
                 int retries = 4;
                 boolean nthtry = false;
-                try{
+                try {
                     do {
                         final ObjectMetadata objMetadata = s3Amazon.getObjectMetadata(Constants.BUCKET_NAME, filename);
                         try {
-                            if (objMetadata.getContentLength()>5) nthtry = true;
+                            if (objMetadata.getContentLength() > 5) nthtry = true;
                         } catch (Exception ex) {
                             nthtry = false;
                         }
                         if (nthtry) {
-                            Log.d(TAG,"Request to s3Amazon.getObjectMetadata succeeded");
+                            Log.d(TAG, "Request to s3Amazon.getObjectMetadata succeeded");
                             return objMetadata;
                         } else {
-                            Log.d(TAG,"Request to s3Amazon.getObjectMetadata failed or object does not exist");
+                            Log.d(TAG, "Request to s3Amazon.getObjectMetadata failed or object does not exist");
                         }
                     } while (retries-- > 0);
-                } catch (AmazonServiceException ase){
-                    Log.d(TAG, "AmazonServiceException="+ase.toString());
+                } catch (AmazonServiceException ase) {
+                    Log.d(TAG, "AmazonServiceException=" + ase.toString());
                     return null;
                 } catch (AmazonClientException ace) {
-                    Log.d(TAG, "AmazonClientException="+ace.toString());
+                    Log.d(TAG, "AmazonClientException=" + ace.toString());
                     return null;
                 } catch (Exception e) {
-                    Log.d(TAG, "Exception="+e.toString());
+                    Log.d(TAG, "Exception=" + e.toString());
                     return null;
                 }
                 return null;
@@ -3499,7 +3533,7 @@ public class ImageCapActivity extends Activity implements
                     if (mediaType.equalsIgnoreCase("v")) {
                         // when the item is a video.
                         try {
-                            getRemoteFileMetadata(Constants.capturesFolder+"/"+mymensorAccount+"/"+vpMediaFileName);
+                            getRemoteFileMetadata(Constants.capturesFolder + "/" + mymensorAccount + "/" + vpMediaFileName);
                         } catch (Exception e) {
                             Log.e(TAG, "Problem Remote files Metadata:" + e.toString());
                         }
@@ -3511,7 +3545,7 @@ public class ImageCapActivity extends Activity implements
                         lastTimeAcquired = getString(R.string.date_vp_capture_shown) + ": " + formattedLastDate;
                         final String desTextView = vpLocationDesText[lastVpSelectedByUser] + "\n" + lastTimeAcquired;
                         final Uri videoFileTMP = Uri.fromFile(new File(getApplicationContext().getFilesDir(), vpMediaFileName));
-                        final InputStream fisthumbs = MymUtils.getLocalFile(vpSelected+"_t_"+millisMoment+".jpg", getApplicationContext());
+                        final InputStream fisthumbs = MymUtils.getLocalFile(vpSelected + "_t_" + millisMoment + ".jpg", getApplicationContext());
                         showVpVideoThumbImageFileContents = BitmapFactory.decodeStream(fisthumbs);
                         fisthumbs.close();
                         runOnUiThread(new Runnable() {
@@ -3558,7 +3592,7 @@ public class ImageCapActivity extends Activity implements
                                             public void onCompletion(MediaPlayer mp) {
                                                 videoView.setZOrderOnTop(false);
                                                 videoView.setVisibility(View.GONE);
-                                                Log.d(TAG,"onCompletion Listener VIDEO showVpCaptures");
+                                                Log.d(TAG, "onCompletion Listener VIDEO showVpCaptures");
                                                 buttonStartVideoInVpCaptures.setVisibility(View.VISIBLE);
                                                 DisplayMetrics metrics = new DisplayMetrics();
                                                 getWindowManager().getDefaultDisplay().getMetrics(metrics);

@@ -225,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
             Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
             launch_intent.putExtra("activitytobecalled", "imagecapactivity");
             launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
+            launch_intent.putExtra("deviceid", mymClientGUID);
             launch_intent.putExtra("appstartstate", appStartState);
             startActivity(launch_intent);
             finish();
@@ -322,6 +323,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
                     launch_intent.putExtra("activitytobecalled", "imagecapactivity");
                     launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
+                    launch_intent.putExtra("deviceid", mymClientGUID);
                     launch_intent.putExtra("appstartstate", appStartState);
                     startActivity(launch_intent);
                     finish();
@@ -404,6 +406,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent launch_intent = new Intent(getApplicationContext(),LoaderActivity.class);
                     launch_intent.putExtra("activitytobecalled", "imagecapactivity");
                     launch_intent.putExtra("account", sharedPref.getString(Constants.MYM_USER,""));
+                    launch_intent.putExtra("deviceid", mymClientGUID);
                     launch_intent.putExtra("appstartstate", appStartState);
                     startActivity(launch_intent);
                     finish();

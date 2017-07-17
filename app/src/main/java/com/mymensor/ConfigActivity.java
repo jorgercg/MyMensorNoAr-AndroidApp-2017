@@ -107,6 +107,8 @@ public class ConfigActivity extends Activity implements
 
 
     private String mymensorAccount;
+    private String origMymAcc;
+    private String deviceId;
     private int dciNumber;
 
     private boolean[] vpChecked;
@@ -316,6 +318,8 @@ public class ConfigActivity extends Activity implements
         sntpTimeReference = Long.parseLong(getIntent().getExtras().get("sntpReference").toString());
         isTimeCertified = Boolean.parseBoolean(getIntent().getExtras().get("isTimeCertified").toString());
         lastVpSelectedByUser = Short.parseShort(getIntent().getExtras().get("lastVpSelectedByUser").toString());
+        origMymAcc = getIntent().getExtras().get("origmymacc").toString();
+        deviceId = getIntent().getExtras().get("deviceid").toString();
 
         descvpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"dsc"+"/";
         markervpRemotePath = Constants.usersConfigFolder+"/"+mymensorAccount+"/"+"cfg"+"/"+dciNumber+"/"+"vps"+"/"+"mrk"+"/";
@@ -1174,7 +1178,9 @@ public class ConfigActivity extends Activity implements
                 //create a map to store user metadata
                 Map<String, String> userMetadata = new HashMap<String, String>();
                 userMetadata.put("VP", "" + (vpIndex));
-                userMetadata.put("mymensorAccount", mymensorAccount);
+                userMetadata.put("mymensoraccount",mymensorAccount);
+                userMetadata.put("origmymacc",origMymAcc);
+                userMetadata.put("deviceid",deviceId);
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ssZ");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                 String formattedDateTime = sdf.format(MymUtils.timeNow(isTimeCertified, sntpTime, sntpTimeReference));
@@ -1223,7 +1229,9 @@ public class ConfigActivity extends Activity implements
                 //create a map to store user metadata
                 Map<String, String> userMetadata = new HashMap<String,String>();
                 userMetadata.put("VP", ""+(vpIndex));
-                userMetadata.put("mymensorAccount", mymensorAccount);
+                userMetadata.put("mymensoraccount",mymensorAccount);
+                userMetadata.put("origmymacc",origMymAcc);
+                userMetadata.put("deviceid",deviceId);
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ssZ");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                 String formattedDateTime = sdf.format(MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference));
@@ -1686,6 +1694,9 @@ public class ConfigActivity extends Activity implements
             //create a map to store user metadata
             Map<String, String> userMetadata = new HashMap<String,String>();
             userMetadata.put("TimeStamp", MymUtils.timeNow(isTimeCertified,sntpTime,sntpTimeReference).toString());
+            userMetadata.put("mymensoraccount",mymensorAccount);
+            userMetadata.put("origmymacc",origMymAcc);
+            userMetadata.put("deviceid",deviceId);
             myObjectMetadata.setUserMetadata(userMetadata);
             TransferObserver observer = MymUtils.storeRemoteFile(transferUtility, (vpsRemotePath + Constants.vpsConfigFileName), Constants.BUCKET_NAME, vpsConfigFile, myObjectMetadata);
             observer.setTransferListener(new TransferListener() {
