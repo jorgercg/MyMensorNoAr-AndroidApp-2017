@@ -102,7 +102,7 @@ public class LoaderActivity extends Activity {
         appStartState = getIntent().getExtras().get("appstartstate").toString();
         Log.d(TAG, "OnCreate: appStartState: " + appStartState);
 
-        sharedPref = this.getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
         s3Client = CognitoSyncClientManager.getInstance();
 
@@ -207,7 +207,7 @@ public class LoaderActivity extends Activity {
             finish();
         }
 
-        amazonSharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        amazonSharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
         do {
             mymensorUserGroup = AmazonSharedPreferencesWrapper.getGroupForUser(amazonSharedPref);

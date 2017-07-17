@@ -14,6 +14,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -117,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
         final Account availableAccounts[] = mAccountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
 
-        sharedPref = getApplicationContext().getSharedPreferences("com.mymensor.app", Context.MODE_PRIVATE);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
         mymClientGUIDEncrypted = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
 
