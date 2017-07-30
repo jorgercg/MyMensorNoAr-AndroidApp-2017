@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.mymensor.cognitoclient.AwsUtil;
-import com.mymensorar.R;
+import com.mymensor.R;
 
 import javax.crypto.SecretKey;
 
