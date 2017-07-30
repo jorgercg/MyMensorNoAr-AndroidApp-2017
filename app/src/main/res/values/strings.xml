@@ -16,7 +16,7 @@
     <string name="date_vp_touched_free_to_be_acquired">Available from</string>
     <string name="date_vp_capture_shown">Media created on</string>
     <string name="vp_touched_info">Info about this VP</string>
-    <string name="vp_out_of_bounds">VP out of Bounds!!!! Increase qty with QtyVp++.</string>
+    <string name="vp_out_of_bounds">VP out of Bounds!!!! Increase qty with QtyVp++</string>
     <string name="camera_focusing">Wait!!! Camera Focusing!!!</string>
     <string name="camera_image_captured">image captured</string>
     <string name="user_name">User name:</string>
