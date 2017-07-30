@@ -4,11 +4,11 @@ android {
     compileSdkVersion 25
     buildToolsVersion '25.0.3'
     defaultConfig {
-        applicationId 'com.mymensorar'
+        applicationId 'com.mymensor'
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 10009
-        versionName "1.0"
+        versionCode 10000
+        versionName "0.1"
 
         externalNativeBuild {
             cmake {

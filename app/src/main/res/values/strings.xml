@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">MyMensorAR</string>
+    <string name="app_name" translatable="false">MyMensor</string>
     <string name="action_settings">Settings</string>
     <string name="double_bck_exit">Press Back twice quickly to exit!</string>
     <string name="button_exit">Press Button twice quickly to exit!</string>
