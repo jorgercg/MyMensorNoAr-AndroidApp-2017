@@ -2187,7 +2187,7 @@ public class ImageCapActivity extends Activity implements
                         }
                     } else {
                         try {
-                            InputStream fis = MymUtils.getLocalFile("descvp0.png", getApplicationContext());
+                            InputStream fis = MymUtils.getLocalFile("mymensoremptytn.png", getApplicationContext());
                             if (!(fis == null)) {
                                 videoThumbnailHdBitmap = BitmapFactory.decodeStream(fis);
                                 fis.close();
