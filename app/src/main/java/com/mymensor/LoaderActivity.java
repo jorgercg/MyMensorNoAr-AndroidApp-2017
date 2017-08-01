@@ -239,6 +239,17 @@ public class LoaderActivity extends Activity {
                 sntpReference = 0;
             }
 
+            // Loading App Assets
+            try {
+                Log.d(TAG, "loadFinalDefinitions: backgroundLoader:####### LOADING: LOCAL ASSETS");
+                MymUtils.extractAllAssets(getApplicationContext());
+            } catch (Exception e) {
+                Log.e(TAG, "loadFinalDefinitions: backgroundLoader extractAllAssets failed:" + e.toString());
+                publishProgress(getString(R.string.checkcfgfiles));
+                finishApp = true;
+                finish();
+            }
+
             if (!finishApp) {
                 publishProgress(getString(R.string.load_assets_finished));
             } else {
