@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -37,6 +38,7 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -93,6 +95,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -224,6 +227,7 @@ public class ImageCapActivity extends Activity implements
 
     FloatingActionButton deleteLocalMediaButton;
     FloatingActionButton shareMediaButton;
+    FloatingActionButton shareMediaButton2;
 
     ImageButton showPreviousVpCaptureButton;
     ImageButton showNextVpCaptureButton;
@@ -536,13 +540,13 @@ public class ImageCapActivity extends Activity implements
 
         mImageDetectionFilterIndex = 1;
 
-        photoTakenTimeMillis = new long[21];
+        photoTakenTimeMillis = new long[Constants.maxQtyVps];
 
-        String[] newVpsList = new String[21];
-        for (int i = 0; i < 21; i++) newVpsList[i] = getString(R.string.vp_name) + i;
+        String[] newVpsList = new String[Constants.maxQtyVps];
+        for (int i = 0; i < Constants.maxQtyVps; i++) newVpsList[i] = getString(R.string.vp_name) + i;
 
         vpsListView = (ListView) this.findViewById(R.id.vp_list);
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_expandable_list_item_1, newVpsList) {
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_1, newVpsList) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 // Get the Item from ListView
@@ -677,6 +681,7 @@ public class ImageCapActivity extends Activity implements
 
         deleteLocalMediaButton = (FloatingActionButton) findViewById(R.id.deleteLocalMediaButton);
         shareMediaButton = (FloatingActionButton) findViewById(R.id.shareMediaButton);
+        shareMediaButton2 = (FloatingActionButton) findViewById(R.id.shareMediaButton2);
 
         // Camera Shutter Button
 
@@ -928,7 +933,7 @@ public class ImageCapActivity extends Activity implements
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 if (showingMediaType.equalsIgnoreCase("p")) {
                     try {
-                        File inFile = new File(getApplicationContext().getFilesDir(), showingMediaFileName);
+                        File inFile = new File(getApplicationContext().getFilesDir(),showingMediaFileName);
                         fileSha256Hash = MymUtils.getFileHash(inFile);
                     } catch (IOException e) {
                         Log.e(TAG, "shareMediaButton: Failed to hash Photo file to share");
@@ -936,11 +941,11 @@ public class ImageCapActivity extends Activity implements
                     shareIntent.setType("text/plain");
                     shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/mc/1/cap/" + mymensorAccount + "/" + showingMediaFileName + "/" + fileSha256Hash);
                     shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Photo shared by MyMensor Mobile App");
-                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotousing)));
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingphotolinkusing)));
                 }
                 if (showingMediaType.equalsIgnoreCase("v")) {
                     try {
-                        File inFile = new File(getApplicationContext().getFilesDir(), showingMediaFileName);
+                        File inFile = new File(getApplicationContext().getFilesDir(),showingMediaFileName);
                         fileSha256Hash = MymUtils.getFileHash(inFile);
                     } catch (IOException e) {
                         Log.e(TAG, "shareMediaButton: Failed to hash Video file to share");
@@ -948,10 +953,18 @@ public class ImageCapActivity extends Activity implements
                     shareIntent.setType("text/plain");
                     shareIntent.putExtra(Intent.EXTRA_TEXT, "https://app.mymensor.com/mc/1/cap/" + mymensorAccount + "/" + showingMediaFileName + "/" + fileSha256Hash);
                     shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Video shared by MyMensor Mobile App");
-                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
+                    startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideolinkusing)));
                 }
+            }
+        });
 
-                /*
+
+        shareMediaButton2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG, "shareMediaButton2:");
+                String fileSha256Hash = "";
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 if (showingMediaType.equalsIgnoreCase("p")) {
                     shareIntent.setType("image/jpg");
                     try {
@@ -961,7 +974,7 @@ public class ImageCapActivity extends Activity implements
                         MymUtils.copyFile(in, out);
                         fileSha256Hash = MymUtils.getFileHash(outFile);
                     } catch (IOException e) {
-                        Log.e(TAG, "shareMediaButton: Failed to copy Photo file to share");
+                        Log.e(TAG, "shareMediaButton2: Failed to copy Photo file to share");
                     }
                     File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorPhotoCaptureShare.jpg");
                     Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
@@ -984,7 +997,7 @@ public class ImageCapActivity extends Activity implements
                         MymUtils.copyFile(in, out);
                         fileSha256Hash = MymUtils.getFileHash(outFile);
                     } catch (IOException e) {
-                        Log.e(TAG, "shareMediaButton: Failed to copy Video file to share");
+                        Log.e(TAG, "shareMediaButton2: Failed to copy Video file to share");
                     }
                     File shareFile = new File(getApplicationContext().getFilesDir(), "MyMensorVideoCaptureShare.mp4");
                     Uri shareFileUri = FileProvider.getUriForFile(getApplicationContext(), "com.mymensor.fileprovider", shareFile);
@@ -998,7 +1011,6 @@ public class ImageCapActivity extends Activity implements
                     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(Intent.createChooser(shareIntent, getText(R.string.sharingvideousing)));
                 }
-                */
             }
         });
 

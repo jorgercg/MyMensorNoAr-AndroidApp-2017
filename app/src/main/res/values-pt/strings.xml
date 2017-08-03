@@ -142,4 +142,6 @@
     <string name="caution_proceed_or_not">Se você continuar uma nova configuração será criada e apagará (se você possuir uma) a sua atual.</string>
     <string name="caution_proceed">CONTINUAR</string>
     <string name="caution_exit">SAIR</string>
+    <string name="sharingphotolinkusing">Compartilhe o link para esta foto usando:</string>
+    <string name="sharingvideolinkusing">Compartilhe o link para este vídeo usando:</string>
 </resources>

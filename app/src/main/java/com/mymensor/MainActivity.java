@@ -40,10 +40,8 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.UUID;
 
 import com.mymensor.cognitoclient.AwsUtil;
-import com.mymensor.R;
 
 import javax.crypto.SecretKey;
 
@@ -72,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private static AppStart appStart = null;
     private String appStartState;
     public static String mymClientGUID;
-    private String mymClientGUIDEncrypted;
+    private String mymClientGUIDStored;
 
     private AccountManager mAccountManager;
     private AlertDialog mAlertDialog;
@@ -120,23 +118,23 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        mymClientGUIDEncrypted = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
+        mymClientGUIDStored = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
+
+        Log.d(TAG,"mymClientGUIDStored= ["+mymClientGUIDStored+"]");
 
         aesKey = MymCrypt.getSecretKeySecurely(getSecretKeyFromJNI(), sharedPref);
 
-        if (mymClientGUIDEncrypted.equals("NOTSET")){
+        if (mymClientGUIDStored.equals("NOTSET")){
             final String androidId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
-            //mymClientGUID = UUID.nameUUIDFromBytes(androidId.getBytes(Charset.forName("ISO-8859-1"))).toString();
-            //mymClientGUID = UUID.randomUUID().toString();
             mymClientGUID = androidId;
-            mymClientGUIDEncrypted = new String(MymCrypt.encryptData(mymClientGUID.getBytes(Charset.forName("ISO-8859-1")),
+            mymClientGUIDStored = new String(MymCrypt.encryptData(mymClientGUID.getBytes(Charset.forName("ISO-8859-1")),
                     MymCrypt.retrieveIv(sharedPref),
                     aesKey),Charset.forName("ISO-8859-1"));
             SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString(Constants.MYM_CLIENT_GUID, mymClientGUIDEncrypted);
+            editor.putString(Constants.MYM_CLIENT_GUID, mymClientGUIDStored);
             editor.commit();
         } else {
-            mymClientGUID = new String(MymCrypt.decryptData(mymClientGUIDEncrypted.getBytes(Charset.forName("ISO-8859-1")),
+            mymClientGUID = new String(MymCrypt.decryptData(mymClientGUIDStored.getBytes(Charset.forName("ISO-8859-1")),
                     MymCrypt.retrieveIv(sharedPref),
                     aesKey),Charset.forName("ISO-8859-1"));
         }

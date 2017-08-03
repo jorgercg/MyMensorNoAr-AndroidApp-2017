@@ -143,4 +143,6 @@
     <string name="caution_proceed_or_not">If you proceed a new configuration will be created and will overwrite (if you have one) your existing one.</string>
     <string name="caution_proceed">PROCEED</string>
     <string name="caution_exit">EXIT</string>
+    <string name="sharingphotolinkusing">Share the link to this photo using:</string>
+    <string name="sharingvideolinkusing">Share the link to this video using:</string>
 </resources>

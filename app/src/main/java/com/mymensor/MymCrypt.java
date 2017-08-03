@@ -26,7 +26,7 @@ public class MymCrypt {
     private static byte[] encryptOrDecrypt(
             byte[] data, SecretKey key, byte[] iv, boolean isEncrypt) {
         try {
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7PADDING");
+            Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
             cipher.init(isEncrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, key,
                     new IvParameterSpec(iv));
             return cipher.doFinal(data);

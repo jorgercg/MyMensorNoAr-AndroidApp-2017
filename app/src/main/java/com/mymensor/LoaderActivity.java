@@ -284,7 +284,7 @@ public class LoaderActivity extends Activity {
                 intent.putExtra("origmymacc", origMymAcc);
                 intent.putExtra("deviceid", deviceId);
                 intent.putExtra("dcinumber", dciNumber);
-                intent.putExtra("QtyVps", 21);
+                intent.putExtra("QtyVps", Constants.maxQtyVps);
                 intent.putExtra("sntpTime", sntpTime);
                 intent.putExtra("sntpReference", sntpReference);
                 intent.putExtra("isTimeCertified", clockSetSuccess);
