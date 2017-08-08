@@ -145,4 +145,8 @@
     <string name="caution_exit">EXIT</string>
     <string name="sharingphotolinkusing">Share the link to this photo using:</string>
     <string name="sharingvideolinkusing">Share the link to this video using:</string>
+    <string name="share_media_link">link</string>
+    <string name="share_media_content">media</string>
+    <string name="error_mob_client_qty_exceeded">Maximum quantity of clients connected to server exceeded, closing...</string>
+    <string name="error_no_server_connection">Cannot proceed with no server connection, closing...</string>
 </resources>

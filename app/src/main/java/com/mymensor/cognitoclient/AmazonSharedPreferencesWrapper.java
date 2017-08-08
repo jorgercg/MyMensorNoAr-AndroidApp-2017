@@ -8,8 +8,8 @@ import android.content.SharedPreferences;
  */
 public class AmazonSharedPreferencesWrapper {
 
-    private static final String MYM_USER_KEY = "MYM_USER_KEY";
-    private static final String MYM_USER_GROUP = "MYM_USER_GROUP";
+    public static final String MYM_USER_KEY = "MYM_USER_KEY";
+    public static final String MYM_USER_GROUP = "MYM_USER_GROUP";
 
     /**
      * Set all of the Shared Preferences used by the sample Cognito developer

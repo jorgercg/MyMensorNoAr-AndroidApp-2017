@@ -4,33 +4,15 @@ import com.amazonaws.regions.Regions;
 
 public class Constants {
 
-    public static final String CURR_APP_VERSION = "10001";
-    public static final String CLIENT_SOFTWARE_TYPE = "GN1000110"; // G->Android N->NoAR 10001->code 10->version
+    public static final String CURR_APP_VERSION = "10002";
+    public static final String CLIENT_SOFTWARE_TYPE = "GN1000210"; // G->Android N->NoAR 10002->code 10->version
 
     public static final short maxQtyVps = 31;
-    public static final String frequencyUnit = "millis";
-    public static final int frequencyValue = 20000;
-    public static final float tolerancePosition = 50;
-    public static final float toleranceRotation = 10;
     public static final String capturesFolder = "cap";
     public static final String usersConfigFolder = "usrcfg";
-    public static final String vpsConfigFileName = "vps.xml";
-    public static final String vpsCheckedConfigFileName = "vpschecked.xml";
-    public static final long VpDescFileSize = 36156;
-    public static final long VpMarkerFileSize = 32209;
-    public static final short captureMarkerWidth = 400;
-    public static final short captureMarkerHeight = 400;
-    public static final short standardMarkerlessMarkerWidth = 400;
-    public static final short standardMarkerlessMarkerHeigth = 400;
-    public static final float idMarkerStdSize = 5.0f;
     public static final long shortVideoLength = 10000;
     public static final int cameraWidthInPixels = 1280;
     public static final int cameraHeigthInPixels = 720;
-    public static final int xAxisTrackingCorrection = 440; // (1280-400)/2=440 // (1280-700)/2=290
-    public static final int yAxisTrackingCorrection = 160; // (720-400)/2=160 // (720-700)/2=10
-    public static final int[] validIdMarkersForMyMensor = { 10,11,12,13,14,15,16,17,18,19,
-                                                            20,21,22,23,24,25,26,27,28,29,
-                                                            30,31,32,33,34,35,36,37,38,39 };
 
     /**
      * OpenCV
@@ -62,7 +44,7 @@ public class Constants {
     public static final String REGISTER_SERVER = "https://app.mymensor.com/accounts/register/";
     public static final String MYM_KEY = "mym_authToken";
     public static final String MYM_USER = "mym_user";
-    public static final String MYM_USR_GROUP = "MYM_USER_GROUP";
+    public static final String MYM_LAST_USER = "mym_last_user";
     public static final String MYM_CLIENT_GUID = "mym_client_guid";
     public static final String MYM_CLIENT_SALT = "mym_client_salt";
     public static final String MYM_CLIENT_IV = "mym_client_iv";

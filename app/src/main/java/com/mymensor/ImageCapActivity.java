@@ -121,8 +121,6 @@ public class ImageCapActivity extends Activity implements
         System.loadLibrary("MyMensor");
     }
 
-    public native String getSecretKeyFromJNI();
-
     private static final String TAG = "ImageCapActvty";
 
     private static long backPressed;
@@ -133,31 +131,16 @@ public class ImageCapActivity extends Activity implements
     private int dciNumber;
     private short qtyVps = 0;
 
-    //private String vpsCheckedRemotePath;
     private String vpsRemotePath;
 
-    //private static Bitmap vpLocationDescImageFileContents;
-
     private short[] vpNumber;
-    //private boolean[] vpChecked;
-    //private boolean[] vpFlashTorchIsOn;
     private long[] photoTakenTimeMillis;
-    //private long[] vpNextCaptureMillis;
     private String[] vpLocationDesText;
 
-    //private boolean[] vpIsAmbiguous;
-    //private boolean[] vpIsSuperSingle;
-    //private int[] vpSuperMarkerId;
-
-    //private boolean inPosition = false;
-    //private boolean inRotation = false;
     private boolean isShowingVpPhoto = false;
-    //private boolean firstFrameAfterArSwitchOff = false;
-    //private int isHudOn = 1;
 
     private boolean vpIsManuallySelected = false;
 
-    //private TrackingValues trackingValues;
     private int vpTrackedInPose;
 
     public boolean vpPhotoAccepted = false;
@@ -171,40 +154,9 @@ public class ImageCapActivity extends Activity implements
 
     private short assetId;
 
-    //private boolean[] vpArIsConfigured;
     private boolean[] vpIsVideo;
 
-    //private int[] vpXCameraDistance;
-    //private int[] vpYCameraDistance;
-    //private int[] vpZCameraDistance;
-    //private int[] vpXCameraRotation;
-    //private int[] vpYCameraRotation;
-    //private int[] vpZCameraRotation;
-    //private String[] vpFrequencyUnit;
-    //private long[] vpFrequencyValue;
-
-    //private static float tolerancePosition;
-    //private static float toleranceRotation;
-
-    //private boolean waitingToCaptureVpAfterDisambiguationProcedureSuccessful = false;
-    //private boolean vpIsDisambiguated = true;
-    //private boolean doubleCheckingProcedureFinalized = false;
-    //private boolean doubleCheckingProcedureStarted = false;
-    //private boolean resultSpecialTrk = false;
-    //private boolean singleImageTrackingIsSet = false;
-    //private boolean waitingUntilSingleImageTrackingIsSet = false;
-    //private boolean multipleImageTrackingIsSet = false;
-    //private boolean waitingUntilMultipleImageTrackingIsSet = false;
-    //private boolean idTrackingIsSet = false;
-    //private boolean validMarkerFound = false;
-
-    //private long millisWhenSingleImageTrackingWasSet = 0;
-
-    //private String frequencyUnit;
-    //private int frequencyValue;
-
     ListView vpsListView;
-    //ImageView radarScanImageView;
     ImageView mProgress;
     TouchImageView imageView;
     VideoView videoView;
@@ -217,12 +169,9 @@ public class ImageCapActivity extends Activity implements
 
     TextView recText;
 
-    //Animation rotationRadarScan;
     Animation rotationMProgress;
     Animation blinkingText;
 
-    //FloatingActionButton callConfigButton;
-    //FloatingActionButton alphaToggleButton;
     FloatingActionButton showVpCapturesButton;
 
     FloatingActionButton deleteLocalMediaButton;
@@ -237,20 +186,11 @@ public class ImageCapActivity extends Activity implements
     ImageButton buttonReplayVpVideo;
     ImageButton buttonStartVideoInVpCaptures;
 
-    //LinearLayout arSwitchLinearLayout;
     LinearLayout uploadPendingLinearLayout;
     LinearLayout videoRecorderTimeLayout;
     LinearLayout linearLayoutButtonsOnShowVpCaptures;
     LinearLayout linearLayoutImageViewsOnShowVpCaptures;
-    //LinearLayout linearLayoutAmbiguousVp;
-    //LinearLayout linearLayoutSuperSingleVp;
-    //LinearLayout linearLayoutConfigCaptureVps;
-    //LinearLayout linearLayoutVpArStatus;
-    //LinearLayout linearLayoutMarkerId;
     LinearLayout linearLayoutAcceptImgButtons;
-
-    //FloatingActionButton buttonAmbiguousVpToggle;
-    //FloatingActionButton buttonSuperSingleVpToggle;
 
     ImageView uploadPendingmageview;
     TextView uploadPendingText;
@@ -259,8 +199,6 @@ public class ImageCapActivity extends Activity implements
     ImageView timeCertifiedImageview;
 
     Chronometer videoRecorderChronometer;
-
-    //Switch arSwitch;
 
     private boolean isArSwitchOn = false;
 
@@ -315,8 +253,6 @@ public class ImageCapActivity extends Activity implements
 
     // A matrix that is used when saving photos.
     private Mat mBgr;
-    //public List<Mat> markerBuffer;
-    //public List<Mat> markerBufferSingle;
 
     // Whether the next camera frame should be saved as a photo.
     private boolean vpPhotoRequestInProgress;
@@ -346,14 +282,6 @@ public class ImageCapActivity extends Activity implements
     boolean camShutterSoundIDLoaded = false;
     boolean videoRecordStartedSoundIDLoaded = false;
     boolean videoRecordStopedSoundIDLoaded = false;
-
-    //Point pt1;
-    //Point pt2;
-    //Point pt3;
-    //Point pt4;
-    //Point pt5;
-    //Point pt6;
-    //Scalar color;
 
     protected GoogleApiClient mGoogleApiClient;
     protected Location mLastLocation;
@@ -2247,6 +2175,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("mymensoraccount", mymensorAccount);
                     userMetadata.put("origmymacc", origMymAcc);
                     userMetadata.put("deviceid", deviceId);
+                    userMetadata.put("clitype",Constants.CLIENT_SOFTWARE_TYPE);
                     userMetadata.put("locprecisioninm", locPhotoToExif[4]);
                     userMetadata.put("localtitude", locPhotoToExif[7]);
                     userMetadata.put("locmillis", locPhotoToExif[5]);
@@ -2521,6 +2450,7 @@ public class ImageCapActivity extends Activity implements
                     userMetadata.put("mymensoraccount", mymensorAccount);
                     userMetadata.put("origmymacc", origMymAcc);
                     userMetadata.put("deviceid", deviceId);
+                    userMetadata.put("clitype",Constants.CLIENT_SOFTWARE_TYPE);
                     userMetadata.put("locprecisioninm", locPhotoToExif[4]);
                     userMetadata.put("localtitude", locPhotoToExif[7]);
                     userMetadata.put("locmillis", locPhotoToExif[5]);

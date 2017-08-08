@@ -18,7 +18,8 @@ import java.net.URL;
 public class CognitoSampleDeveloperAuthenticationService {
     private static final String LOG_TAG = "CogntSmplDvlprAuthSrv";
     private static final String ERROR = "Internal Server Error";
-    public static boolean isConnectedToServer = false;
+    public static int isApprovedByCognitoState = 0;
+    public static int qtyClientsExceededState = 0;
 
     /**
      * A function to send request to the sample Cognito developer authentication
@@ -37,7 +38,7 @@ public class CognitoSampleDeveloperAuthenticationService {
         try {
             requestUrl = request.buildRequestUrl();
 
-            Log.i(LOG_TAG, "Sending Request : [" + requestUrl + "] Token " + mymToken );
+            Log.i(LOG_TAG, "Sending Request:[" + requestUrl + "]:Token=["+mymToken+"]:CST=["+Constants.CLIENT_SOFTWARE_TYPE+"]:ID=["+MainActivity.mymClientGUID+"]");
 
             URL url = new URL(requestUrl);
             HttpURLConnection connection = (HttpURLConnection) url
@@ -49,7 +50,17 @@ public class CognitoSampleDeveloperAuthenticationService {
             responseCode = connection.getResponseCode();
             responseBody = CognitoSampleDeveloperAuthenticationService
                     .getResponse(connection);
-            if (responseCode==200) isConnectedToServer=true;
+            if (responseCode==200) {
+                isApprovedByCognitoState =1;
+            } else {
+                isApprovedByCognitoState =2;
+            }
+            if (responseCode==403) {
+                responseBody="Quantity of concurrent clients limit exceeded";
+                qtyClientsExceededState = 1;
+            } else {
+                qtyClientsExceededState = 2;
+            }
             Log.i(LOG_TAG, "ResponseCode : [" + responseCode + "]");
             Log.i(LOG_TAG, "ResponseBody : [" + responseBody + "]");
 

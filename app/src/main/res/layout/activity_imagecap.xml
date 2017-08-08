@@ -397,49 +397,79 @@
 
     <LinearLayout
         android:id="@+id/linearLayoutButtonsOnShowVpCaptures"
+        android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical|start"
         android:layout_above="@id/buttonShowPreviousVpCapture"
         android:layout_alignParentStart="true"
-        android:layout_margin="8dp"
-        android:gravity="top|center"
-        android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:layout_margin="16dp">
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/deleteLocalMediaButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="2dp"
-            android:layout_marginTop="2dp"
             android:clickable="true"
-            opencv:backgroundTint="@color/mymensorbluedark"
-            opencv:elevation="0dp"
             opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/ic_menu_delete" />
+            opencv:srcCompat="@android:drawable/ic_menu_delete"
+            opencv:backgroundTint="@color/mymensorbluedark"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp" />
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/shareMediaButton2"
+        <LinearLayout
+            android:id="@+id/linearLayoutshareMediaButton2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:clickable="true"
-            opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/ic_menu_share"
-            opencv:backgroundTint="@color/mymensorgreendark"
-            android:layout_marginBottom="5dp"
-            android:layout_marginTop="5dp" />
+            android:orientation="horizontal">
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/shareMediaButton"
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/shareMediaButton2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@android:drawable/ic_menu_share"
+                opencv:backgroundTint="@color/mymensorgreendark"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="5dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:text="@string/share_media_content"
+                android:gravity="center_vertical"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayoutshareMediaButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="2dp"
-            android:layout_marginTop="2dp"
-            android:clickable="true"
-            opencv:backgroundTint="@color/mymensorbluedark"
-            opencv:elevation="0dp"
-            opencv:fabSize="mini"
-            opencv:srcCompat="@android:drawable/ic_menu_share" />
+            android:orientation="horizontal">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/shareMediaButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                opencv:fabSize="mini"
+                opencv:srcCompat="@android:drawable/ic_menu_share"
+                opencv:backgroundTint="@color/mymensorbluedark"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="5dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:text="@string/share_media_link"
+                android:gravity="center_vertical"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

@@ -7,7 +7,7 @@ android {
         applicationId 'com.mymensor'
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 10001
+        versionCode 10002
         versionName "1.0"
 
         externalNativeBuild {

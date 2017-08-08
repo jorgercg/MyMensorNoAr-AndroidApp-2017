@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.mymensor.cognitoclient.AmazonSharedPreferencesWrapper;
+import com.mymensor.cognitoclient.CognitoSampleDeveloperAuthenticationService;
 
 public class LoaderActivity extends Activity {
     private static final String TAG = "LoaderActvty";
@@ -76,8 +77,6 @@ public class LoaderActivity extends Activity {
         backgroundLoader = new BackgroundLoader();
 
         Log.d(TAG, "onCreate(): calling checkConnectionToServer().");
-
-        checkConnectionToServer();
 
         setContentView(R.layout.activity_loader);
         logoLinearLayout = (LinearLayout) findViewById(R.id.MyMensorLogoLinearLayout1);
@@ -139,14 +138,48 @@ public class LoaderActivity extends Activity {
                     .setAction(getText(R.string.ok), null).show();
             Log.d(TAG, "Closing the app");
             finish();
+            return;
         }
 
         amazonSharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
+        Log.d(TAG, "startUpLoader: Before COG response: isApprovedByCognitoState=" + CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState);
+        Log.d(TAG, "startUpLoader: Before COG response: qtyClientsExceededState=" + CognitoSampleDeveloperAuthenticationService.qtyClientsExceededState);
+
+        Long loopStart = System.currentTimeMillis();
+
+        do {
+            //nada!!!!
+        }
+        while (((CognitoSampleDeveloperAuthenticationService.qtyClientsExceededState == 0) || (CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 0)) && ((System.currentTimeMillis() - loopStart) < 5000));
+
+        Log.d(TAG, "startUpLoader: After COG response: isApprovedByCognitoState=" + CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState);
+        Log.d(TAG, "startUpLoader: After COG response: qtyClientsExceededState=" + CognitoSampleDeveloperAuthenticationService.qtyClientsExceededState);
+
+        if ((CognitoSampleDeveloperAuthenticationService.qtyClientsExceededState == 1) && (CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 2)) {
+            Log.d(TAG, "startUpLoader: finishing");
+            Toast toast = Toast.makeText(getApplicationContext(), getText(R.string.error_mob_client_qty_exceeded), Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER | Gravity.CENTER_HORIZONTAL, 0, 30);
+            toast.show();
+            finish();
+            return;
+        } else {
+            if ((CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 2) || ((CognitoSampleDeveloperAuthenticationService.qtyClientsExceededState == 0) && (CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 0))) {
+                Log.d(TAG, "startUpLoader: finishing");
+                Toast toast = Toast.makeText(getApplicationContext(), getText(R.string.error_no_server_connection), Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER | Gravity.CENTER_HORIZONTAL, 0, 30);
+                toast.show();
+                finish();
+                return;
+            }
+        }
+
         do {
             mymensorUserGroup = AmazonSharedPreferencesWrapper.getGroupForUser(amazonSharedPref);
         } while (mymensorUserGroup == null);
+
         Log.d(TAG, "startUpLoader: MYM_USR_GROUP: " + mymensorUserGroup);
+
         if (mymensorUserGroup.equalsIgnoreCase("mymARmobileapp")) {
             origMymAcc = mymensorAccount;
             mymensorAccount = mymensorAccount.substring(7, mymensorAccount.length());
@@ -159,34 +192,6 @@ public class LoaderActivity extends Activity {
 
         backgroundLoader.execute();
 
-    }
-
-
-    private void checkConnectionToServer() {
-
-        new AsyncTask<Void, Void, Boolean>() {
-            @Override
-            protected void onPreExecute() {
-                Log.d(TAG, "checkConnectionToServer: onPreExecute");
-            }
-
-            @Override
-            protected Boolean doInBackground(Void... params) {
-                return MymUtils.isS3Available(s3Amazon);
-            }
-
-            @Override
-            protected void onPostExecute(Boolean result) {
-                Log.d(TAG, "checkConnectionToServer: onPostExecute: result=" + result);
-                searchForServerEnded = true;
-                if (result) {
-                    isConnectedToServer = true;
-                } else {
-                    isConnectedToServer = false;
-                }
-                Log.d(TAG, "checkConnectionToServer(): CONNECTION TO SERVER EXISTS:" + isConnectedToServer);
-            }
-        }.execute();
     }
 
 
@@ -229,7 +234,7 @@ public class LoaderActivity extends Activity {
                 if (now != 0)
                     Log.d(TAG, "backgroundLoader: ntp:now=" + now);
 
-            } while ((now == 0) && ((System.currentTimeMillis() - loopStart) < 10000));
+            } while ((now == 0) && ((System.currentTimeMillis() - loopStart) < 5000));
             Log.d(TAG, "backgroundLoader: ending the loop querying pool.ntp.org for 10 seconds max:" + (System.currentTimeMillis() - loopStart) + " millis:" + now);
             if (clockSetSuccess) {
                 Log.d(TAG, "backgroundLoader: System.currentTimeMillis() before setTime=" + System.currentTimeMillis());
@@ -277,6 +282,9 @@ public class LoaderActivity extends Activity {
         Log.d(TAG, "callingActivities");
         Log.d(TAG, "callingActivities:####### LOADING: onPostExecute: callingARVewactivity: isTimeCertified=" + clockSetSuccess);
         Log.d(TAG, "callingActivities:####### LOADING: onPostExecute: callingARVewactivity: activityToBeCalled=" + activityToBeCalled);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(Constants.MYM_LAST_USER, origMymAcc);
+        editor.commit();
         if (activityToBeCalled.equalsIgnoreCase("imagecapactivity")) {
             try {
                 Intent intent = new Intent(getApplicationContext(), ImageCapActivity.class);

@@ -144,4 +144,8 @@
     <string name="caution_exit">SAIR</string>
     <string name="sharingphotolinkusing">Compartilhe o link para esta foto usando:</string>
     <string name="sharingvideolinkusing">Compartilhe o link para este vídeo usando:</string>
+    <string name="share_media_link">link</string>
+    <string name="share_media_content">mídia</string>
+    <string name="error_mob_client_qty_exceeded">Excedida a quantidade máxima de clientes conectados ao servidor, fechando...</string>
+    <string name="error_no_server_connection">Não é possível continuar sem conexão ao servidor, fechando...</string>
 </resources>

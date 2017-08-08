@@ -40,7 +40,9 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Map;
 
+import com.mymensor.cognitoclient.AmazonSharedPreferencesWrapper;
 import com.mymensor.cognitoclient.AwsUtil;
 
 import javax.crypto.SecretKey;
@@ -118,6 +120,12 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
+        Map<String, ?> keys = sharedPref.getAll();
+
+        for (Map.Entry<String, ?> entry : keys.entrySet()) {
+            Log.d(TAG, "onCreate: sharedPref: " + entry.getKey() + "=[" + entry.getValue().toString() +"]");
+        }
+
         mymClientGUIDStored = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
 
         Log.d(TAG,"mymClientGUIDStored= ["+mymClientGUIDStored+"]");
@@ -178,8 +186,18 @@ public class MainActivity extends AppCompatActivity {
 
         if (availableAccounts.length == 0){
             Log.d(TAG, "availableAccounts[] = " + "nada!!!!" + " Qty= 0");
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString(Constants.MYM_LAST_USER, null);
+            editor.putString(AmazonSharedPreferencesWrapper.MYM_USER_GROUP, null);
+            editor.commit();
         } else {
             Log.d(TAG, "availableAccounts[] = " + availableAccounts[0] + " Qty="+availableAccounts.length);
+            if (!sharedPref.getString(Constants.MYM_LAST_USER, "").equals(availableAccounts[0].name)) {
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(Constants.MYM_LAST_USER, null);
+                editor.putString(AmazonSharedPreferencesWrapper.MYM_USER_GROUP, null);
+                editor.commit();
+            };
         }
 
         if (availableAccounts.length == 0) {
@@ -398,6 +416,24 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "AddNewAccount Bundle is " + bnd.toString());
                     logInOut.setVisibility(View.GONE);
                     userLogged.setText(getText(R.string.userstate_loggedin)+" "+ bnd.getString("authAccount"));
+
+                    Map<String, ?> keys = sharedPref.getAll();
+
+                    for (Map.Entry<String, ?> entry : keys.entrySet()) {
+                        Log.d(TAG, "BEFORE: map values: " + entry.getKey() + ": " + entry.getValue().toString());
+                    }
+
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString(AmazonSharedPreferencesWrapper.MYM_USER_KEY, "");
+                    editor.putString(AmazonSharedPreferencesWrapper.MYM_USER_GROUP, null);
+                    editor.commit();
+
+                    Map<String, ?> keysafter = sharedPref.getAll();
+
+                    for (Map.Entry<String, ?> entry : keysafter.entrySet()) {
+                        Log.d(TAG, "AFTER: map values: " + entry.getKey() + ": " + entry.getValue().toString());
+                    }
+
                     String mymtoken = sharedPref.getString(Constants.MYM_KEY," ");
                     Log.d(TAG, "AddNewAccount Token is " + mymtoken);
                     getCognitoIdAndToken(mymtoken);
