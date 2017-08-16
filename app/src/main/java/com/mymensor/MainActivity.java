@@ -123,7 +123,11 @@ public class MainActivity extends AppCompatActivity {
         Map<String, ?> keys = sharedPref.getAll();
 
         for (Map.Entry<String, ?> entry : keys.entrySet()) {
-            Log.d(TAG, "onCreate: sharedPref: " + entry.getKey() + "=[" + entry.getValue().toString() +"]");
+            try {
+                Log.d(TAG, "onCreate: sharedPref: " + entry.getKey() + "=[" + entry.getValue().toString() +"]");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         mymClientGUIDStored = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
@@ -420,7 +424,11 @@ public class MainActivity extends AppCompatActivity {
                     Map<String, ?> keys = sharedPref.getAll();
 
                     for (Map.Entry<String, ?> entry : keys.entrySet()) {
-                        Log.d(TAG, "BEFORE: map values: " + entry.getKey() + ": " + entry.getValue().toString());
+                        try {
+                            Log.d(TAG, "BEFORE: map values: " + entry.getKey() + ": " + entry.getValue().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
 
                     SharedPreferences.Editor editor = sharedPref.edit();
