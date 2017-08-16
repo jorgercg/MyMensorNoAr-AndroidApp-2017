@@ -439,7 +439,11 @@ public class MainActivity extends AppCompatActivity {
                     Map<String, ?> keysafter = sharedPref.getAll();
 
                     for (Map.Entry<String, ?> entry : keysafter.entrySet()) {
-                        Log.d(TAG, "AFTER: map values: " + entry.getKey() + ": " + entry.getValue().toString());
+                        try {
+                            Log.d(TAG, "AFTER: map values: " + entry.getKey() + ": " + entry.getValue().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
 
                     String mymtoken = sharedPref.getString(Constants.MYM_KEY," ");
