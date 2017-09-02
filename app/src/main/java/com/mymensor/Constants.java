@@ -4,8 +4,8 @@ import com.amazonaws.regions.Regions;
 
 public class Constants {
 
-    public static final String CURR_APP_VERSION = "10004";
-    public static final String CLIENT_SOFTWARE_TYPE = "GN1000410"; // G->Android N->NoAR 10004->code 10->version
+    public static final String CURR_APP_VERSION = "10005";
+    public static final String CLIENT_SOFTWARE_TYPE = "GN10005105"; // G->Android N->NoAR 10005->code 105->version
 
     public static final short maxQtyVps = 31;
     public static final String capturesFolder = "cap";

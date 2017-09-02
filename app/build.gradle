@@ -7,8 +7,8 @@ android {
         applicationId 'com.mymensor'
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 10004
-        versionName "1.0"
+        versionCode 10005
+        versionName "1.05"
 
         externalNativeBuild {
             cmake {
