@@ -147,5 +147,7 @@
     <string name="share_media_link">link</string>
     <string name="share_media_content">mídia</string>
     <string name="error_mob_client_qty_exceeded">Excedida a quantidade máxima de clientes conectados ao servidor, fechando...</string>
-    <string name="error_no_server_connection">Não é possível continuar sem conexão ao servidor, fechando...</string>
+    <string name="error_no_server_connection">Não é possível continuar por erro na conexão ao servidor, fechando...</string>
+    <string name="error_trial_exp_continuing_with_no_server_connection">O período de testes terminou, continuando sem conexão com o servidor.</string>
+    <string name="error_sub_exp_continuing_with_no_server_connection">Assinatura terminada, continuando sem conexão com o servidor.</string>
 </resources>

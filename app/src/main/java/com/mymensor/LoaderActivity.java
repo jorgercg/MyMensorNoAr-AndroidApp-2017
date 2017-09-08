@@ -172,6 +172,18 @@ public class LoaderActivity extends Activity {
                 finish();
                 return;
             }
+            if ((CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 3) ) {
+                Log.d(TAG, "startUpLoader: TRIAL EXP continuing without server connection");
+                Toast toast = Toast.makeText(getApplicationContext(), getText(R.string.error_trial_exp_continuing_with_no_server_connection), Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER | Gravity.CENTER_HORIZONTAL, 0, 30);
+                toast.show();
+            }
+            if ((CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 4) ) {
+                Log.d(TAG, "startUpLoader: SUB EXP continuing without server connection");
+                Toast toast = Toast.makeText(getApplicationContext(), getText(R.string.error_sub_exp_continuing_with_no_server_connection), Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER | Gravity.CENTER_HORIZONTAL, 0, 30);
+                toast.show();
+            }
         }
 
         // || ((CognitoSampleDeveloperAuthenticationService.qtyClientsExceededState == 0) && (CognitoSampleDeveloperAuthenticationService.isApprovedByCognitoState == 0))

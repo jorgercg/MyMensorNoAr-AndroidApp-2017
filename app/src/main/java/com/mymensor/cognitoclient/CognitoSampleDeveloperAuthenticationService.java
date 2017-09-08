@@ -53,9 +53,19 @@ public class CognitoSampleDeveloperAuthenticationService {
             if (responseCode==200) {
                 isApprovedByCognitoState =1;
             } else {
-                isApprovedByCognitoState =2;
+                if (responseCode==432) {
+                    responseBody="Trial Expired";
+                    isApprovedByCognitoState =3;
+                } else {
+                    if (responseCode==434) {
+                        responseBody="Subscription Expired";
+                        isApprovedByCognitoState =4;
+                    } else {
+                        isApprovedByCognitoState =2;
+                    }
+                }
             }
-            if (responseCode==403) {
+            if (responseCode==433) {
                 responseBody="Quantity of concurrent clients limit exceeded";
                 qtyClientsExceededState = 1;
             } else {
