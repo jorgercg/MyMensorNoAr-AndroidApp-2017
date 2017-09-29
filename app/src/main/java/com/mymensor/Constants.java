@@ -4,8 +4,8 @@ import com.amazonaws.regions.Regions;
 
 public class Constants {
 
-    public static final String CURR_APP_VERSION = "10006";
-    public static final String CLIENT_SOFTWARE_TYPE = "GN10006106"; // G->Android N->NoAR 10006->code 106->version
+    public static final String CURR_APP_VERSION = "10007";
+    public static final String CLIENT_SOFTWARE_TYPE = "GN100071076"; // G->Android N->NoAR 10007->code 107->version
 
     public static final short maxQtyVps = 31;
     public static final String capturesFolder = "cap";
@@ -41,7 +41,9 @@ public class Constants {
     public static final String AUTHTOKEN_TYPE_FULL_ACCESS = "Full access";
     public static final String AUTHTOKEN_TYPE_FULL_ACCESS_LABEL = "Full access to a mymensor account";
     public static final String AUTH_SERVER = "https://app.mymensor.com/api-token-auth/";
-    public static final String REGISTER_SERVER = "https://app.mymensor.com/accounts/register/";
+    public static final String REGISTER_SERVER = "https://app.mymensor.com/remoteregistration/";
+    public static final String TERMSOFSERV_URI = "https://mymensor.com/terms/";
+    public static final String PRIVACY_URI = "https://mymensor.com/privacy/";
     public static final String MYM_KEY = "mym_authToken";
     public static final String MYM_USER = "mym_user";
     public static final String MYM_LAST_USER = "mym_last_user";

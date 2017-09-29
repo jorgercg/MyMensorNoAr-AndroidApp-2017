@@ -57,8 +57,10 @@
     <string name="logout_btn_txt">LOGOUT</string>
     <string name="accountname">Username</string>
     <string name="Password">Password</string>
-    <string name="SignIn">Sign In</string>
-    <string name="newuser">New User?</string>
+    <string name="Email">E-mail</string>
+    <string name="SignIn">LOG EXISTING USER IN</string>
+    <string name="SignUp">Register</string>
+    <string name="newuser">CREATE NEW USER</string>
     <string name="Name">Name</string>
     <string name="CreateAcc">Create Account</string>
     <string name="AlreadyMember">Already a member?</string>
@@ -151,4 +153,13 @@
     <string name="error_no_server_connection">Cannot proceed due to error with server connection, closing...</string>
     <string name="error_trial_exp_continuing_with_no_server_connection">Trial period has expired, continuing with no server connection.</string>
     <string name="error_sub_exp_continuing_with_no_server_connection">Subscription expired, continuing with no server connection.</string>
+    <string name="accountemail">E-mail</string>
+    <string name="registrationfailed">Registration Failed</string>
+    <string name="creatinguser">Creating user</string>
+    <string name="waitingforserver">Waiting for server...</string>
+    <string name="checkfirsttxt">I\'ve read and agreed with the</string>
+    <string name="checksecondtxt">and</string>
+    <string name="checkfirstlink">Terms of Service</string>
+    <string name="checksecondlink">Privacy Policy</string>
+    <string name="checknotchecked">In order to register to MyMensor you must read and agree to our terms and policies.</string>
 </resources>

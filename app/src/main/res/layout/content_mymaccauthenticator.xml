@@ -30,13 +30,23 @@
             android:paddingTop="8dp"
             android:scaleType="centerInside"
             android:src="@drawable/logo_mymensor"
-            android:layout_gravity="center_horizontal">
-        </ImageView>
+            android:layout_gravity="center_horizontal"
+            />
+
+        <TextView android:id="@+id/accountEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:hint="@string/accountemail"
+            android:padding="10dp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            />
 
         <EditText android:id="@+id/accountName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="10dp"
             android:hint="@string/accountname"
             android:inputType="textEmailAddress"
             android:padding="10dp"
@@ -51,19 +61,99 @@
             android:padding="10dp"
             />
 
-        <Button android:id="@+id/submit"
+        <Button
+            android:id="@+id/signUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="@string/SignIn"
-            android:padding="10dp"/>
+            android:padding="10dp"
+            android:text="@string/newuser" />
 
-        <TextView android:id="@+id/signUp"
+        <Button
+            android:id="@+id/submit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/newuser"
-            android:padding="10dp"/>
+            android:layout_marginTop="10dp"
+            android:padding="10dp"
+            android:text="@string/SignIn" />
+
+        <LinearLayout
+            android:id="@+id/termslinearlayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <CheckBox
+                android:id="@+id/terms_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/terms_first_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:text="@string/checkfirsttxt" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/terms_first_link"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:clickable="true"
+                        android:onClick="onClickFirstLink"
+                        android:text="@string/checkfirstlink"
+                        android:textColor="#00f" />
+
+                    <TextView
+                        android:id="@+id/terms_second_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:text="@string/checksecondtxt" />
+
+                    <TextView
+                        android:id="@+id/terms_second_link"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:clickable="true"
+                        android:onClick="onClickSecondLink"
+                        android:text="@string/checksecondlink"
+                        android:textColor="#00f" />
+
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <Button android:id="@+id/register"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/SignUp"
+            android:padding="10dp"
+            android:visibility="gone"
+            />
 
     </LinearLayout>
 </RelativeLayout>

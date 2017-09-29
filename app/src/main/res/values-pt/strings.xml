@@ -55,8 +55,8 @@
     <string name="logout_btn_txt">LOGOUT</string>
     <string name="Password">Senha</string>
     <string name="accountname">Usuário</string>
-    <string name="SignIn">Entrar</string>
-    <string name="newuser">Usuário novo?</string>
+    <string name="SignIn">ENTRAR COM USUÁRIO EXISTENTE</string>
+    <string name="newuser">CRIAR NOVO USUÁRIO</string>
     <string name="Name">Nome</string>
     <string name="CreateAcc">Criar Conta</string>
     <string name="AlreadyMember">Já se inscreveu?</string>
@@ -150,4 +150,15 @@
     <string name="error_no_server_connection">Não é possível continuar por erro na conexão ao servidor, fechando...</string>
     <string name="error_trial_exp_continuing_with_no_server_connection">O período de testes terminou, continuando sem conexão com o servidor.</string>
     <string name="error_sub_exp_continuing_with_no_server_connection">Assinatura terminada, continuando sem conexão com o servidor.</string>
+    <string name="SignUp">Registrar</string>
+    <string name="Email">E-mail</string>
+    <string name="accountemail">E-mail</string>
+    <string name="registrationfailed">Falha no registro</string>
+    <string name="creatinguser">Criando usuário</string>
+    <string name="waitingforserver">Esperando pelo servidor...</string>
+    <string name="checkfirstlink">Termos de Serviço</string>
+    <string name="checksecondlink">Política de Privacidade</string>
+    <string name="checkfirsttxt">Eu li e concordo com os</string>
+    <string name="checksecondtxt">e</string>
+    <string name="checknotchecked">Para se registrar no MyMensor você tem de ler e concordar com nossos termos e políticas.</string>
 </resources>

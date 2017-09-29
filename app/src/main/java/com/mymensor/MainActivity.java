@@ -40,6 +40,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.mymensor.cognitoclient.AmazonSharedPreferencesWrapper;
@@ -133,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
         mymClientGUIDStored = sharedPref.getString(Constants.MYM_CLIENT_GUID,"NOTSET");
 
         Log.d(TAG,"mymClientGUIDStored= ["+mymClientGUIDStored+"]");
+
+        Log.d(TAG,"CURRENT LOCALE: ["+ Locale.getDefault().getLanguage()+"-"+Locale.getDefault().getCountry()+"]");
 
         aesKey = MymCrypt.getSecretKeySecurely(getSecretKeyFromJNI(), sharedPref);
 
