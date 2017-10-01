@@ -791,7 +791,7 @@ public class ImageCapActivity extends Activity implements
         });
 
 
-        // Show VP captures galley Button
+        // Show VP captures gallery Button on Main Screen
 
         showVpCapturesButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1154,6 +1154,23 @@ public class ImageCapActivity extends Activity implements
 
     public String[] getLocationToExifStrings(Location location, String photoTakenMillis) {
         String[] locationString = new String[14];
+        if (isTimeCertified) {
+            locationString[10] = Integer.toString(1);
+            locationString[11] = photoTakenMillis;
+        } else {
+            locationString[10] = Integer.toString(0);
+            locationString[11] = photoTakenMillis;
+        }
+        if (isPositionCertified) {
+            locationString[12] = Integer.toString(1);
+        } else {
+            locationString[12] = Integer.toString(0);
+        }
+        if (isArSwitchOn) {
+            locationString[13] = Integer.toString(1);
+        } else {
+            locationString[13] = Integer.toString(0);
+        }
         try {
             double[] gps = new double[2];
             if (location != null) {
@@ -1187,33 +1204,18 @@ public class ImageCapActivity extends Activity implements
                 locationString[5] = mLastUpdateTime.toString();
                 locationString[6] = location.getProvider();
                 locationString[7] = Double.toString(location.getAltitude());
-                if (isTimeCertified) {
-                    locationString[10] = Integer.toString(1);
-                    locationString[11] = photoTakenMillis;
-                } else {
-                    locationString[10] = Integer.toString(0);
-                    locationString[11] = photoTakenMillis;
-                }
-                if (isPositionCertified) {
-                    locationString[12] = Integer.toString(1);
-                } else {
-                    locationString[12] = Integer.toString(0);
-                }
-                if (isArSwitchOn) {
-                    locationString[13] = Integer.toString(1);
-                } else {
-                    locationString[13] = Integer.toString(0);
-                }
                 Log.d(TAG, "getLocationToExifStrings: LAT:" + gps[0] + " " + (gps[0] % 1) + " " + locationString[0] + locationString[1] + " LON:" + gps[1] + " " + locationString[2] + locationString[3]);
             } else {
-                locationString[0] = " ";
-                locationString[1] = " ";
-                locationString[2] = " ";
-                locationString[3] = " ";
-                locationString[4] = " ";
-                locationString[5] = " ";
-                locationString[6] = " ";
-                locationString[7] = " ";
+                locationString[0] = "" + 0 + "/1," + 0 + "/1," + 0 + "/1000";
+                locationString[1] = "N";
+                locationString[2] = "" + 0 + "/1," + 0 + "/1," + 0 + "/1000";
+                locationString[3] = "W";
+                locationString[4] = "0";
+                locationString[5] = "0";
+                locationString[6] = "LOCOFF";
+                locationString[7] = "0";
+                locationString[8] = "0";
+                locationString[9] = "0";
             }
             for (int index = 0; index < locationString.length; index++) {
                 if (locationString[index] == null) locationString[index] = " ";
